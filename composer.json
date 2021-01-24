@@ -1,0 +1,28 @@
+{
+    "name": "simbiat/http20",
+    "type": "library",
+    "keywords": ["http","php","html", "sitemap", "atom", "breadcrumb"],
+    "description": "Set of functions that may be universally useful for websites",
+    "homepage": "https://github.com/Simbiat/http20",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Dmitry Kustov",
+            "email": "simbiat@outlook.com",
+            "homepage": "https://simbiat.ru",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "http20\\": "src/"
+        }
+    },
+	"support": {
+		"issues": "https://github.com/Simbiat/http20/issues",
+		"source": "https://github.com/Simbiat/http20"
+	}
+}

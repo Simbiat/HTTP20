@@ -1,2 +1,2 @@
 # HTTP20
- A set of functions that may be universally useful for websites
+Set of functions that may be universally useful for websites
