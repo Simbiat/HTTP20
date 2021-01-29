@@ -16,6 +16,9 @@
     "require": {
         "php": "^7.4"
     },
+    "replace": {
+    	"simbiat/prettyurl": "^1.2.0+20210129"
+    }
     "autoload": {
         "psr-4": {
             "http20\\": "src/"

@@ -4,17 +4,13 @@ namespace HTTP20;
 
 class Atom
 {
-    #Base URL to use for links
-    private string $urlbase = '';
+    #Object to cache some common functions
+    private \HTTP20\Common $http20;
     
-    public function __construct(string $urlbase = '')
+    public function __construct()
     {
-        #Set the base for links
-        if (empty($urlbase)) {
-            $this->urlbase = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'];
-        } else {
-            $this->urlbase = $urlbase;
-        }
+        #Caching common functions
+        $this->http20 = (new \http20\Common);
     }
     
     #Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
@@ -26,21 +22,29 @@ class Atom
         } else {
             $feed_settings['title'] = $title;
         }
+        #validate text type
+        if (!in_array(strtolower($texttype), ['text', 'html', 'xhtml'])) {
+            throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
+        }
         #Validate content
         if (!empty($entries)) {
             $this->atomElementValidator($entries, 'entry', 'link');
         }
         #Check id
         if (empty($id)) {
-            $feed_settings['id'] = $this->urlbase.$_SERVER['REQUEST_URI'];
+            $feed_settings['id'] = $this->http20->htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } else {
-            $feed_settings['id'] = $id;
+            if ($this->http20->uriValidator($id)) {
+                $feed_settings['id'] = $this->http20->htmlToRFC3986($id);
+            } else {
+                throw new \UnexpectedValueException('$id provided is not a valid URI');
+            }
         }
         #Check time
         if (empty($feed_settings['updated'])) {
             $feed_settings['updated'] = date('c', time());
         } else {
-            $feed_settings['updated'] = date('c', (new \http20\Common)->valueToTime($feed_settings['updated']));
+            $feed_settings['updated'] = date('c', $this->http20->valueToTime($feed_settings['updated'], \DATE_ATOM));
         }
         #Validate authors
         if (!empty($feed_settings['authors'])) {
@@ -51,8 +55,8 @@ class Atom
             $this->atomElementValidator($feed_settings['contributors'], 'contributor');
         }
         #Validate links
-        if (!empty($feed_settings['extralinks'])) {
-            $this->atomElementValidator($feed_settings['extralinks'], 'link', 'href');
+        if (!empty($feed_settings['links'])) {
+            $this->atomElementValidator($feed_settings['links'], 'link', 'href');
         }
         #Validate categories
         if (!empty($feed_settings['categories'])) {
@@ -76,10 +80,10 @@ class Atom
         #Add link tag
         $link = $root->appendChild($feed->createElement('link'));
         $link->setAttribute('rel', 'self');
-        $link->setAttribute('href', $this->urlbase.$_SERVER['REQUEST_URI']);
+        $link->setAttribute('href', $feed_settings['id']);
         #Add any extra links
-        if (!empty($feed_settings['extralinks'])) {
-            foreach ($feed_settings['extralinks'] as $link) {
+        if (!empty($feed_settings['links'])) {
+            foreach ($feed_settings['links'] as $link) {
                 $linkelem = $root->appendChild($feed->createElement('link'));
                 $this->atomAddAttributes($linkelem, $feed, $link, ['href', 'rel', 'type', 'hreflang', 'title', 'length']);
             }
@@ -103,10 +107,10 @@ class Atom
             $subtitle->setAttribute('type', $texttype);
         }
         if (!empty($feed_settings['icon'])) {
-            $root->appendChild($feed->createElement('icon', $feed_settings['icon']));
+            $root->appendChild($feed->createElement('icon', $this->http20->htmlToRFC3986($feed_settings['icon'])));
         }
         if (!empty($feed_settings['logo'])) {
-            $root->appendChild($feed->createElement('logo', $feed_settings['logo']));
+            $root->appendChild($feed->createElement('logo', $this->http20->htmlToRFC3986($feed_settings['logo'])));
         }
         if (!empty($feed_settings['rights'])) {
             $rights = $root->appendChild($feed->createElement('rights', $feed_settings['rights']));
@@ -131,7 +135,7 @@ class Atom
         $feed->normalizeDocument();
         #Output
         header('Content-type: application/atom+xml;charset=utf-8');
-        (new \http20\Common)->zEcho($feed->saveXML());
+        $this->http20->zEcho($feed->saveXML());
     }
     
     #Helper function to validate some elements
@@ -149,6 +153,9 @@ class Atom
                 }
             }
             if ($type === 'link') {
+                if (!$this->http20->uriValidator($eltoval['href'])) {
+                    throw new \UnexpectedValueException('`href` for element `'.$key.'` in `'.$type.'` is not a valid URI');
+                }
                 if (!empty($eltoval['rel'])) {
                     if (!in_array($eltoval['rel'], ['alternate', 'self', 'ecnlosure', 'related', 'via'])) {
                         throw new \UnexpectedValueException('Unsupported `rel` value ('.$eltoval['rel'] .') provided for element `'.$key.'` in `'.$type.'s');
@@ -162,7 +169,9 @@ class Atom
                 if (empty($eltoval['updated'])) {
                     throw new \UnexpectedValueException('`Updated` for element `'.$key.'` in `'.$type.'` is not provided');
                 }
-                
+                if (!$this->http20->uriValidator($eltoval['link'])) {
+                    throw new \UnexpectedValueException('`link` ('.$eltoval['link'].') for element `'.$key.'` in `'.$type.'` is not a valid URI');
+                }
             }
         }
     }
@@ -175,8 +184,11 @@ class Atom
         }
         foreach ($subnodes as $subnode) {
             if (!empty($toptag[$subnode])) {
-                #ID is recommended to be an XML
-                $element->appendChild($feed->createElement($subnode, $toptag[$subnode]));
+                if ($subnode === 'uri') {
+                    $element->appendChild($feed->createElement($subnode, $this->http20->htmlToRFC3986( $toptag[$subnode])));
+                } else {
+                    $element->appendChild($feed->createElement($subnode, $toptag[$subnode]));
+                }
             }
         }
         return $element;
@@ -190,7 +202,11 @@ class Atom
         }
         foreach ($attributes as $attribute) {
             if (!empty($toptag[$attribute])) {
-                $element->setAttribute($attribute, $toptag[$attribute]);
+                if ($attribute === 'href') {
+                    $element->setAttribute($attribute, $this->http20->htmlToRFC3986($toptag[$attribute]));
+                } else {
+                    $element->setAttribute($attribute, $toptag[$attribute]);
+                }
             }
         }
         return $element;
@@ -201,17 +217,17 @@ class Atom
     {
         #Adding mandatory tags
         if (empty($entry['id'])) {
-            $element->appendChild($feed->createElement('id', (new \http20\Common)->feedIDGen($entry['link'])));
+            $element->appendChild($feed->createElement('id', $this->http20->atomIDGen($entry['link'])));
         } else {
             $element->appendChild($feed->createElement('id', $entry['id']));
         }
         $title = $element->appendChild($feed->createElement('title', $entry['title']));
         $title->setAttribute('type', $texttype);
-        $element->appendChild($feed->createElement('updated', (new \http20\Common)->valueToTime($entry['updated'])));
+        $element->appendChild($feed->createElement('updated', $this->http20->valueToTime($entry['updated'], \DATE_ATOM)));
         #Add link as alternate
         $link = $element->appendChild($feed->createElement('link'));
         $link->setAttribute('rel', 'alternate');
-        $link->setAttribute('href', $entry['link']);
+        $link->setAttribute('href', $this->http20->htmlToRFC3986($entry['link']));
         #Adding recommended tags
         #Add persons
         if (!empty($entry['author_name']) || !empty($entry['author_email']) || !empty($entry['author_uri'])) {
@@ -235,7 +251,7 @@ class Atom
                 $contributor->appendChild($feed->createElement('email', $entry['contributor_email']));
             }
             if (!empty($entry['contributor_uri'])) {
-                $contributor->appendChild($feed->createElement('uri', $entry['contributor_uri']));
+                $contributor->appendChild($feed->createElement('uri', $this->http20->htmlToRFC3986($entry['contributor_uri'])));
             }
         }
         if (!empty($entry['content'])) {
@@ -251,7 +267,9 @@ class Atom
             $category->setAttribute('term', $entry['category']);
         }
         if (!empty($entry['published'])) {
-            $element->appendChild($feed->createElement('published', (new \http20\Common)->valueToTime($entry['published'])));
+            $element->appendChild($feed->createElement('published', $this->http20->valueToTime($entry['published'], \DATE_ATOM)));
+        } else {
+            $element->appendChild($feed->createElement('updated', $this->http20->valueToTime($entry['updated'], \DATE_ATOM)));
         }
         if (!empty($entry['rights'])) {
             $rights = $element->appendChild($feed->createElement('rights', $entry['rights']));
@@ -268,7 +286,7 @@ class Atom
                 $source_title->setAttribute('type', $texttype);
             }
             if (!empty($entry['source_updated'])) {
-                $source->appendChild($feed->createElement('updated', (new \http20\Common)->valueToTime($entry['source_updated'])));
+                $source->appendChild($feed->createElement('updated', $this->http20->valueToTime($entry['source_updated'], \DATE_ATOM)));
             }
         }
     }
