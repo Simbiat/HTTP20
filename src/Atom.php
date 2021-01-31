@@ -42,10 +42,17 @@ class Atom
         }
         #Check time
         if (empty($feed_settings['updated'])) {
-            $feed_settings['updated'] = date('c', time());
+            $dates = array_merge(array_column($entries, 'updated'), array_column($entries, 'published'));
+            if (empty($dates)) {
+                $feed_settings['updated'] = $this->http20->valueToTime(time(), \DATE_ATOM);
+            } else {
+                $feed_settings['updated'] = $this->http20->valueToTime(max($dates), \DATE_ATOM);
+            }
         } else {
-            $feed_settings['updated'] = date('c', $this->http20->valueToTime($feed_settings['updated'], \DATE_ATOM));
+            $feed_settings['updated'] = $this->http20->valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
+        #Send Lst-Modified header. Sending it here to slightly improve performance, if we do hit browser's cache
+        (new \http20\Headers)->lastModified(strtotime($feed_settings['updated']));
         #Validate authors
         if (!empty($feed_settings['authors'])) {
             $this->atomElementValidator($feed_settings['authors']);
@@ -135,7 +142,7 @@ class Atom
         $feed->normalizeDocument();
         #Output
         header('Content-type: application/atom+xml;charset=utf-8');
-        $this->http20->zEcho($feed->saveXML());
+        $this->http20->zEcho($feed->saveXML(), 'hour');
     }
     
     #Helper function to validate some elements

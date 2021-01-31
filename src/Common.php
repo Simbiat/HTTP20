@@ -48,15 +48,20 @@ class Common
         #Add 'tag:' to beginning and ',Y-m-d:' after domain name
         $link = preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
         return $link;
-    } 
+    }
     
-    #Function utilizes ob functions to attempt compresing output sent to browser and also provide browser with length of the output
-    public function zEcho(string $string): void
+    #Function utilizes ob functions to attempt compresing output sent to browser and also provide browser with length of the output and some caching-related headers
+    public function zEcho(string $string, string $cacheStrat = ''): void
     {
+        (new \http20\Headers)->cacheControl($string, $cacheStrat);
         #Check that zlib is loaded. If not - do not zip, but do send size of the content
         if (extension_loaded('zlib')) {
+            #Ensure we have a good compromise between compression and performance, as well as same level for both methods used
+            ini_set('zlib.output_compression_level', '6');
             #Check if output_ompression is On. If not - use ob_gzhandler
             if (ini_get('zlib.output_compression') === 'On') {
+                #Send header with length
+                header('Content-Length: '.strlen(gzencode($string, 6)));
                 #Initiate buffer
                 ob_start();
                 #Send the output to buffer
@@ -65,21 +70,26 @@ class Common
                 ob_end_flush();
             } else {
                 #Initiate buffer
-                ob_start('ob_gzhandler');
+                if (ob_start('ob_gzhandler')) {
+                    #Send header with length
+                    header('Content-Length: '.strlen(gzencode($string, 6)));
+                } else {
+                    ob_start();
+                    #Send header with length
+                    header('Content-Length: '.strlen($string));
+                }
                 #Send the output to buffer
                 echo $string;
                 #Flush buffer
                 ob_end_flush();
-                #Send header with length (needs to be sent after flushing or it wil show the length of unzipped version
-                header('Content-Length: '.ob_get_length());
             }
         } else {
             #Initiate buffer
             ob_start();
+            #Send header with length
+            header('Content-Length: '.strlen($string));
             #Send the output to buffer
             echo $string;
-            #Send header with length
-            header('Content-Length: '.ob_get_length());
             #Flush buffer
             ob_end_flush();
         }
@@ -125,6 +135,179 @@ class Common
             return str_replace(['\'', '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
         } else {
             return str_replace(['&', '<'], ['%26', '%3C'], $string);
+        }
+    }
+    
+    #Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that.
+    #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
+    public function reductor($files, string $type, bool $minify = false, string $tofile = '', string $cacheStrat = ''): void
+    {
+        #Set content to empty string as precaution
+        $content = '';
+        #Check if empty value was sent
+        if (empty($files)) {
+            throw new \UnexpectedValueException('Empty set of files provided to `reductor` function');
+        }
+        #Check if a string
+        if (is_string($files)) {
+            #Check if it's a dir
+            if (is_dir($files)) {
+                if (strrpos('/', $files) === false) {
+                    $files = $files . '/';
+                }
+                #Get list of files
+                $filelist = glob($files.'*');
+                #Check if any files were returned
+                if (empty($files)) {
+                    throw new \UnexpectedValueException('`reductor` did not find any files matching `'.$files.'` criteria.');
+                } else {
+                    $files = $filelist;
+                    unset($filelist);
+                }
+            } else {
+                #Check if it's a file
+                if (is_file($files)) {
+                    #Read file into variable
+                    $content = file_get_contents($files);
+                } else {
+                    #Assume it's a regular string
+                    $content = $files;
+                }
+            }
+        } else {
+            if (!is_array($files)) {
+                throw new \UnexpectedValueException('Value provided to `reductor` function is neither string nor array');
+            }
+        }
+        #Get contents of all files mentioned in array
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                $content .= file_get_contents($file);
+            }
+        }
+        #Minify
+        if ($minify === true) {
+            switch (strtolower($type)) {
+                case 'js':
+                    $content = preg_replace(
+                        [
+                            // Remove comment(s)
+                            '#\s*("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')\s*|\s*\/\*(?!\!|@cc_on)(?>[\s\S]*?\*\/)\s*|\s*(?<![\:\=])\/\/.*(?=[\n\r]|$)|^\s*|\s*$#',
+                            // Remove white-space(s) outside the string and regex
+                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|\/\*(?>.*?\*\/)|\/(?!\/)[^\n\r]*?\/(?=[\s.,;]|[gimuy]|$))|\s*([!%&*\(\)\-=+\[\]\{\}|;:,.<>?\/])\s*#s',
+                            // Remove the last semicolon
+                            '#;+\}#',
+                            // Minify object attribute(s) except JSON attribute(s). From `{'foo':'bar'}` to `{foo:'bar'}`
+                            '#([\{,])([\'])(\d+|[a-z_][a-z0-9_]*)\2(?=\:)#i',
+                            // --ibid. From `foo['bar']` to `foo.bar`
+                            '#([a-z0-9_\)\]])\[([\'"])([a-z_][a-z0-9_]*)\2\]#i'
+                        ],
+                        [
+                            '$1',
+                            '$1$2',
+                            '}',
+                            '$1$3',
+                            '$1.$3'
+                        ],
+                        $content);
+                    break;
+                case 'css':
+                    $content = preg_replace(
+                        [
+                            // Remove comment(s)
+                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')|\/\*(?!\!)(?>.*?\*\/)|^\s*|\s*$#s',
+                            // Remove unused white-space(s)
+                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|\/\*(?>.*?\*\/))|\s*+;\s*+(})\s*+|\s*+([*$~^|]?+=|[{};,>~]|\s(?![0-9\.])|!important\b)\s*+|([[(:])\s++|\s++([])])|\s++(:)\s*+(?!(?>[^{}"\']++|"(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')*+{)|^\s++|\s++\z|(\s)\s+#si',
+                            // Replace `0(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)` with `0`
+                            '#(?<=[\s:])(0)(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)#si',
+                            // Replace `:0 0 0 0` with `:0`
+                            '#:(0\s+0|0\s+0\s+0\s+0)(?=[;\}]|\!important)#i',
+                            // Replace `background-position:0` with `background-position:0 0`
+                            '#(background-position):0(?=[;\}])#si',
+                            // Replace `0.6` with `.6`, but only when preceded by `:`, `,`, `-` or a white-space
+                            '#(?<=[\s:,\-])0+\.(\d+)#s',
+                            // Minify string value
+                            '#(\/\*(?>.*?\*\/))|(?<!content\:)([\'"])([a-z_][a-z0-9\-_]*?)\2(?=[\s\{\}\];,])#si',
+                            '#(\/\*(?>.*?\*\/))|(\burl\()([\'"])([^\s]+?)\3(\))#si',
+                            // Minify HEX color code
+                            '#(?<=[\s:,\-]\#)([a-f0-6]+)\1([a-f0-6]+)\2([a-f0-6]+)\3#i',
+                            // Replace `(border|outline):none` with `(border|outline):0`
+                            '#(?<=[\{;])(border|outline):none(?=[;\}\!])#',
+                            // Remove empty selector(s)
+                            '#(\/\*(?>.*?\*\/))|(^|[\{\}])(?:[^\s\{\}]+)\{\}#s'
+                        ],
+                        [
+                            '$1',
+                            '$1$2$3$4$5$6$7',
+                            '$1',
+                            ':0',
+                            '$1:0 0',
+                            '.$1',
+                            '$1$3',
+                            '$1$2$4$5',
+                            '$1$2$3',
+                            '$1:0',
+                            '$1$2'
+                        ],
+                        $content);
+                    break;
+                case 'html':
+                    $content = preg_replace_callback('#<([^\/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(\/?)>#s',
+                        function($matches) {
+                            return '<' . $matches[1] . preg_replace('#([^\s=]+)(\=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]) . $matches[3] . '>';
+                        }, str_replace("\r", '', $content));
+                    $content = preg_replace(
+                        [
+                            // t = text
+                            // o = tag open
+                            // c = tag close
+                            // Keep important white-space(s) after self-closing HTML tag(s)
+                            '#<(img|input)(>| .*?>)#s',
+                            // Remove a line break and two or more white-space(s) between tag(s)
+                            '#(<!--.*?-->)|(>)(?:\n*|\s{2,})(<)|^\s*|\s*$#s',
+                            '#(<!--.*?-->)|(?<!\>)\s+(<\/.*?>)|(<[^\/]*?>)\s+(?!\<)#s', // t+c || o+t
+                            '#(<!--.*?-->)|(<[^\/]*?>)\s+(<[^\/]*?>)|(<\/.*?>)\s+(<\/.*?>)#s', // o+o || c+c
+                            '#(<!--.*?-->)|(<\/.*?>)\s+(\s)(?!\<)|(?<!\>)\s+(\s)(<[^\/]*?\/?>)|(<[^\/]*?\/?>)\s+(\s)(?!\<)#s', // c+t || t+o || o+t -- separated by long white-space(s)
+                            '#(<!--.*?-->)|(<[^\/]*?>)\s+(<\/.*?>)#s', // empty tag
+                            '#<(img|input)(>| .*?>)<\/\1>#s', // reset previous fix
+                            '#(&nbsp;)&nbsp;(?![<\s])#', // clean up ...
+                            '#(?<=\>)(&nbsp;)(?=\<)#', // --ibid
+                            // Remove HTML comment(s) except IE comment(s)
+                            '#\s*<!--(?!\[if\s).*?-->\s*|(?<!\>)\n+(?=\<[^!])#s'
+                        ],
+                        [
+                            '<$1$2</$1>',
+                            '$1$2$3',
+                            '$1$2$3',
+                            '$1$2$3$4$5',
+                            '$1$2$3$4$5$6$7',
+                            '$1$2$3',
+                            '<$1$2',
+                            '$1 ',
+                            '$1',
+                            ''
+                        ],
+                        $content);
+                    break;
+            }
+        }
+        if (empty($tofile)) {
+            #Send appropriate header
+            switch (strtolower($type)) {
+                case 'js':
+                    header('Content-Type: application/javascript; charset=utf-8');
+                    break;
+                case 'css':
+                    header('Content-Type: text/css; charset=utf-8');
+                    break;
+                default:
+                    header('Content-Type: text/html; charset=utf-8');
+                    break;
+            }
+            #Send data to browser
+            $this->zEcho($content, $cacheStrat);
+        } else {
+            file_put_contents($tofile, $content);
         }
     }
 }

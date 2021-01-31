@@ -57,7 +57,12 @@ class RSS
         }
         #Check time
         if (empty($feed_settings['pubDate'])) {
-            $feed_settings['pubDate'] = $this->http20->valueToTime(time(), \DATE_RSS);
+            $dates = array_column($entries, 'pubDate');
+            if (empty($dates)) {
+                $feed_settings['pubDate'] = $this->http20->valueToTime(time(), \DATE_RSS);
+            } else {
+                $feed_settings['pubDate'] = $this->http20->valueToTime(max($dates), \DATE_RSS);
+            }
         } else {
             $feed_settings['pubDate'] = $this->http20->valueToTime($feed_settings['pubDate'], \DATE_RSS);
         }
@@ -66,6 +71,8 @@ class RSS
         } else {
             $feed_settings['lastBuildDate'] = $this->http20->valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         }
+        #Send Lst-Modified header. Sending it here to slightly improve performance, if we do hit browser's cache
+        (new \http20\Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])));
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
@@ -211,7 +218,7 @@ class RSS
         $feed->normalizeDocument();
         #Output
         header('Content-type: application/rss+xml;charset=utf-8');
-        $this->http20->zEcho($feed->saveXML());
+        $this->http20->zEcho($feed->saveXML(), 'hour');
     }
     
     #Helper function to add actual entries
