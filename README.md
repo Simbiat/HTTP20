@@ -7,6 +7,10 @@ Set of classes/functions that may be universally useful for websites (or some pa
   * [PrettyURL](#prettyurl)
   * [Headers](#headers)
     + [cacheControl](#cachecontrol)
+    + [lastModified](#lastmodified)
+    + [performance](#performance)
+    + [security](#security)
+    + [features](#features)
   * [Common](#common)
     + [valueToTime](#valuetotime)
     + [atomIDGen](#atomidgen)
@@ -219,6 +223,30 @@ ETag header generation will happen regardless, as well as handling of HTTP_IF_NO
 lastModified(int $modtime = 0);
 ```
 Sends Last-Modified header based on either parameter provided or the freshest date of all the script files used to generate a page. Also handles HTTP_IF_MODIFIED_SINCE header from client, if it was sent, allowing for some performance improvement if cache can be used.
+
+### performance
+```php
+performance(int $keepalive = 0);
+```
+Sends some headers that may improve performance on client side.
+
+`$keepalive` is used for `Keep-Alive` header governing how long the connection should stay up. Header will be sent only if server is using HTTP version other than 2.0.
+
+### security
+```php
+security(string $strat = 'strict', array $allowOrigins = [], array $allowHeaders = [], array $exposeHeaders = []);
+```
+Sends headers that can improve security of your page.
+
+### features
+```php
+features(array $features = [], bool $forcecheck = true);
+```
+Allows to control different features through Feature-Policy header.
+
+`$features` expectes assotiative array, where each key is name of the policy in lower case and value - expected `allow list`. If an empty array is sent default values will be applied (most features are disabled).
+
+`$forcecheck` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
 
 ## Common
 Assortment of functions, that are used by classes inside the library, but can also be used directly. They are all called as

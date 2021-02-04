@@ -4,21 +4,11 @@ namespace HTTP20;
 
 class Headers
 {
+    #List of supported features for Feature-Policy header, in case we are validating the policy name
+    private array $features = ['accelerometer', 'ambient-light-sensor', 'autoplay', 'battery', 'camera', 'display-capture', 'document-domain', 'document-write', 'encrypted-media', 'execution-while-not-rendered', 'execution-while-out-of-viewport', 'font-display-late-swap', 'fullscreen', 'geolocation', 'gyroscope', 'image-compression', 'layout-animations', 'lazyload', 'legacy-image-formats', 'magnetometer', 'maximum-downscaling-image', 'microphone', 'midi', 'navigation-override', 'oversized-images', 'payment', 'picture-in-picture', 'publickey-credentials-get', 'screen-wake-lock', 'speaker', 'sync-script', 'sync-xhr', 'unoptimized-images', 'unoptimized-lossless-images', 'unoptimized-lossy-images', 'unsized-media', 'usb', 'vertical-scroll', 'vibrate', 'vr', 'wake-lock', 'web-share', 'xr-spatial-tracking'];
+    
     #separate function for authentication headers?
     
-    #Security headers:
-    #separate function for Access-Control-Allow-Origin?
-    #separate function for Feature-Policy?
-        #autoplay: Allow or disallow autoplaying video.
-        #sync-script: Allow or disallow synchronous script tags.
-        #document-write: Allow or disallow document.write.
-        #lazyload: Force all images and iframe to load lazily (as if all had lazyload="on"
-        #image-compression: restrict images to have a byte size no more than 10x bigger than their pixel count.
-        #maximum-downscaling-image: restrict images to be downscaled by not more than 2x.
-        #unsized-media: requires images to have a width & height specified, otherwise defaults to 300 x 150.
-        #layout-animations: turns off CSS animation for any property that triggers a re-layout (e.g. top, width, max-height)
-    #allow cookies by default?
-    #Access-Control-Allow-Credentials: true
     #somve validations are suggested for https://www.moesif.com/blog/technical/cors/Authoritative-Guide-to-CORS-Cross-Origin-Resource-Sharing-for-REST-APIs/
     #allow read only by default
     #Access-Control-Allow-Methods: POST, GET, OPTIONS (should go with Allow header)
@@ -29,7 +19,7 @@ class Headers
         #Sec-Fetch-Site: cross-site
     
     #read on Save-Data
-    #read on Server-Timing
+    
     #https://www.fastly.com/blog/best-practices-using-vary-header
     #https://www.keycdn.com/blog/client-hints
     
@@ -42,12 +32,22 @@ class Headers
     #unclear what to do with https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Tk
     
     #Function sends headers, related to security
-    public function security(string $strat = 'strict', array $allowHeaders = [], array $exposeHeaders = [])
+    public function security(string $strat = 'strict', array $allowOrigins = [], array $allowHeaders = [], array $exposeHeaders = [])
     {
         #HSTS and force HTTPS
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
         #Set caching value for CORS
         header('Access-Control-Max-Age: 86400');
+        #Allows credentials to be shared to front-end JS. By itself this should not be a security issue, but it may ease of use for 3rd-party parser in some cases if you are using cookies.
+        header('Access-Control-Allow-Credentials: true');
+        #Allow access from origins
+        if (!empty($allowOrigins)) {
+            #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
+            header('Vary: Origin', false);
+            foreach ($allowOrigins as $origin) {
+                header('Access-Control-Allow-Origin: '.$origin, false);
+            }
+        }
         #Allow headers, that can change server state, but are normally restricted by CORS
         if (!empty($allowHeaders)) {
             header('Access-Control-Allow-Headers: '.implode(', ', $allowHeaders));
@@ -94,6 +94,93 @@ class Headers
             header('Connection: Keep-Alive');
             header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive*1000));
         }
+        return $this;
+    }
+    
+    #Function to manage Feature-Policy to control differnet features. By default most features are disabled for security and performance
+    #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
+    #https://feature-policy-demos.appspot.com/
+    #https://featurepolicy.info/
+    public function features(array $features = [], bool $forcecheck = true)
+    {
+        $deafults = [
+            #Disable access to sensors
+            'accelerometer' => '\'none\'',
+            'ambient-light-sensor' => '\'none\'',
+            'gyroscope' => '\'none\'',
+            'magnetometer' => '\'none\'',
+            'vibrate' => '\'none\'',
+            #Disable access to devices
+            'camera' => '\'none\'',
+            'microphone' => '\'none\'',
+            'midi' => '\'none\'',
+            'battery' => '\'none\'',
+            'usb' => '\'none\'',
+            'speaker' => '\'none\'',
+            #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
+            'document-domain' => '\'none\'',
+            #document-write (.write, .writeln, .open and .close) is aslo discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
+            'document-write' => '\'none\'',
+            #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+            'encrypted-media' => '\'self\'',
+            'publickey-credentials-get' => '\'self\'',
+            #Disable geolocation, XR tracking, payment and screen capture APIs
+            'geolocation' => '\'none\'',
+            'xr-spatial-tracking' => '\'none\'',
+            'payment' => '\'none\'',
+            'display-capture' => '\'none\'',
+            #Disable wake-locks
+            'wake-lock' => '\'none\'',
+            'screen-wake-lock' => '\'none\'',
+            #Disable Web Share API. It's recommended to enable it explicitely for pages, where sharing will not expose potentially sensetive materials
+            'web-share' => '\'none\'',
+            #Disable synchronous XMLHttpRequests (that were technically deprecated)
+            'sync-xhr' => '\'none\'',
+            #Disable synchronous parsing blocking scripts (inline without defer/asycn attribute)
+            'sync-script' => '\'none\'',
+            #Disable WebVR API (halted standard, replaced by WebXR)
+            'vr' => '\'none\'',
+            #Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
+            'oversized-images' => '*(2.0)',
+            'unoptimized-images' => '*(0.5)',
+            'unoptimized-lossy-images' => '*(0.5)',
+            'unoptimized-lossless-images' => '*(1.0)',
+            'legacy-image-formats' => '\'none\'',
+            'unsized-media' => '\'none\'',
+            'image-compression' => '\'none\'',
+            'maximum-downscaling-image' => '\'none\'',
+            #Disable lazyload. Do not apply it to everything. While it can improve performacne somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
+            'lazyload' => '\'none\'',
+            #Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+            'autoplay' => '\'none\'',
+            'fullscreen' => '\'none\'',
+            'picture-in-picture' => '\'none\'',
+            #Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g. top, width, max-height)
+            'font-display-late-swap' => '\'none\'',
+            'layout-animations' => '\'none\'',
+            #Disable execution of scripts/task in elements, that are not rendered or visible
+            'execution-while-not-rendered' => '\'none\'',
+            'execution-while-out-of-viewport' => '\'none\'',
+            #Disabling APIs for modification of spatial navgiation and scrolling, since you need them only for specific cases
+            'navigation-override' => '\'none\'',
+            'vertical-scroll' => '\'none\'',
+        ];
+        foreach ($features as $feature=>$allowlist) {
+            #Sanitize
+            $feature = strtolower(trim($feature));
+            $allowlist = strtolower(trim($allowlist));
+            #If validation is enforced, validate the feature and value provided
+            if ($forcecheck === false || ($forcecheck === true && isset($deafults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'(none|self)\')(?<setting>\(\d{1,}(\.\d{1,})?\))?)|(?<origin>(?<scheme>[a-z][a-z0-9+.-]+):\/\/(?<host>[a-z0-9.\-_~]+)(?<port>:\d+)?(?<setting_o>\(\d{1,}(\.\d{1,})?\))?(?<delimiter> )?){1,}$/i', $allowlist) === 1)) {
+                #Update value
+                $deafults[$feature] = $allowlist;
+            }
+        }
+        #Generate line for header
+        $headerline = '';
+        foreach ($deafults as $feature=>$allowlist) {
+            $headerline .= $feature.' '.$allowlist.'; ';
+        }
+        header('Feature-Policy: '.trim($headerline));
         return $this;
     }
     
