@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace HTTP20;
+namespace http20;
 
 class RSS
 {
