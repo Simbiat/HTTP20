@@ -71,8 +71,8 @@ class RSS
         } else {
             $feed_settings['lastBuildDate'] = $this->http20->valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         }
-        #Send Lst-Modified header. Sending it here to slightly improve performance, if we do hit browser's cache
-        (new \http20\Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])));
+        #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
+        (new \http20\Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])), false);
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {

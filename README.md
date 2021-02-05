@@ -187,7 +187,7 @@ Functions that send/handle different HTTP headers
 
 ### cacheControl
 ```php
-cacheControl(string $string, string $cacheStrat = '');
+cacheControl(string $string, string $cacheStrat = '', bool $exit = false);
 ```
 Allows you to send appropriate `Cache-Control` headers (refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control for explanation on parameters):
 ```php
@@ -218,11 +218,15 @@ switch (strtolower($cacheStrat)) {
 ```
 ETag header generation will happen regardless, as well as handling of HTTP_IF_NONE_MATCH header, if present.
 
+`$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
+
 ### lastModified
 ```php
-lastModified(int $modtime = 0);
+lastModified(int $modtime = 0, bool $exit = false);
 ```
 Sends Last-Modified header based on either parameter provided or the freshest date of all the script files used to generate a page. Also handles HTTP_IF_MODIFIED_SINCE header from client, if it was sent, allowing for some performance improvement if cache can be used.
+
+`$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
 
 ### performance
 ```php

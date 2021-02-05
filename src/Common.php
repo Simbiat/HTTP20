@@ -53,7 +53,7 @@ class Common
     #Function utilizes ob functions to attempt compresing output sent to browser and also provide browser with length of the output and some caching-related headers
     public function zEcho(string $string, string $cacheStrat = ''): void
     {
-        (new \http20\Headers)->cacheControl($string, $cacheStrat);
+        (new \http20\Headers)->cacheControl($string, $cacheStrat, true);
         #Check that zlib is loaded. If not - do not zip, but do send size of the content
         if (extension_loaded('zlib')) {
             #Ensure we have a good compromise between compression and performance, as well as same level for both methods used

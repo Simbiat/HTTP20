@@ -185,27 +185,30 @@ class Headers
     }
     
     #Function to set Last-Modified header. This header is generally not required if you already have Cache-Control and ETag, but still may be useful in case of conditional requests. At least if you will provide it with proper modification time.
-    public function lastModified(int $modtime = 0)
+    public function lastModified(int $modtime = 0, bool $exit = false)
     {
         if ($modtime <= 0) {
             #Get freshest modification time of all PHP files used ot PHP's getlastmod time
             $modtime = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file'))), getlastmod());
         }
+        #Send header
+        header('Last-Modified: '.gmdate(\DATE_RFC7231, $modtime));
         #Set the flag to false for now
         if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
            $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
            if ($IfModifiedSince >= $modtime) {
                 #If content has not beend modified - return 304
                 header($_SERVER['SERVER_PROTOCOL'].' 304 Not Modified');
-                exit;
+                if ($exit === true) {
+                    exit;
+                }
             }
         }
-        header('Last-Modified: '.gmdate(\DATE_RFC7231, $modtime));
         return $this;
     }
     
     #Function to prepare and send cache-related headers
-    public function cacheControl(string $string, string $cacheStrat = '')
+    public function cacheControl(string $string, string $cacheStrat = '', bool $exit = false)
     {
         #Send headers related to cache based on strategy selected
         #Some of the strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
@@ -237,21 +240,26 @@ class Headers
         }
         #Set ETag
         $etag = hash('sha3-256', $string);
-        #Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since it will not save much resources on server, it still can improve performance on client side
+        #Send ETag for caching purposes
+        header('ETag: '.$etag);
+        #Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since ideally you will have some text to output first, but it can still save some time on client side
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not beend modified - return 304
                 header($_SERVER['SERVER_PROTOCOL'].' 304 Not Modified');
-                exit;
+                if ($exit === true) {
+                    exit;
+                }
             }
         }
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
                 header($_SERVER['SERVER_PROTOCOL'].' 412 Precondition Failed');
+                if ($exit === true) {
+                    exit;
+                }
             }
         }
-        #Send ETag for caching purposes
-        header('ETag: '.$etag);
         return $this;
     }
 }

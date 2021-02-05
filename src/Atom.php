@@ -51,8 +51,8 @@ class Atom
         } else {
             $feed_settings['updated'] = $this->http20->valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
-        #Send Lst-Modified header. Sending it here to slightly improve performance, if we do hit browser's cache
-        (new \http20\Headers)->lastModified(strtotime($feed_settings['updated']));
+        #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
+        (new \http20\Headers)->lastModified(strtotime($feed_settings['updated']), false);
         #Validate authors
         if (!empty($feed_settings['authors'])) {
             $this->atomElementValidator($feed_settings['authors']);
