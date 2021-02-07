@@ -3,17 +3,9 @@ declare(strict_types=1);
 namespace http20;
 
 class Headers
-{
-    #List of supported features for Feature-Policy header, in case we are validating the policy name
-    private array $features = ['accelerometer', 'ambient-light-sensor', 'autoplay', 'battery', 'camera', 'display-capture', 'document-domain', 'document-write', 'encrypted-media', 'execution-while-not-rendered', 'execution-while-out-of-viewport', 'font-display-late-swap', 'fullscreen', 'geolocation', 'gyroscope', 'image-compression', 'layout-animations', 'lazyload', 'legacy-image-formats', 'magnetometer', 'maximum-downscaling-image', 'microphone', 'midi', 'navigation-override', 'oversized-images', 'payment', 'picture-in-picture', 'publickey-credentials-get', 'screen-wake-lock', 'speaker', 'sync-script', 'sync-xhr', 'unoptimized-images', 'unoptimized-lossless-images', 'unoptimized-lossy-images', 'unsized-media', 'usb', 'vertical-scroll', 'vibrate', 'vr', 'wake-lock', 'web-share', 'xr-spatial-tracking'];
-    
+{    
     #separate function for authentication headers?
     
-    #somve validations are suggested for https://www.moesif.com/blog/technical/cors/Authoritative-Guide-to-CORS-Cross-Origin-Resource-Sharing-for-REST-APIs/
-    #allow read only by default
-    #Access-Control-Allow-Methods: POST, GET, OPTIONS (should go with Allow header)
-    #block all by default, allow override (frame-ancestors \'self\' to all requests)
-    #header('Content-Security-Policy: default-src https:; frame-ancestors 'none'; block-all-mixed-content; form-action https:; frame-ancestors \'self\'');
     #read on Sec-Fetch-Dest: image
         #Sec-Fetch-Mode: no-cors
         #Sec-Fetch-Site: cross-site
@@ -31,39 +23,86 @@ class Headers
     
     #unclear what to do with https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Tk
     
+    #Regex to validate Origins (essentially, an URI in https://examplecom:443 format)
+    public const originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
+    
     #Function sends headers, related to security
-    public function security(string $strat = 'strict', array $allowOrigins = [], array $allowHeaders = [], array $exposeHeaders = [])
+    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], string $cspReportURI = '')
     {
+        #Default list of allowed methods, limited to only "simple" ones
+        $defaultMethods = ['GET', 'HEAD', 'POST'];
+        #Sanitize the custom methods
+        foreach ($allowMethods as $key=>$method) {
+            if (!in_array($method, ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'])) {
+                unset($allowMethods[$key]);
+            }
+        }
+        #If we end up with empty list of custom methods - use default one
+        if (empty($allowMethods)) {
+            $allowMethods = $defaultMethods;
+        }
+        #Send the header. More on methods - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+        header('Access-Control-Allow-Methods: '.implode(', ', $allowMethods));
+        #Handle wrong type of method from client
+        if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allowMethods)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allowMethods))) {
+            header($_SERVER['SERVER_PROTOCOL'].' 405 Method Not Allowed');
+            exit;
+        }
+        #Sanitize Origins list
+        foreach ($allowOrigins as $key=>$origin) {
+            if (preg_match('/'.self::originRegex.'/i', $origin) !== 1) {
+                unset($allowOrigins[$key]);
+            }
+        }
+        #Check that list is still not empty, otherwise, we assume, that access from all origins is allowed (akin to *)
+        if (!empty($allowOrigins)) {
+            if (isset($_SERVER['HTTP_ORIGIN']) && preg_match('/'.self::originRegex.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allowOrigins)) {
+                #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
+                header('Vary: Origin', false);
+                #Send actual header
+                header('Access-Control-Allow-Origin: '.$allowOrigins);
+            } else {
+                #Send proper header denying access and stop processing
+                header($_SERVER['SERVER_PROTOCOL'].' 403 Forbidden');
+                exit;
+            }
+        } else {
+            #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
+            header('Vary: Origin', false);
+            #Send actual header
+            header('Access-Control-Allow-Origin: *');
+        }
         #HSTS and force HTTPS
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
         #Set caching value for CORS
         header('Access-Control-Max-Age: 86400');
         #Allows credentials to be shared to front-end JS. By itself this should not be a security issue, but it may ease of use for 3rd-party parser in some cases if you are using cookies.
         header('Access-Control-Allow-Credentials: true');
-        #Allow access from origins
-        if (!empty($allowOrigins)) {
-            #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
-            header('Vary: Origin', false);
-            foreach ($allowOrigins as $origin) {
-                header('Access-Control-Allow-Origin: '.$origin, false);
-            }
-        }
+        #Allow headers sent from server, normally restricted by CORS
+        #Keep a default list, that includes those originally allowed by CORS and those present in this class
+        $defaultHeaders = [
+            #CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
+            'Cache-Control', 'Content-Language', 'Content-Type', 'Last-Modified',
+            #Security headers
+            'Strict-Transport-Security', 'Access-Control-Max-Age', 'Access-Control-Allow-Credentials',
+            'Vary', 'Access-Control-Allow-Origin',
+            'Access-Control-Expose-Headers', 'Access-Control-Allow-Headers', 'Access-Control-Allow-Methods',
+            'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Cross-Origin-Resource-Policy', 'Referrer-Policy',
+            #Performance headers
+            'X-Content-Type-Options', 'X-DNS-Prefetch-Control', 'Connection', 'Keep-Alive',
+            #Other
+            'Feature-Policy', 'ETag', 'Link',
+        ];
+        #Merge with custom ones
+        $exposeHeaders = array_merge($defaultHeaders, $exposeHeaders);
+        #Send list
+        header('Access-Control-Expose-Headers: '.implode(', ', $exposeHeaders));
         #Allow headers, that can change server state, but are normally restricted by CORS
         if (!empty($allowHeaders)) {
             header('Access-Control-Allow-Headers: '.implode(', ', $allowHeaders));
         }
-        #Allow headers sent from server, normally restricted by CORS
-        if (!empty($exposeHeaders)) {
-            header('Access-Control-Expose-Headers: '.implode(', ', $exposeHeaders));
-        }
         #Set CORS strategy
         switch (strtolower($strat)) {
-            case 'strict':
-                header('Cross-Origin-Embedder-Policy: require-corp');
-                header('Cross-Origin-Opener-Policy: same-origin');
-                header('Cross-Origin-Resource-Policy: same-origin');
-                header('Referrer-Policy: no-referrer');
-                break;
             case 'mild':
                 header('Cross-Origin-Embedder-Policy: unsafe-none');
                 header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
@@ -76,6 +115,128 @@ class Headers
                 header('Cross-Origin-Resource-Policy: cross-origin');
                 header('Referrer-Policy: strict-origin-when-cross-origin');
                 break;
+            #Make 'strict' default value, but also allow explicit specification
+            case 'strict':
+            default:
+                header('Cross-Origin-Embedder-Policy: require-corp');
+                header('Cross-Origin-Opener-Policy: same-origin');
+                header('Cross-Origin-Resource-Policy: same-origin');
+                header('Referrer-Policy: no-referrer');
+                break;
+        }
+        #Set defaults directives for CSP
+        $defaultDirectives = [
+            #Fetch Directives
+            'default-src' => '\'self\'',
+            'child-src' => '\'self\'',
+            'connect-src' => '\'self\'',
+            'font-src' => '\'self\'',
+            'frame-src' => '\'self\'',
+            #Blocking images, because images can be used to inject scripts:
+            #https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
+            #https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
+            'img-src' => '\'none\'',
+            'manifest-src' => '\'self\'',
+            'media-src' => '\'self\'',
+            'object-src' => '\'none\'',
+            'prefetch-src' => '\'self\'',
+            'script-src' => '\'none\'',
+            'script-src-elem' => '\'none\'',
+            'script-src-attr' => '\'none\'',
+            'style-src' => '\'none\'',
+            'style-src-elem' => '\'none\'',
+            'style-src-attr' => '\'none\'',
+            'worker-src' => '\'self\'',
+            #Document directives
+            'base-uri' => '\'self\'',
+            'plugin-types' => '',
+            'sandbox' => '',
+            #Navigate directives
+            'form-action' => '\'self\'',
+            'frame-ancestors' => '\'self\'',
+            'navigate-to' => '\'self\'',
+            #Other directives
+            'require-trusted-types-for' => '\'script\'',
+            'trusted-types' => '',
+        ];
+        #Apply custom directives
+        foreach ($cspDirectives as $directive=>$value) {
+            #If value is empty, assume, that we want to remove the directive entirely
+            if (empty($value)) {
+                unset($defaultDirectives[$directive]);
+            } else {
+                switch ($directive) {
+                    case 'sandbox':
+                        #Validate the value we have
+                        if (in_array($value, ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'])) {
+                            $defaultDirectives['sandbox'] = $value;
+                        } else {
+                            #Ignore the value entirely
+                            unset($defaultDirectives['sandbox']);
+                        }
+                        break;
+                    case 'trusted-types':
+                        #Validate the value we have
+                        if (preg_match('/^\'none\'|((([a-z0-9-#=_\/@.%]+) ?){1,}( ?\'allow-duplicates\')?)$/i', $value) === 1) {
+                            $defaultDirectives['trusted-types'] = $value;
+                        } else {
+                            #Ignore the value entirely
+                            unset($defaultDirectives['trusted-types']);
+                        }
+                        break;
+                    case 'plugin-types':
+                        #Validate the value we have
+                        if (preg_match('/^(([-\w.]+\/[-\w.]+) ?){1,}$/i', $value) === 1) {
+                            $defaultDirectives['plugin-types'] = $value;
+                        } else {
+                            #Ignore the value entirely
+                            unset($defaultDirectives['plugin-types']);
+                        }
+                        break;
+                    default:
+                        #Validate the value
+                        if (isset($defaultDirectives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|\*)\'))|(\'self\' ?)?(\'unsafe-hashes\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::originRegex.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?)*$/i', $value) === 1) {
+                            #Check if it's script or style source
+                            if (in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])) {
+                                #If it's not 'none' - add 'report-sample'
+                                if ($value !== '\'none\'') {
+                                    $defaultDirectives[$directive] = '\'report-sample\' '.$value;
+                                } else {
+                                    $defaultDirectives[$directive] = $value;
+                                }
+                            } else {
+                                $defaultDirectives[$directive] = $value;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+        #plugin-types is not used if all objects are blocked
+        if ($defaultDirectives['object-src'] === '\'none\'') {
+            unset($defaultDirectives['plugin-types']);
+        } else {
+            #If empty provides inconsitent behaviour depending on browser
+            if (empty($defaultDirectives['plugin-types'])) {
+                unset($defaultDirectives['plugin-types']);
+            }
+        }
+        #Sandbox is ignored if we use Report-Only
+        if (!empty($cspReportURI)) {
+            unset($defaultDirectives['sandbox']);
+        }
+        #Generate line for CSP
+        $cspLine = '';
+        foreach ($defaultDirectives as $directive=>$value) {
+            if (!empty($value)) {
+                $cspLine .= $directive.' '.$value.'; ';
+            }
+        }
+        #If report is set - use Report-Only, if not - regular header
+        if (!empty($cspReportURI)) {
+            header('Content-Security-Policy-Report-Only: report-to '.$cspReportURI.'; '.trim($cspLine));
+        } else {
+            header('Content-Security-Policy: upgrade-insecure-requests; '.trim($cspLine));
         }
         
         header('Link: <https://'.$_SERVER['HTTP_HOST'].str_ireplace('?onepager', '', $_SERVER['REQUEST_URI']).'>; rel=canonical;', false);
@@ -103,7 +264,7 @@ class Headers
     #https://featurepolicy.info/
     public function features(array $features = [], bool $forcecheck = true)
     {
-        $deafults = [
+        $defaults = [
             #Disable access to sensors
             'accelerometer' => '\'none\'',
             'ambient-light-sensor' => '\'none\'',
@@ -170,14 +331,14 @@ class Headers
             $feature = strtolower(trim($feature));
             $allowlist = strtolower(trim($allowlist));
             #If validation is enforced, validate the feature and value provided
-            if ($forcecheck === false || ($forcecheck === true && isset($deafults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'(none|self)\')(?<setting>\(\d{1,}(\.\d{1,})?\))?)|(?<origin>(?<scheme>[a-z][a-z0-9+.-]+):\/\/(?<host>[a-z0-9.\-_~]+)(?<port>:\d+)?(?<setting_o>\(\d{1,}(\.\d{1,})?\))?(?<delimiter> )?){1,}$/i', $allowlist) === 1)) {
+            if ($forcecheck === false || ($forcecheck === true && isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d{1,}(\.\d{1,})?\))?)|(\'self\' ?)?(?<origin>'.self::originRegex.'(?<setting_o>\(\d{1,}(\.\d{1,})?\))?(?<delimiter> )?)*$/i', $allowlist) === 1)) {
                 #Update value
-                $deafults[$feature] = $allowlist;
+                $defaults[$feature] = $allowlist;
             }
         }
         #Generate line for header
         $headerline = '';
-        foreach ($deafults as $feature=>$allowlist) {
+        foreach ($defaults as $feature=>$allowlist) {
             $headerline .= $feature.' '.$allowlist.'; ';
         }
         header('Feature-Policy: '.trim($headerline));
@@ -212,31 +373,31 @@ class Headers
     {
         #Send headers related to cache based on strategy selected
         #Some of the strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
-        if (!empty($cacheStrat)) {
-            switch (strtolower($cacheStrat)) {
-                case 'aggressive':
-                    header('Cache-Control: max-age=31536000, immutable, no-transform');
-                    break;
-                case 'private':
-                    header('Cache-Control: private, no-cache, no-store, no-transform');
-                    break;
-                case 'live':
-                    header('Cache-Control: no-cache, no-transform');
-                    break;
-                case 'month':
-                    #28 days to be more precise
-                    header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-                    break;
-                case 'week':
-                    header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-                    break;
-                case 'day':
-                    header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
-                    break;
-                case 'hour':
-                    header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
-                    break;
-            }
+        switch (strtolower($cacheStrat)) {
+            case 'aggressive':
+                header('Cache-Control: max-age=31536000, immutable, no-transform');
+                break;
+            case 'private':
+                header('Cache-Control: private, no-cache, no-store, no-transform');
+                break;
+            case 'live':
+                header('Cache-Control: no-cache, no-transform');
+                break;
+            case 'month':
+                #28 days to be more precise
+                header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+                break;
+            case 'week':
+                header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+                break;
+            case 'day':
+                header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
+                break;
+            #Make 'hour' default value, but also allow explicit specification
+            case 'hour':
+            default:
+                header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
+                break;
         }
         #Set ETag
         $etag = hash('sha3-256', $string);
