@@ -27,7 +27,7 @@ class Headers
     public const originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
     
     #Function sends headers, related to security
-    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], string $cspReportURI = '')
+    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false)
     {
         #Default list of allowed methods, limited to only "simple" ones
         $defaultMethods = ['GET', 'HEAD', 'POST'];
@@ -158,6 +158,7 @@ class Headers
             #Other directives
             'require-trusted-types-for' => '\'script\'',
             'trusted-types' => '',
+            'report-to' => '',
         ];
         #Apply custom directives
         foreach ($cspDirectives as $directive=>$value) {
@@ -193,9 +194,18 @@ class Headers
                             unset($defaultDirectives['plugin-types']);
                         }
                         break;
+                    case 'report-to':
+                        if (!empty($value)) {
+                            $defaultDirectives['report-to'] = $value;
+                            $defaultDirectives['report-uri'] = $value;
+                        } else {
+                            #Ignore the value entirely
+                            unset($defaultDirectives['report-to']);
+                        }
+                        break;
                     default:
                         #Validate the value
-                        if (isset($defaultDirectives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|\*)\'))|(\'self\' ?)?(\'unsafe-hashes\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::originRegex.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?)*$/i', $value) === 1) {
+                        if (isset($defaultDirectives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|\*)\'))|(\'self\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::originRegex.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?){1,}$/i', $value) === 1) {
                             #Check if it's script or style source
                             if (in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])) {
                                 #If it's not 'none' - add 'report-sample'
@@ -232,11 +242,13 @@ class Headers
                 $cspLine .= $directive.' '.$value.'; ';
             }
         }
-        #If report is set - use Report-Only, if not - regular header
-        if (!empty($cspReportURI)) {
-            header('Content-Security-Policy-Report-Only: report-to '.$cspReportURI.'; '.trim($cspLine));
-        } else {
+        #If report is set also send Content-Security-Policy-Report-Only header
+        if ($reportonly === false) {
             header('Content-Security-Policy: upgrade-insecure-requests; '.trim($cspLine));
+        } else {
+            if (!empty($defaultDirectives['report-to'])) {
+                header('Content-Security-Policy-Report-Only: '.trim($cspLine));
+            }
         }
         
         header('Link: <https://'.$_SERVER['HTTP_HOST'].str_ireplace('?onepager', '', $_SERVER['REQUEST_URI']).'>; rel=canonical;', false);
@@ -331,7 +343,7 @@ class Headers
             $feature = strtolower(trim($feature));
             $allowlist = strtolower(trim($allowlist));
             #If validation is enforced, validate the feature and value provided
-            if ($forcecheck === false || ($forcecheck === true && isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d{1,}(\.\d{1,})?\))?)|(\'self\' ?)?(?<origin>'.self::originRegex.'(?<setting_o>\(\d{1,}(\.\d{1,})?\))?(?<delimiter> )?)*$/i', $allowlist) === 1)) {
+            if ($forcecheck === false || ($forcecheck === true && isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d{1,}(\.\d{1,})?\))?)|(\'self\' ?)?(?<origin>'.self::originRegex.'(?<setting_o>\(\d{1,}(\.\d{1,})?\))?(?<delimiter> )?){1,}$/i', $allowlist) === 1)) {
                 #Update value
                 $defaults[$feature] = $allowlist;
             }
