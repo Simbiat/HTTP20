@@ -1,5 +1,7 @@
 # HTTP20
-Set of classes/functions that may be universally useful for websites (or some parts of them, at least)
+Set of classes/functions that may be universally useful for websites (or some parts of them, at least).
+
+I hope that at some point in future `Headers` part will become quite popular. While some frameworks do seem to implement some similar functionality it seems to be generally ignored, while HTTP headers can make user experience better and more secure. If you start using `Headers` (especially `security`) it will (by default) force you into following best practices when designing your website. And if you need to loosen up your security for some reason, it is possible in a relatively convinient way. And if you find that it isn't (like you need to use `unsafe` directives, for example), most likely you are trying to save a security hole, that you should not be saving.
 
 - [HTTP20](#http20)
   * [Atom](#atom)
@@ -11,6 +13,7 @@ Set of classes/functions that may be universally useful for websites (or some pa
     + [performance](#performance)
     + [security](#security)
     + [features](#features)
+    + [secFetch](#secFetch)
   * [Common](#common)
     + [valueToTime](#valuetotime)
     + [atomIDGen](#atomidgen)
@@ -242,6 +245,8 @@ security(string $strat = 'strict', array $allowOrigins = [], array $allowHeaders
 ```
 Sends headers that can improve security of your page.
 
+For Content-Security-Policy I can suggest using https://rapidsec.com/
+
 ### features
 ```php
 features(array $features = [], bool $forcecheck = true);
@@ -251,6 +256,16 @@ Allows to control different features through Feature-Policy header.
 `$features` expectes assotiative array, where each key is name of the policy in lower case and value - expected `allow list`. If an empty array is sent default values will be applied (most features are disabled).
 
 `$forcecheck` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
+
+### secFetch
+```php
+secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false);
+```
+Allows validation of Sec-Fetch-* headers from client against the provided list of allowed values. Each of the 4 `array` values represent a list of values of respective Sec-Fetch-* header, which you allow to be processed. For more information refer https://www.w3.org/TR/fetch-metadata/
+
+`$strict` allows to enforce compliance with suported values only. Current W3C allows ignoring headers, if not sent or have unsupported values, but we may want to be stricter by setting this option to `true`.
+
+**Be mindful**: unlike `security`, which, essentially, attempts to be as secure as possible by default, this may be too lax for some use-cases. It is recommended, that you you call it with different parameters depending on what is calling what on your server. For example, you may want to restrict certain code getting called with `Sec-Fetch-Destination: image`, especially, if it's a `POST` request, let alone `DELETE`. Thus the best way to use this is in some `switch` or `if-elseif-else` scenario, rather than universally.
 
 ## Common
 Assortment of functions, that are used by classes inside the library, but can also be used directly. They are all called as

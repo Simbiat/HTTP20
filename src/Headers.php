@@ -6,10 +6,6 @@ class Headers
 {    
     #separate function for authentication headers?
     
-    #read on Sec-Fetch-Dest: image
-        #Sec-Fetch-Mode: no-cors
-        #Sec-Fetch-Site: cross-site
-    
     #read on Save-Data
     
     #https://www.fastly.com/blog/best-practices-using-vary-header
@@ -25,15 +21,143 @@ class Headers
     
     #Regex to validate Origins (essentially, an URI in https://examplecom:443 format)
     public const originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
+    #Regex for MIME type
+    public const mimeRegex = '[-\w.]+\/[-+\w.]+';
+    #Safe HTTP methods which can, generally, be allowed for processing
+    public const safeMethods = ['GET', 'HEAD', 'POST'];
+    #Full list of HTTP methods
+    public const allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
+    #List of headers we allow to expose by default
+    public const exposedHeaders = [
+        #CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
+        'Cache-Control', 'Content-Language', 'Content-Type', 'Last-Modified',
+        #Security headers
+        'Strict-Transport-Security', 'Access-Control-Max-Age', 'Access-Control-Allow-Credentials',
+        'Vary', 'Access-Control-Allow-Origin',
+        'Access-Control-Expose-Headers', 'Access-Control-Allow-Headers', 'Access-Control-Allow-Methods',
+        'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Cross-Origin-Resource-Policy', 'Referrer-Policy', 'Content-Security-Policy', 'Content-Security-Policy-Report-Only',
+        #Performance headers
+        'X-Content-Type-Options', 'X-DNS-Prefetch-Control', 'Connection', 'Keep-Alive',
+        #Other
+        'Feature-Policy', 'ETag', 'Link',
+    ];
+    #Default values for CSP directives set to mostly restrictive values
+    public const secureDirectives = [
+        #Fetch Directives
+        'default-src' => '\'self\'',
+        'child-src' => '\'self\'',
+        'connect-src' => '\'self\'',
+        'font-src' => '\'self\'',
+        'frame-src' => '\'self\'',
+        #Blocking images, because images can be used to inject scripts:
+        #https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
+        #https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
+        'img-src' => '\'none\'',
+        'manifest-src' => '\'self\'',
+        'media-src' => '\'self\'',
+        'object-src' => '\'none\'',
+        'prefetch-src' => '\'self\'',
+        'script-src' => '\'none\'',
+        'script-src-elem' => '\'none\'',
+        'script-src-attr' => '\'none\'',
+        'style-src' => '\'none\'',
+        'style-src-elem' => '\'none\'',
+        'style-src-attr' => '\'none\'',
+        'worker-src' => '\'self\'',
+        #Document directives
+        'base-uri' => '\'self\'',
+        'plugin-types' => '',
+        'sandbox' => '',
+        #Navigate directives
+        'form-action' => '\'self\'',
+        'frame-ancestors' => '\'self\'',
+        'navigate-to' => '\'self\'',
+        #Other directives
+        'require-trusted-types-for' => '\'script\'',
+        'trusted-types' => '',
+        'report-to' => '',
+    ];
+    #Default values for Feature-Policy, essentially disabling most of them
+    public const secureFeatures = [
+        #Disable access to sensors
+        'accelerometer' => '\'none\'',
+        'ambient-light-sensor' => '\'none\'',
+        'gyroscope' => '\'none\'',
+        'magnetometer' => '\'none\'',
+        'vibrate' => '\'none\'',
+        #Disable access to devices
+        'camera' => '\'none\'',
+        'microphone' => '\'none\'',
+        'midi' => '\'none\'',
+        'battery' => '\'none\'',
+        'usb' => '\'none\'',
+        'speaker' => '\'none\'',
+        #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
+        'document-domain' => '\'none\'',
+        #document-write (.write, .writeln, .open and .close) is aslo discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
+        'document-write' => '\'none\'',
+        #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+        'encrypted-media' => '\'self\'',
+        'publickey-credentials-get' => '\'self\'',
+        #Disable geolocation, XR tracking, payment and screen capture APIs
+        'geolocation' => '\'none\'',
+        'xr-spatial-tracking' => '\'none\'',
+        'payment' => '\'none\'',
+        'display-capture' => '\'none\'',
+        #Disable wake-locks
+        'wake-lock' => '\'none\'',
+        'screen-wake-lock' => '\'none\'',
+        #Disable Web Share API. It's recommended to enable it explicitely for pages, where sharing will not expose potentially sensetive materials
+        'web-share' => '\'none\'',
+        #Disable synchronous XMLHttpRequests (that were technically deprecated)
+        'sync-xhr' => '\'none\'',
+        #Disable synchronous parsing blocking scripts (inline without defer/asycn attribute)
+        'sync-script' => '\'none\'',
+        #Disable WebVR API (halted standard, replaced by WebXR)
+        'vr' => '\'none\'',
+        #Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
+        'oversized-images' => '*(2.0)',
+        'unoptimized-images' => '*(0.5)',
+        'unoptimized-lossy-images' => '*(0.5)',
+        'unoptimized-lossless-images' => '*(1.0)',
+        'legacy-image-formats' => '\'none\'',
+        'unsized-media' => '\'none\'',
+        'image-compression' => '\'none\'',
+        'maximum-downscaling-image' => '\'none\'',
+        #Disable lazyload. Do not apply it to everything. While it can improve performacne somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
+        'lazyload' => '\'none\'',
+        #Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+        'autoplay' => '\'none\'',
+        'fullscreen' => '\'none\'',
+        'picture-in-picture' => '\'none\'',
+        #Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g. top, width, max-height)
+        'font-display-late-swap' => '\'none\'',
+        'layout-animations' => '\'none\'',
+        #Disable execution of scripts/task in elements, that are not rendered or visible
+        'execution-while-not-rendered' => '\'none\'',
+        'execution-while-out-of-viewport' => '\'none\'',
+        #Disabling APIs for modification of spatial navgiation and scrolling, since you need them only for specific cases
+        'navigation-override' => '\'none\'',
+        'vertical-scroll' => '\'none\'',
+    ];
+    #Values supported by Sandbox in CSP
+    public const sandboxValues = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
+    #Supported values for Sec-Fetch-* headers
+    public const fetchSite = ['cross-site', 'same-origin', 'same-site', 'none'];
+    public const fetchMode = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
+    public const fetchUser = ['?0', '?1'];
+    public const fetchDest = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
+    #List of Set-Fetch-Destinations that are considered "script-like", that is they are, most likely, triggered by a script (<script> or similar object)
+    public const scriptLike = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
     
     #Function sends headers, related to security
     public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false)
     {
         #Default list of allowed methods, limited to only "simple" ones
-        $defaultMethods = ['GET', 'HEAD', 'POST'];
+        $defaultMethods = self::safeMethods;
         #Sanitize the custom methods
         foreach ($allowMethods as $key=>$method) {
-            if (!in_array($method, ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'])) {
+            if (!in_array($method, self::allMethods)) {
                 unset($allowMethods[$key]);
             }
         }
@@ -80,19 +204,7 @@ class Headers
         header('Access-Control-Allow-Credentials: true');
         #Allow headers sent from server, normally restricted by CORS
         #Keep a default list, that includes those originally allowed by CORS and those present in this class
-        $defaultHeaders = [
-            #CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
-            'Cache-Control', 'Content-Language', 'Content-Type', 'Last-Modified',
-            #Security headers
-            'Strict-Transport-Security', 'Access-Control-Max-Age', 'Access-Control-Allow-Credentials',
-            'Vary', 'Access-Control-Allow-Origin',
-            'Access-Control-Expose-Headers', 'Access-Control-Allow-Headers', 'Access-Control-Allow-Methods',
-            'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Cross-Origin-Resource-Policy', 'Referrer-Policy',
-            #Performance headers
-            'X-Content-Type-Options', 'X-DNS-Prefetch-Control', 'Connection', 'Keep-Alive',
-            #Other
-            'Feature-Policy', 'ETag', 'Link',
-        ];
+        $defaultHeaders = self::exposedHeaders;
         #Merge with custom ones
         $exposeHeaders = array_merge($defaultHeaders, $exposeHeaders);
         #Send list
@@ -125,41 +237,7 @@ class Headers
                 break;
         }
         #Set defaults directives for CSP
-        $defaultDirectives = [
-            #Fetch Directives
-            'default-src' => '\'self\'',
-            'child-src' => '\'self\'',
-            'connect-src' => '\'self\'',
-            'font-src' => '\'self\'',
-            'frame-src' => '\'self\'',
-            #Blocking images, because images can be used to inject scripts:
-            #https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
-            #https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
-            'img-src' => '\'none\'',
-            'manifest-src' => '\'self\'',
-            'media-src' => '\'self\'',
-            'object-src' => '\'none\'',
-            'prefetch-src' => '\'self\'',
-            'script-src' => '\'none\'',
-            'script-src-elem' => '\'none\'',
-            'script-src-attr' => '\'none\'',
-            'style-src' => '\'none\'',
-            'style-src-elem' => '\'none\'',
-            'style-src-attr' => '\'none\'',
-            'worker-src' => '\'self\'',
-            #Document directives
-            'base-uri' => '\'self\'',
-            'plugin-types' => '',
-            'sandbox' => '',
-            #Navigate directives
-            'form-action' => '\'self\'',
-            'frame-ancestors' => '\'self\'',
-            'navigate-to' => '\'self\'',
-            #Other directives
-            'require-trusted-types-for' => '\'script\'',
-            'trusted-types' => '',
-            'report-to' => '',
-        ];
+        $defaultDirectives = self::secureDirectives;
         #Apply custom directives
         foreach ($cspDirectives as $directive=>$value) {
             #If value is empty, assume, that we want to remove the directive entirely
@@ -169,7 +247,7 @@ class Headers
                 switch ($directive) {
                     case 'sandbox':
                         #Validate the value we have
-                        if (in_array($value, ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'])) {
+                        if (in_array($value, self::sandboxValues)) {
                             $defaultDirectives['sandbox'] = $value;
                         } else {
                             #Ignore the value entirely
@@ -187,7 +265,7 @@ class Headers
                         break;
                     case 'plugin-types':
                         #Validate the value we have
-                        if (preg_match('/^(([-\w.]+\/[-\w.]+) ?){1,}$/i', $value) === 1) {
+                        if (preg_match('/^(('.self::mimeRegex.') ?){1,}$/i', $value) === 1) {
                             $defaultDirectives['plugin-types'] = $value;
                         } else {
                             #Ignore the value entirely
@@ -255,6 +333,121 @@ class Headers
         return $this;
     }
     
+    #Function to process Sec-Fetch headers. Arrays are set to empty ones by default for ease of use (sending empty array is a bit easier than copying values).
+    #$strict allows to enforce compliance with suported values only. Current W3C allows ignoring headers, if not sent or have unsupported values, but we may want to be stricter by setting this option to true
+    #Below amterials were used in preparation
+    #https://www.w3.org/TR/fetch-metadata/
+    #https://fetch.spec.whatwg.org/
+    #https://web.dev/fetch-metadata/
+    public function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false)
+    {
+        #Set flag for processing
+        $badRequest = false;
+        #Check if Sec-Fetch was passed at all (older browsers will not use it). Process it only if it's present.
+        if (isset($_SERVER['HTTP_SEC_FETCH_SITE'])) {
+            #Check if support values are sent in headers
+            if (
+                in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::fetchSite) &&
+                in_array($_SERVER['HTTP_SEC_FETCH_MODE'], self::fetchMode) &&
+                (
+                    empty($_SERVER['HTTP_SEC_FETCH_USER']) ||
+                    in_array($_SERVER['HTTP_SEC_FETCH_USER'], self::fetchUser)
+                ) &&
+                (
+                    empty($_SERVER['HTTP_SEC_FETCH_DEST']) ||
+                    in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::fetchDest)
+                )
+            ) {
+                #Setting defaults
+                $site = array_intersect($site, self::fetchSite);
+                if (empty($site)) {
+                    #Alloes only same-origin (site and subdomain) or top-navigation
+                    $site = ['same-origin', 'none'];
+                }
+                $mode = array_intersect($mode, self::fetchMode);
+                if (empty($mode)) {
+                    #Allow all modes
+                    $mode = self::fetchMode;
+                }
+                $user = array_intersect($user, self::fetchUser);
+                if (empty($user)) {
+                    #Allow only actions triggered by user activation
+                    $user = ['?1'];
+                }
+                $dest = array_intersect($dest, self::fetchDest);
+                if (empty($dest)) {
+                    $dest = [
+                        #Allow navigation (including from frames)
+                        'document', 'embed', 'frame', 'iframe',
+                        #Allow common elements
+                        'audio', 'font', 'image', 'style', 'video', 'track', 'manifest',
+                        #Allow empty
+                        'empty',
+                    ];
+                }
+                #Actual validation
+                if (
+                    !in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site) ||
+                    !in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode) ||
+                    (
+                        !empty($_SERVER['HTTP_SEC_FETCH_USER']) &&
+                        !in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user)
+                    ) ||
+                    (
+                        !empty($_SERVER['HTTP_SEC_FETCH_DEST']) &&
+                        !in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest)
+                    )
+                ) {
+                    $badRequest = true;
+                } else {
+                    #There is also a recomendation to check wheter a script-like is requesting certain MIME types
+                    #Normally this should be done by browser, but we can do that as well and be independent from their logic
+                    if (!empty($_SERVER['HTTP_SEC_FETCH_DEST']) && in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::scriptLike)) {
+                        #Attempt to get content-type headers
+                        $contenttype = '';
+                        #This header may be present in some cases
+                        if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
+                            $contenttype = $_SERVER['HTTP_CONTENT_TYPE'];
+                        } else {
+                            #This is a standard header that should be present in PHP. Usually in case of POST method
+                            if (isset($_SERVER['CONTENT_TYPE']) || isset($_SERVER['HTTP_CONTENT_TYPE'])) {
+                                $contenttype = $_SERVER['CONTENT_TYPE'];
+                            }
+                        }
+                        #Check if we have already sent our own content-type header
+                        foreach (headers_list() as $header) {
+                            if (preg_match('/^Content-type:/', $header) === 1) {
+                                #Get MIME
+                                $contenttype = preg_replace('/^(Content-type:\s*)('.self::mimeRegex.')(;.*?)$/', '$2', $header);
+                                break;
+                            }
+                        }
+                        #If MIME is found and it amtches CSV, audio, image or video - reject
+                        if (!empty($contenttype) && preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $contenttype) === 1) {
+                            $badRequest = true;
+                        }
+                    }
+                }
+            } else {
+                #Reject if we want to be stricter than W3C
+                if ($strict) {
+                    $badRequest = true;
+                }
+            }
+        } else {
+            #Reject if we want to be stricter than W3C
+            if ($strict) {
+                $badRequest = true;
+            }
+        }
+        if ($badRequest) {
+            #Send proper header denying access and stop processing
+            header($_SERVER['SERVER_PROTOCOL'].' 403 Forbidden');
+            exit;
+        }
+        return $this;
+    }
+    
     #Function to send headers, that may improve performance on client side
     public function performance(int $keepalive = 0)
     {
@@ -276,68 +469,7 @@ class Headers
     #https://featurepolicy.info/
     public function features(array $features = [], bool $forcecheck = true)
     {
-        $defaults = [
-            #Disable access to sensors
-            'accelerometer' => '\'none\'',
-            'ambient-light-sensor' => '\'none\'',
-            'gyroscope' => '\'none\'',
-            'magnetometer' => '\'none\'',
-            'vibrate' => '\'none\'',
-            #Disable access to devices
-            'camera' => '\'none\'',
-            'microphone' => '\'none\'',
-            'midi' => '\'none\'',
-            'battery' => '\'none\'',
-            'usb' => '\'none\'',
-            'speaker' => '\'none\'',
-            #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
-            'document-domain' => '\'none\'',
-            #document-write (.write, .writeln, .open and .close) is aslo discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
-            'document-write' => '\'none\'',
-            #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-            'encrypted-media' => '\'self\'',
-            'publickey-credentials-get' => '\'self\'',
-            #Disable geolocation, XR tracking, payment and screen capture APIs
-            'geolocation' => '\'none\'',
-            'xr-spatial-tracking' => '\'none\'',
-            'payment' => '\'none\'',
-            'display-capture' => '\'none\'',
-            #Disable wake-locks
-            'wake-lock' => '\'none\'',
-            'screen-wake-lock' => '\'none\'',
-            #Disable Web Share API. It's recommended to enable it explicitely for pages, where sharing will not expose potentially sensetive materials
-            'web-share' => '\'none\'',
-            #Disable synchronous XMLHttpRequests (that were technically deprecated)
-            'sync-xhr' => '\'none\'',
-            #Disable synchronous parsing blocking scripts (inline without defer/asycn attribute)
-            'sync-script' => '\'none\'',
-            #Disable WebVR API (halted standard, replaced by WebXR)
-            'vr' => '\'none\'',
-            #Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
-            'oversized-images' => '*(2.0)',
-            'unoptimized-images' => '*(0.5)',
-            'unoptimized-lossy-images' => '*(0.5)',
-            'unoptimized-lossless-images' => '*(1.0)',
-            'legacy-image-formats' => '\'none\'',
-            'unsized-media' => '\'none\'',
-            'image-compression' => '\'none\'',
-            'maximum-downscaling-image' => '\'none\'',
-            #Disable lazyload. Do not apply it to everything. While it can improve performacne somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
-            'lazyload' => '\'none\'',
-            #Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-            'autoplay' => '\'none\'',
-            'fullscreen' => '\'none\'',
-            'picture-in-picture' => '\'none\'',
-            #Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g. top, width, max-height)
-            'font-display-late-swap' => '\'none\'',
-            'layout-animations' => '\'none\'',
-            #Disable execution of scripts/task in elements, that are not rendered or visible
-            'execution-while-not-rendered' => '\'none\'',
-            'execution-while-out-of-viewport' => '\'none\'',
-            #Disabling APIs for modification of spatial navgiation and scrolling, since you need them only for specific cases
-            'navigation-override' => '\'none\'',
-            'vertical-scroll' => '\'none\'',
-        ];
+        $defaults = self::secureFeatures;
         foreach ($features as $feature=>$allowlist) {
             #Sanitize
             $feature = strtolower(trim($feature));
