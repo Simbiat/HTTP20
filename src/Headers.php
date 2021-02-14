@@ -6,23 +6,21 @@ class Headers
 {    
     #separate function for authentication headers?
     
-    #read on Save-Data
-    
-    #https://www.fastly.com/blog/best-practices-using-vary-header
-    #https://www.keycdn.com/blog/client-hints
+    #Link headers:
+    #if Save-Data is On do not do HTTP2.0 Push
+    #ensure to send Vary: Save-Data as well
     
     #consider https://github.com/bspot/phpsourcemaps for https://www.html5rocks.com/en/tutorials/developertools/sourcemaps/ https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/SourceMap
     
     #consider fucntion for server-timing:
     #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
-    #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Timing-Allow-Origin
-    
-    #unclear what to do with https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Tk
+    #Probably needs to be a separate class and also be called from zEcho
+    #https://www.smashingmagazine.com/2018/10/performance-server-timing/
     
     #Regex to validate Origins (essentially, an URI in https://examplecom:443 format)
     public const originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
     #Regex for MIME type
-    public const mimeRegex = '[-\w.]+\/[-+\w.]+';
+    public const mimeRegex = '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
     #Safe HTTP methods which can, generally, be allowed for processing
     public const safeMethods = ['GET', 'HEAD', 'POST'];
     #Full list of HTTP methods
@@ -44,69 +42,34 @@ class Headers
     #Default values for CSP directives set to mostly restrictive values
     public const secureDirectives = [
         #Fetch Directives
-        'default-src' => '\'self\'',
-        'child-src' => '\'self\'',
-        'connect-src' => '\'self\'',
-        'font-src' => '\'self\'',
-        'frame-src' => '\'self\'',
+        'default-src' => '\'self\'', 'child-src' => '\'self\'', 'connect-src' => '\'self\'', 'font-src' => '\'self\'', 'frame-src' => '\'self\'',
         #Blocking images, because images can be used to inject scripts:
         #https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
         #https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
-        'img-src' => '\'none\'',
-        'manifest-src' => '\'self\'',
-        'media-src' => '\'self\'',
-        'object-src' => '\'none\'',
-        'prefetch-src' => '\'self\'',
-        'script-src' => '\'none\'',
-        'script-src-elem' => '\'none\'',
-        'script-src-attr' => '\'none\'',
-        'style-src' => '\'none\'',
-        'style-src-elem' => '\'none\'',
-        'style-src-attr' => '\'none\'',
-        'worker-src' => '\'self\'',
+        'img-src' => '\'none\'', 'manifest-src' => '\'self\'', 'media-src' => '\'self\'', 'object-src' => '\'none\'', 'prefetch-src' => '\'self\'', 'script-src' => '\'none\'', 'script-src-elem' => '\'none\'', 'script-src-attr' => '\'none\'', 'style-src' => '\'none\'', 'style-src-elem' => '\'none\'', 'style-src-attr' => '\'none\'', 'worker-src' => '\'self\'',
         #Document directives
-        'base-uri' => '\'self\'',
-        'plugin-types' => '',
-        'sandbox' => '',
+        'base-uri' => '\'self\'', 'plugin-types' => '', 'sandbox' => '',
         #Navigate directives
-        'form-action' => '\'self\'',
-        'frame-ancestors' => '\'self\'',
-        'navigate-to' => '\'self\'',
+        'form-action' => '\'self\'', 'frame-ancestors' => '\'self\'', 'navigate-to' => '\'self\'',
         #Other directives
-        'require-trusted-types-for' => '\'script\'',
-        'trusted-types' => '',
-        'report-to' => '',
+        'require-trusted-types-for' => '\'script\'', 'trusted-types' => '', 'report-to' => '',
     ];
     #Default values for Feature-Policy, essentially disabling most of them
     public const secureFeatures = [
         #Disable access to sensors
-        'accelerometer' => '\'none\'',
-        'ambient-light-sensor' => '\'none\'',
-        'gyroscope' => '\'none\'',
-        'magnetometer' => '\'none\'',
-        'vibrate' => '\'none\'',
+        'accelerometer' => '\'none\'', 'ambient-light-sensor' => '\'none\'', 'gyroscope' => '\'none\'', 'magnetometer' => '\'none\'', 'vibrate' => '\'none\'',
         #Disable access to devices
-        'camera' => '\'none\'',
-        'microphone' => '\'none\'',
-        'midi' => '\'none\'',
-        'battery' => '\'none\'',
-        'usb' => '\'none\'',
-        'speaker' => '\'none\'',
+        'camera' => '\'none\'', 'microphone' => '\'none\'', 'midi' => '\'none\'', 'battery' => '\'none\'', 'usb' => '\'none\'', 'speaker' => '\'none\'',
         #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
         'document-domain' => '\'none\'',
         #document-write (.write, .writeln, .open and .close) is aslo discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
         'document-write' => '\'none\'',
         #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => '\'self\'',
-        'publickey-credentials-get' => '\'self\'',
+        'encrypted-media' => '\'self\'', 'publickey-credentials-get' => '\'self\'',
         #Disable geolocation, XR tracking, payment and screen capture APIs
-        'geolocation' => '\'none\'',
-        'xr-spatial-tracking' => '\'none\'',
-        'payment' => '\'none\'',
-        'display-capture' => '\'none\'',
+        'geolocation' => '\'none\'', 'xr-spatial-tracking' => '\'none\'', 'payment' => '\'none\'', 'display-capture' => '\'none\'',
         #Disable wake-locks
-        'wake-lock' => '\'none\'',
-        'screen-wake-lock' => '\'none\'',
+        'wake-lock' => '\'none\'', 'screen-wake-lock' => '\'none\'',
         #Disable Web Share API. It's recommended to enable it explicitely for pages, where sharing will not expose potentially sensetive materials
         'web-share' => '\'none\'',
         #Disable synchronous XMLHttpRequests (that were technically deprecated)
@@ -116,29 +79,17 @@ class Headers
         #Disable WebVR API (halted standard, replaced by WebXR)
         'vr' => '\'none\'',
         #Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
-        'oversized-images' => '*(2.0)',
-        'unoptimized-images' => '*(0.5)',
-        'unoptimized-lossy-images' => '*(0.5)',
-        'unoptimized-lossless-images' => '*(1.0)',
-        'legacy-image-formats' => '\'none\'',
-        'unsized-media' => '\'none\'',
-        'image-compression' => '\'none\'',
-        'maximum-downscaling-image' => '\'none\'',
+        'oversized-images' => '*(2.0)', 'unoptimized-images' => '*(0.5)', 'unoptimized-lossy-images' => '*(0.5)', 'unoptimized-lossless-images' => '*(1.0)', 'legacy-image-formats' => '\'none\'', 'unsized-media' => '\'none\'', 'image-compression' => '\'none\'', 'maximum-downscaling-image' => '\'none\'',
         #Disable lazyload. Do not apply it to everything. While it can improve performacne somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
         'lazyload' => '\'none\'',
         #Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-        'autoplay' => '\'none\'',
-        'fullscreen' => '\'none\'',
-        'picture-in-picture' => '\'none\'',
+        'autoplay' => '\'none\'', 'fullscreen' => '\'none\'', 'picture-in-picture' => '\'none\'',
         #Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g. top, width, max-height)
-        'font-display-late-swap' => '\'none\'',
-        'layout-animations' => '\'none\'',
+        'font-display-late-swap' => '\'none\'', 'layout-animations' => '\'none\'',
         #Disable execution of scripts/task in elements, that are not rendered or visible
-        'execution-while-not-rendered' => '\'none\'',
-        'execution-while-out-of-viewport' => '\'none\'',
+        'execution-while-not-rendered' => '\'none\'', 'execution-while-out-of-viewport' => '\'none\'',
         #Disabling APIs for modification of spatial navgiation and scrolling, since you need them only for specific cases
-        'navigation-override' => '\'none\'',
-        'vertical-scroll' => '\'none\'',
+        'navigation-override' => '\'none\'', 'vertical-scroll' => '\'none\'',
     ];
     #Values supported by Sandbox in CSP
     public const sandboxValues = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
@@ -183,8 +134,9 @@ class Headers
             if (isset($_SERVER['HTTP_ORIGIN']) && preg_match('/'.self::originRegex.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allowOrigins)) {
                 #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
                 header('Vary: Origin', false);
-                #Send actual header
+                #Send actual headers
                 header('Access-Control-Allow-Origin: '.$allowOrigins);
+                header('Timing-Allow-Origin: '.$allowOrigins);
             } else {
                 #Send proper header denying access and stop processing
                 header($_SERVER['SERVER_PROTOCOL'].' 403 Forbidden');
@@ -193,8 +145,9 @@ class Headers
         } else {
             #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
             header('Vary: Origin', false);
-            #Send actual header
+            #Send actual headers
             header('Access-Control-Allow-Origin: *');
+            header('Timing-Allow-Origin: '.(isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].':'.$_SERVER['SERVER_PORT']);
         }
         #HSTS and force HTTPS
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
@@ -203,15 +156,12 @@ class Headers
         #Allows credentials to be shared to front-end JS. By itself this should not be a security issue, but it may ease of use for 3rd-party parser in some cases if you are using cookies.
         header('Access-Control-Allow-Credentials: true');
         #Allow headers sent from server, normally restricted by CORS
-        #Keep a default list, that includes those originally allowed by CORS and those present in this class
-        $defaultHeaders = self::exposedHeaders;
-        #Merge with custom ones
-        $exposeHeaders = array_merge($defaultHeaders, $exposeHeaders);
+        #Keep a default list, that includes those originally allowed by CORS and those present in this class as self::exposedHeaders
         #Send list
-        header('Access-Control-Expose-Headers: '.implode(', ', $exposeHeaders));
+        header('Access-Control-Expose-Headers: '.implode(', ', array_merge(self::exposedHeaders, $exposeHeaders)));
         #Allow headers, that can change server state, but are normally restricted by CORS
         if (!empty($allowHeaders)) {
-            header('Access-Control-Allow-Headers: '.implode(', ', $allowHeaders));
+            header('Access-Control-Allow-Headers: '.implode(', ', array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allowHeaders)));
         }
         #Set CORS strategy
         switch (strtolower($strat)) {
@@ -279,8 +229,12 @@ class Headers
                         } else {
                             #Ignore the value entirely
                             unset($defaultDirectives['report-to']);
+                            unset($defaultDirectives['report-uri']);
                         }
                         break;
+                    case 'report-uri':
+                        #Ensure that we do not use report-uri, unless there is a report-to, since report-uri is deprecated
+                        unset($defaultDirectives['report-uri']);
                     default:
                         #Validate the value
                         if (isset($defaultDirectives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|\*)\'))|(\'self\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::originRegex.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?){1,}$/i', $value) === 1) {
@@ -418,7 +372,7 @@ class Headers
                         foreach (headers_list() as $header) {
                             if (preg_match('/^Content-type:/', $header) === 1) {
                                 #Get MIME
-                                $contenttype = preg_replace('/^(Content-type:\s*)('.self::mimeRegex.')(;.*?)$/', '$2', $header);
+                                $contenttype = preg_replace('/^(Content-type:\s*)('.self::mimeRegex.')$/', '$2', $header);
                                 break;
                             }
                         }
@@ -449,7 +403,7 @@ class Headers
     }
     
     #Function to send headers, that may improve performance on client side
-    public function performance(int $keepalive = 0)
+    public function performance(int $keepalive = 0, array $clientHints = [])
     {
         #Prevent content type sniffing (determening file type by content, not by extension or header)
         header('X-Content-Type-Options: nosniff');
@@ -459,6 +413,15 @@ class Headers
         if ($keepalive > 0 && $_SERVER['SERVER_PROTOCOL'] !== 'HTTP/2.0') {
             header('Connection: Keep-Alive');
             header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive*1000));
+        }
+        if (!empty($clientHints)) {
+            #Implode client hints
+            $clientHints = implode(', ', $clientHints);
+            #Notify, that we support Client Hints: https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
+            #Logic for processing them should be done outside this function, though
+            header('Accept-CH: '.$clientHints);
+            #Instruct to vary cache depending on client hints
+            header('Vary: '.$clientHints, false);
         }
         return $this;
     }
@@ -513,7 +476,7 @@ class Headers
     }
     
     #Function to prepare and send cache-related headers
-    public function cacheControl(string $string, string $cacheStrat = '', bool $exit = false)
+    public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false)
     {
         #Send headers related to cache based on strategy selected
         #Some of the strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
@@ -543,8 +506,18 @@ class Headers
                 header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
                 break;
         }
+        #Ensure that caching works properly in case client did not support compresion, but now does or vice-versa and in case data-saving mode was requested by client at any point.
+        header('Vary: Save-Data, Accept-Encoding', false);
         #Set ETag
-        $etag = hash('sha3-256', $string);
+        if (!empty($string)) {
+            $this->eTag(hash('sha3-256', $string));
+        }
+        return $this;
+    }
+    
+    #Handle Etag header and its validation depending on request headers
+    public function eTag(string $etag)
+    {
         #Send ETag for caching purposes
         header('ETag: '.$etag);
         #Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since ideally you will have some text to output first, but it can still save some time on client side
@@ -557,6 +530,7 @@ class Headers
                 }
             }
         }
+        #Return error if If-Match was sent and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
                 header($_SERVER['SERVER_PROTOCOL'].' 412 Precondition Failed');

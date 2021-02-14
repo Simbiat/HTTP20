@@ -9,6 +9,7 @@ I hope that at some point in future `Headers` part will become quite popular. Wh
   * [PrettyURL](#prettyurl)
   * [Headers](#headers)
     + [cacheControl](#cachecontrol)
+    + [eTag](#etag)
     + [lastModified](#lastmodified)
     + [performance](#performance)
     + [security](#security)
@@ -219,9 +220,15 @@ switch (strtolower($cacheStrat)) {
 	    break;
 }
 ```
-ETag header generation will happen regardless, as well as handling of HTTP_IF_NONE_MATCH header, if present.
+ETag procesing using `eTag()` will happen regardless (unless string is empty: then it will simply make no sense).
 
 `$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
+
+### eTag
+```php
+eTag(string $etag)
+```
+Sends ETag header and handles its validation depending on requesting headers (If-Match, If-None-Match).
 
 ### lastModified
 ```php
@@ -233,19 +240,55 @@ Sends Last-Modified header based on either parameter provided or the freshest da
 
 ### performance
 ```php
-performance(int $keepalive = 0);
+performance(int $keepalive = 0, array $clientHints = []);
 ```
 Sends some headers that may improve performance on client side.
 
 `$keepalive` is used for `Keep-Alive` header governing how long the connection should stay up. Header will be sent only if server is using HTTP version other than 2.0.
 
+`$clientHints` instructs clients, that your server supports Client Hints (https://developer.mozilla.org/en-US/docs/Glossary/Client_hints) like DPR, Width, Viewport-Width, Downlink, .etc and client should cache the output accordingly, in order to increase allow cache hitting and thus improve performance.
+
 ### security
 ```php
-security(string $strat = 'strict', array $allowOrigins = [], array $allowHeaders = [], array $exposeHeaders = []);
+security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false);
 ```
 Sends headers that can improve security of your page.
 
-For Content-Security-Policy I can suggest using https://rapidsec.com/
+`$stract` allows to select one fo 3 strategies for CORS headers (https://developer.mozilla.org/ru/docs/Web/HTTP/CORS). `strict` is default, because security is king.
+```php
+case 'mild':
+	header('Cross-Origin-Embedder-Policy: unsafe-none');
+	header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
+	header('Cross-Origin-Resource-Policy: same-site');
+	header('Referrer-Policy: strict-origin');
+	break;
+case 'loose':
+	header('Cross-Origin-Embedder-Policy: unsafe-none');
+	header('Cross-Origin-Opener-Policy: unsafe-none');
+	header('Cross-Origin-Resource-Policy: cross-origin');
+	header('Referrer-Policy: strict-origin-when-cross-origin');
+	break;
+case 'strict':
+default:
+	header('Cross-Origin-Embedder-Policy: require-corp');
+	header('Cross-Origin-Opener-Policy: same-origin');
+	header('Cross-Origin-Resource-Policy: same-origin');
+	header('Referrer-Policy: no-referrer');
+	break;
+```
+`$allowOrigins` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) allows you to set a list of allowed `Origin` values, that can access your page. If empty - will allow access to all (`*`).
+
+`Access-Control-Allow-Origin` allows only 1 values by specification, but `$allowOrigins` allows to overcome it by doing validation against the list you've provided. Then, if the origin is allowed - access will be granted, if not - 403 will be sent and code will exit.
+
+`$exposeHeaders` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers) allows you to set a list of headers, that you are ok to expose to client. Headers, that are provided by this class, will always be exposed.
+
+`$allowHeaders` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers) lets you add headers, that you willing to accept and use to change states in your code.
+
+`$allowMethods` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods) allows you to restrict accepted methods. If request to page is done by a method not in the list - it will be rejected (405). By default GET, POST and HEAD are the only allowed.
+
+`$cspDirectives` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) allows you to provide a list of directives and their settings (with validation) to control CSP headers. By default, essentially eveyrthing is either disabled or allowed only from `self`, which give you a solid base in terms of restricting access.
+
+`$reportonly` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
 
 ### features
 ```php

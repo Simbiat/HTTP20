@@ -54,44 +54,22 @@ class Common
     public function zEcho(string $string, string $cacheStrat = ''): void
     {
         (new \http20\Headers)->cacheControl($string, $cacheStrat, true);
-        #Check that zlib is loaded. If not - do not zip, but do send size of the content
-        if (extension_loaded('zlib')) {
-            #Ensure we have a good compromise between compression and performance, as well as same level for both methods used
-            ini_set('zlib.output_compression_level', '6');
-            #Check if output_ompression is On. If not - use ob_gzhandler
-            if (ini_get('zlib.output_compression') === 'On') {
-                #Send header with length
-                header('Content-Length: '.strlen(gzencode($string, 6)));
-                #Initiate buffer
-                ob_start();
-                #Send the output to buffer
-                echo $string;
-                #Flush buffer
-                ob_end_flush();
-            } else {
-                #Initiate buffer
-                if (ob_start('ob_gzhandler')) {
-                    #Send header with length
-                    header('Content-Length: '.strlen(gzencode($string, 6)));
-                } else {
-                    ob_start();
-                    #Send header with length
-                    header('Content-Length: '.strlen($string));
-                }
-                #Send the output to buffer
-                echo $string;
-                #Flush buffer
-                ob_end_flush();
-            }
-        } else {
-            #Initiate buffer
-            ob_start();
+        #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistences with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
+        if (extension_loaded('zlib') && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false) {
+            #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
+            #GZipping the string
+            $string = gzcompress($string, 9, FORCE_GZIP);
+            #Send header with format
+            header('Content-Encoding: gzip');
             #Send header with length
             header('Content-Length: '.strlen($string));
-            #Send the output to buffer
+            #Send the output
             echo $string;
-            #Flush buffer
-            ob_end_flush();
+        } else {
+            #Send header with length
+            header('Content-Length: '.strlen($string));
+            #Send the output
+            echo $string;
         }
     }
     
