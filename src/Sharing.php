@@ -2,7 +2,7 @@
 declare(strict_types=1);
 namespace http20;
 
-class Download
+class Sharing
 {
     #Linkage of extensions to MIME types
     public const extToMime = [
@@ -696,7 +696,7 @@ class Download
     ];
     
     #Function for smart resumable download with proper headers
-    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true): bool
+    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true)
     {
         #Sanitize speedlimit
         $speedlimit = $this->speedLimit($speedlimit);
@@ -827,7 +827,11 @@ class Download
                                 return false;
                             }
                         } else {
-                            return true;
+                            if ($exit) {
+                                exit;
+                            } else {
+                                return true;
+                            }
                         }
                     } else {
                         header('Content-Type: multipart/byteranges; boundary='.$boundary);
@@ -871,7 +875,11 @@ class Download
                         fclose($stream);
                         fclose($output);
                         echo "\r\n--".$boundary."\r\n";
-                        return true;
+                        if ($exit) {
+                            exit;
+                        } else {
+                            return true;
+                        }
                     }
                 } else {
                     header('Content-Type: '.$mime);
@@ -891,7 +899,11 @@ class Download
                             return false;
                         }
                     } else {
-                        return true;
+                        if ($exit) {
+                            exit;
+                        } else {
+                            return true;
+                        }
                     }
                 }
             } else {
@@ -912,17 +924,21 @@ class Download
         }
     }
     
-    #Function to output data in small chunks (not HTTP1.1 chunks) based on speed limitation
+    #Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
     public function streamCopy(&$input, &$output, int $totalsize = 0, int $offset = 0, int $speed = 10485760)
     {
         #Ignore user abort to attempt identify when client has aborted
         ignore_user_abort(true);
+        #Check that we have resources
         if (!is_resource($input) || !is_resource($output)) {
             return false;
         }
+        #Get size if not provided
         if ($totalsize <= 0) {
             $totalsize = fstat($input)['size'];
         }
+        #Sanitize speed
+        $speed = $this->speedLimit($speed);
         #Set time limit equal to the size. If download speed is 1 byte per second - that's definitely low speed session, that we do not want to keep forever
         set_time_limit($totalsize);
         #Set counter for amount of data sent
