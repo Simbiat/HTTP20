@@ -696,12 +696,13 @@ class Download
     ];
     
     #Function for smart resumable download with proper headers
-    public function download(string $file, string $mime = '', int $speedlimit = 102400): bool
+    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true): bool
     {
         #Sanitize speedlimit
-        if ($speedlimit <= 0) {
-            $speedlimit = 102400;
-        }
+        $speedlimit = $this->speedLimit($speedlimit);
+        #Some protection
+        header('Access-Control-Allow-Headers: range');
+        header('Access-Control-Allow-Methods: GET');
         #Download if valid only in case of GET method
         if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             #Check that path exists and is actually a file
@@ -720,7 +721,11 @@ class Download
                 if (!is_readable($file)) {
                     #Most likely the file is locked
                     header($_SERVER['SERVER_PROTOCOL'].' 423 Locked');
-                    exit;
+                    if ($exit) {
+                        exit;
+                    } else {
+                        return false;
+                    }
                 }
                 #Check if MIME was provided
                 if (!empty($mime)) {
@@ -740,124 +745,153 @@ class Download
                         $mime = 'application/octet-stream';
                     }
                 }
-                #Process range
-                if (isset($_SERVER['HTTP_RANGE'])) {
-                    #Validate the value
-                    if (preg_match('/^bytes=\d*-\d*(\s*,\s*\d*-\d*)*$/i', $_SERVER['HTTP_RANGE']) !== 1) {
-                        header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
-                        header('Content-Range: bytes */'.$filesize);
+                #Get file name
+                if (empty($filename)) {
+                    $filename = $fileinfo['basename'];
+                }
+                #Process ranges
+                $ranges = $this->rangesValidate($filesize);
+                if (isset($ranges[0]) && $ranges[0] === false) {
+                    #Notify client, that something is wrong with ranges
+                    header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
+                    header('Content-Range: bytes */'.$filesize);
+                    if ($exit) {
                         exit;
                     } else {
-                        #Remove bytes=
-                        $ranges = preg_replace('/bytes=/i', '', $_SERVER['HTTP_RANGE']);
-                        #Split ranges
-                        $ranges = explode(',', $ranges);
-                        #Sanitize
-                        foreach ($ranges as $key=>$range) {
-                            if (preg_match('/^-\d{1,}$/', $range) === 1) {
-                                $ranges[$key] = ['start' => 0, 'end' => intval(ltrim($range, '-'))];
-                            } elseif (preg_match('/^\d{1,}-$/', $range) === 1) {
-                                $ranges[$key] = ['start' => intval(rtrim($range, '-')), 'end' => $filesize];
-                            } elseif (preg_match('/^\d{1,}-\d{1,}$/', $range) === 1) {
-                                $temprange = explode('-', $range);
-                                $ranges[$key] = ['start' => intval($temprange[0]), 'end' => intval($temprange[1])];
-                            } else {
-                                #If we get here, something went incredibly wrong, so better exit
-                                header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
-                                header('Content-Range: bytes */'.$filesize);
-                                exit;
-                            }
-                            #Check range is of proper value
-                            if ($ranges[$key]['start'] >= $ranges[$key]['end'] || $ranges[$key]['end'] > $filesize) {
-                                header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
-                                header('Content-Range: bytes */'.$filesize);
-                                exit;
-                            }
-                        }
+                        return false;
                     }
                 }
                 #Send common headers
-                header('Content-Disposition: attachment; filename="'.$fileinfo['basename'].'"');
+                if ($inline) {
+                    header('Content-Disposition: inline; filename="'.$filename.'"');
+                } else {
+                    header('Content-Disposition: attachment; filename="'.$filename.'"');
+                }
+                #Notify, that we accept ranges
                 header('Accept-Ranges: bytes');
                 #Generally not required for web, but in case this somehow gets into a mail - better have it
                 header('Content-Transfer-Encoding: binary');
-                #Process data
                 #Open the file
                 $stream = fopen($file, 'rb');
                 #Check if file was opened
                 if ($stream === false) {
-                    #Sending 423, because most likely we got a file lock
+                    #Sending 423, because most likely we got a file lock, since previous check was good
                     header($_SERVER['SERVER_PROTOCOL'].' 423 Locked');
-                    exit;
+                    if ($exit) {
+                        exit;
+                    } else {
+                        return false;
+                    }
                 }
-                if (isset($_SERVER['HTTP_RANGE'])) {
+                #Open output stream
+                $output = fopen('php://output', 'wb');
+                #Check if stream was opened
+                if ($output === false) {
+                    #Send 500, because something clearly went wrong while reading the file on server
+                    header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
+                    if ($exit) {
+                        exit;
+                    } else {
+                        return false;
+                    }
+                }
+                #Disable buffering. This should help limiting the memory usage. At least, in some cases.
+                stream_set_read_buffer($stream, 0);
+                stream_set_write_buffer($output, 0);
+                if (!empty($ranges)) {
                     #Send partial content headers
                     header($_SERVER['SERVER_PROTOCOL'].' 206 Partial Content');
                     #Checking how many ranges we have
                     if (count($ranges) === 1) {
                         header('Content-Type: '.$mime);
-                        #Get to start of range
-                        fseek($stream, $ranges[0]['start'], SEEK_SET);
-                        #Read data
-                        $data = fread($stream, ($ranges[0]['end'] - $ranges[0]['start'] + 1));
-                        #Close the file
-                        fclose($stream);
-                        #Check if data is available
-                        if ($data === false) {
-                            #Send 500, because soemthing clearly went wrong while reading the file on server
-                            header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
-                            exit;
-                        }
-                        #Set offset
-                        $offsetrange = $ranges[0]['start'].'-'.$ranges[0]['end'];
+                        header('Content-Range: bytes '.$ranges[0]['start'].'-'.$ranges[0]['end'].'/'.$filesize);
+                        #Update size to block size
+                        $filesize = $ranges[0]['end'] - $ranges[0]['start'] + 1;
                         header('Content-Length: '.$filesize);
-                        header('Content-Range: bytes '.$offsetrange.'/'.$filesize);
+                        #Limit speed to range length, if it's current speed limit is too large, so that it will be provided fully
+                        if ($speedlimit > $filesize) {
+                            $speedlimit = $filesize;
+                        }
+                        $speedlimit = $this->speedLimit($speedlimit);
+                        #Output data
+                        $result = $this->streamCopy($stream, $output, $filesize, $ranges[0]['start'], $speedlimit);
+                        #Close file
+                        fclose($stream);
+                        fclose($output);
+                        if ($result === false) {
+                            #Send 500, because something clearly went wrong while reading the file on server
+                            @header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
+                            if ($exit) {
+                                exit;
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            return true;
+                        }
                     } else {
                         header('Content-Type: multipart/byteranges; boundary='.$boundary);
-                        #Initiate variables
-                        $data = '';
-                        #Iterrate the parts
+                        #Calculate size starting with the mandatory end of the feed (delimiter)
+                        $partsSize = strlen("\r\n--".$boundary."\r\n");
                         foreach ($ranges as $range) {
-                            #Get to start of range
-                            fseek($stream, $ranges[0]['start'], SEEK_SET);
-                            #Read data
-                            $tempdata = fread($stream, ($ranges[0]['end'] - $ranges[0]['start'] + 1));
-                            if ($tempdata === false) {
-                                #Send 500, because soemthing clearly went wrong while reading the file on server
-                                header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
-                                exit;
-                            }
-                            #Add to actual data
-                            $data .= "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$ranges[0]['start'].'-'.$ranges[0]['end'].'/'.$filesize."\r\n\r\n".$tempdata;
+                            #Add content size
+                            $partsSize += $range['end'] - $range['start'] + 1;
+                            #Add size of supportive text
+                            $partsSize += strlen("\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n");
                         }
-                        $data .= "\r\n--".$boundary."\r\n";
-                        $partsSize = strlen($data);
+                        #Send expected size to client
                         header('Content-Length: '.$partsSize);
+                        #Iterrate the parts
+                        $result = false;
+                        foreach ($ranges as $range) {
+                            #Echo supportive text
+                            echo "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n";
+                            #Limit speed to range length, if current speed limit is too large, so that it will be provided fully
+                            if ($speedlimit > $range['end'] - $range['start'] + 1) {
+                                $speedlimit_multi = $range['end'] - $range['start'] + 1;
+                            } else {
+                                $speedlimit_multi = $speedlimit;
+                            }
+                            $speedlimit_multi = $this->speedLimit($speedlimit_multi);
+                            #Output data
+                            $result = $this->streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speedlimit_multi);
+                            if ($result === false) {
+                                #Send 500, because something clearly went wrong while reading the file on server
+                                @header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
+                                fclose($stream);
+                                fclose($output);
+                                if ($exit) {
+                                    exit;
+                                } else {
+                                    return false;
+                                }
+                            }
+                        }
+                        #Close the file
+                        fclose($stream);
+                        fclose($output);
+                        echo "\r\n--".$boundary."\r\n";
+                        return true;
                     }
                 } else {
                     header('Content-Type: '.$mime);
                     header('Content-Length: '.$filesize);
                     header($_SERVER['SERVER_PROTOCOL'].' 200 OK');
-                    #Open output stream
-                    $output = fopen('php://output', 'wb');
-                    #Disable buffering. This should help limiting the memory usage. At least, in some cases.
-                    stream_set_read_buffer($stream, 0);
-                    stream_set_write_buffer($output, 0);
-                    #Output data in small chunks (not HTTP 1.1 chunks, though, sicne HTTP 2.0 has dropped it and downloaders will most likely use Range header to download in several streams)
-                    $offset = 0;
-                    while ($offset < $filesize  && (connection_status() === CONNECTION_NORMAL)) {
-                        #Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
-                        stream_copy_to_stream($stream, $output, 1024 * $speedlimit, $offset);
-                        $offset += 1024 * $speedlimit;
-                        flush();
-                        ob_flush();
-                        sleep(1);
-                    }
+                    #Output data
+                    $result = $this->streamCopy($stream, $output, $filesize, 0, $speedlimit);
+                    #Close the file
                     fclose($stream);
-                    if ($offset < $filesize) {
-                        return true;
+                    fclose($output);
+                    if ($result === false) {
+                        #Send 500, because something clearly went wrong while reading the file on server
+                        @header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error');
+                        if ($exit) {
+                            exit;
+                        } else {
+                            return false;
+                        }
                     } else {
-                        return false;
+                        return true;
                     }
                 }
             } else {
@@ -875,6 +909,139 @@ class Download
             #Inform client, that wrong method is used
             header($_SERVER['SERVER_PROTOCOL'].' 405 Method Not Allowed');
             exit;
+        }
+    }
+    
+    #Function to output data in small chunks (not HTTP1.1 chunks) based on speed limitation
+    public function streamCopy(&$input, &$output, int $totalsize = 0, int $offset = 0, int $speed = 10485760)
+    {
+        #Ignore user abort to attempt identify when client has aborted
+        ignore_user_abort(true);
+        if (!is_resource($input) || !is_resource($output)) {
+            return false;
+        }
+        if ($totalsize <= 0) {
+            $totalsize = fstat($input)['size'];
+        }
+        #Set time limit equal to the size. If download speed is 1 byte per second - that's definitely low speed session, that we do not want to keep forever
+        set_time_limit($totalsize);
+        #Set counter for amount of data sent
+        $sent = 0;
+        while ($sent < $totalsize  && (connection_status() === CONNECTION_NORMAL)) {
+            #Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
+            $sentStat = stream_copy_to_stream($input, $output, $speed, $offset);
+            if ($sentStat !== false) {
+                $sent += $sentStat;
+            } else {
+                return false;
+            }
+            $offset += $speed;
+            #Ensure the buffer is cleaned
+            flush();
+            ob_flush();
+            #Sleep to limit data rate
+            sleep(1);
+        }
+        if (connection_status() === CONNECTION_NORMAL && $sent >= $totalsize) {
+            return $sent;
+        } else {
+            return false;
+        }
+    }
+    
+    #Function to determine speed limit based on maximum allowed memory usage
+    public function speedLimit(int $speed = 0, float $percentage = 0.9): int
+    {
+        #Sanitize percentage
+        if ($percentage <= 0 || $percentage > 1.0) {
+            $percentage = 0.9;
+        }
+        #Get memory limit
+        $memory = ini_get('memory_limit');
+        #Get suffix
+        $suffix = strtolower($memory[strlen($memory)-1]);
+        #Get int value
+        $memory = intval(substr($memory, 0, -1));
+        switch($suffix) {
+            case 'g':
+                $memory *= 1073741824;
+                break;
+            case 'm':
+                $memory *= 1048576;
+                break;
+            case 'k':
+                $memory *= 1024;
+                break;
+        }
+        #Exclude memory peak usage (assume, that it's either still being used or can be used in near future)
+        $memory = $memory - memory_get_peak_usage(true);
+        #When using stream there is still a certain memory overhead, so we take only percentage of the memory
+        #Percentage was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
+        $memory = intval(floor($memory * 0.9));
+        if ($speed <= 0 || $speed > $memory) {
+            $speed = $memory;
+        }
+        return $speed;
+    }
+    
+    #Function to validate HTTP header "Range" and return it as an array. If case of errors it will return array with one element (index 0) equallling false.
+    public function rangesValidate(int $size): array
+    {
+        if (isset($_SERVER['HTTP_RANGE'])) {
+            #Validate the value
+            if (preg_match('/^bytes=\d*-\d*(\s*,\s*\d*-\d*)*$/i', $_SERVER['HTTP_RANGE']) !== 1) {
+                header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
+                return [0 => false];
+            } else {
+                #Remove bytes=
+                $ranges = preg_replace('/bytes=/i', '', $_SERVER['HTTP_RANGE']);
+                #Split ranges
+                $ranges = explode(',', $ranges);
+                #Sanitize
+                foreach ($ranges as $key=>$range) {
+                    if (preg_match('/^-\d{1,}$/', $range) === 1) {
+                        $ranges[$key] = ['start' => 0, 'end' => intval(ltrim($range, '-'))];
+                    } elseif (preg_match('/^\d{1,}-$/', $range) === 1) {
+                        $ranges[$key] = ['start' => intval(rtrim($range, '-')), 'end' => ($size - 1)];
+                    } elseif (preg_match('/^\d{1,}-\d{1,}$/', $range) === 1) {
+                        $temprange = explode('-', $range);
+                        $ranges[$key] = ['start' => intval($temprange[0]), 'end' => intval($temprange[1])];
+                    } else {
+                        #If we get here, something went incredibly wrong, so better exit
+                        return [0 => false];
+                    }
+                    #Check range is of proper value
+                    if ($ranges[$key]['start'] >= $ranges[$key]['end'] || $ranges[$key]['start'] >= $size || $ranges[$key]['end'] > $size || ($ranges[0]['end'] - $ranges[0]['start'] + 1) > $size) {
+                        return [0 => false];
+                    }
+                }
+                #Checking for overlaps, since as per https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html we expect non-overlapping ranges
+                if (count($ranges) > 1) {
+                    foreach ($ranges as $keyPrime=>$rangePrime) {
+                        foreach ($ranges as $keySec=>$rangeSec) {
+                            #Only compare pairs after current one
+                            if ($keySec > $keyPrime) {
+                                #If overlap in any way - exit
+                                if (
+                                    ($rangePrime['start'] === $rangeSec['start'] && $rangePrime['end'] === $rangeSec['end']) ||
+                                    ($rangeSec['end'] >= $rangePrime['start'] && $rangeSec['end'] < $rangePrime['end']) ||
+                                    ($rangeSec['start'] > $rangePrime['start'] && $rangeSec['start'] <= $rangePrime['end'])
+                                ) {
+                                    return [0 => false];
+                                }
+                            }
+                        }
+                    }
+                }
+                #If something went wrong and we got an empty range here - return as false
+                if (empty($ranges)) {
+                    return [0 => false];
+                } else {
+                    return $ranges;
+                }
+            }
+        } else {
+            return [];
         }
     }
 }
