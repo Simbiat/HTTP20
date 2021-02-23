@@ -17,7 +17,7 @@
         "php": "^7.4"
     },
     "suggest": {
-        "simbiat/filename-sanitizer": "Small class to replace common characters that are restiricted in filenames.",
+        "simbiat/filename-sanitizer": "Small class to replace common characters that are restiricted in filenames."
     },
     "replace": {
     	"simbiat/prettyurl": "^1.2.0+20210129"
