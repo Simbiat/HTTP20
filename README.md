@@ -12,6 +12,7 @@ I hope that at some point in future `Headers` part will become quite popular. Wh
     + [upload](#upload)
     + [streamCopy](#streamcopy)
     + [speedLimit](#speedlimit)
+    + [phpMemoryToInt](#phpmemorytoint)
     + [rangesValidate](#rangesvalidate)
   * [Headers](#headers)
     + [cacheControl](#cachecontrol)
@@ -21,6 +22,7 @@ I hope that at some point in future `Headers` part will become quite popular. Wh
     + [security](#security)
     + [features](#features)
     + [secFetch](#secFetch)
+    + [clientReturn](#clientreturn)
   * [Common](#common)
     + [valueToTime](#valuetotime)
     + [atomIDGen](#atomidgen)
@@ -30,6 +32,7 @@ I hope that at some point in future `Headers` part will become quite popular. Wh
     + [LangCodeCheck](#langcodecheck)
     + [htmlToRFC3986](#htmltorfc3986)
     + [reductor](#reductor)
+    + [forceClose](#forceclose)
 
 ## Atom
 ```php
@@ -212,7 +215,9 @@ Function to download files (or more precisely, feed them to client). Unlike othe
 
 `$speedlimit` - the maximum of bytes you want to send per second. Default is 10MBs. Note, that if it's too large it will be overriden by internal logic (`speedLimit()`).
 
-`$exit` - if set to `false` will not automatically exit once file/range or "bad" header is sent to client. It then will return a `false` or `true` value, that you can utilize somehow.
+`$exit` - if set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a `false` or `true` value, that you can utilize somehow.
+
+While this function can return the number of bytes, that may be useful for some statistics, I'd recommend not using it as confirmation of successful file download, because it is not possible to reliably track client success on server without some scripting on client side.
 
 ### streamCopy
 ```php
@@ -224,7 +229,7 @@ Function to copy data in small chunks (not HTTP1.1 chunks) with speed limitation
 
 `$totalsize` - bytes to copy.
 
-`$offset` - where to strt copying from.
+`$offset` - where to start copying from.
 
 `$speed` - the maximum of bytes you want to copy per second. Default is 10MBs. Note, that if it's too large it will be overriden by internal logic (`speedLimit()`).
 
@@ -237,6 +242,12 @@ Function calculates maximum number of bytes that can be allocated for streaming 
 `$speed` - the desired "speed limit". If it's less than calculated value, it will be returned.
 
 `$percentage` - percent of available memory, that we can use. For example, if we have 256M as memory limit and 200M available, 0.9 will allow us to use 180M. Default was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
+
+### phpMemoryToInt
+```php
+phpMemoryToInt(string $memory);
+```
+Converts PHP's memory strings (like 256M) used in some settings to integer value (bytes).
 
 ### rangesValidate
 ```php
@@ -375,6 +386,12 @@ Allows validation of Sec-Fetch-* headers from client against the provided list o
 
 **Be mindful**: unlike `security`, which, essentially, attempts to be as secure as possible by default, this may be too lax for some use-cases. It is recommended, that you you call it with different parameters depending on what is calling what on your server. For example, you may want to restrict certain code getting called with `Sec-Fetch-Destination: image`, especially, if it's a `POST` request, let alone `DELETE`. Thus the best way to use this is in some `switch` or `if-elseif-else` scenario, rather than universally.
 
+### clientReturn
+```php
+clientReturn(string $code = '500', bool $exit = true);
+```
+Returns a selected HTTP status code (defaults to 500) with option to forcibly close HTTP connection (`$exit = true`). This is mostly useful for returnring error codes, especially, when you want to close the connection, even if the client is still sending something, thus the default values are `500` and `true`.
+
 ## Common
 Assortment of functions, that are used by classes inside the library, but can also be used directly. They are all called as
 ```php
@@ -444,3 +461,9 @@ Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
 `$tofile` allows to output the data to a file, instead of to browser. Useful if you do not want to do this dynamically, but would rather prepare the files beforehand.
 
 `$cacheStrat` is an optional caching strategy to apply (as described for `cacheControl`)
+
+### forceClose
+```php
+forceClose();
+```
+Function to force close HTTP connection. Sounds simple, but it may actually become a problem, if the client is actively sending data to you. Trick is simple, too (just flush the buffer), but using this function will help you not bother thinking about it.

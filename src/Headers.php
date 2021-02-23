@@ -100,6 +100,14 @@ class Headers
     public const fetchDest = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
     #List of Set-Fetch-Destinations that are considered "script-like", that is they are, most likely, triggered by a script (<script> or similar object)
     public const scriptLike = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
+    #List of standard HTTP status codes
+    public const HTTPCodes = [
+        '100' => 'Continue', '101' => 'Switching Protocols', '102' => 'Processing', '103' => 'Early Hints',
+        '200' => 'OK', '201' => 'Created', '202' => 'Accepted', '203' => 'Non-Authoritative Information', '204' => 'No Content', '205' => 'Reset Content', '206' => 'Partial Content', '207' => 'Multi-Status', '208' => 'Already Reported', '226' => 'IM Used',
+        '300' => 'Multiple Choices', '301' => 'Moved Permanently', '302' => 'Found', '303' => 'See Other', '304' => 'Not Modified', '305' => 'Use Proxy', '306' => 'Switch Proxy', '307' => 'Temporary Redirect', '308' => 'Permanent Redirect',
+        '400' => 'Bad Request', '401' => 'Unauthorized', '402' => 'Payment Required', '403' => 'Forbidden', '404' => 'Not Found', '405' => 'Method Not Allowed', '406' => 'Not Acceptable', '407' => 'Proxy Authentication Required', '408' => 'Request Timeout', '409' => 'Conflict', '410' => 'Gone', '411' => 'Length Required', '412' => 'Precondition Failed', '413' => 'Payload Too Large', '414' => 'URI Too Long', '415' => 'Unsupported Media Type', '416' => 'Range Not Satisfiable', '417' => 'Expectation Failed', '418' => 'I\'m a teapot', '421' => 'Misdirected Request', '422' => 'Unprocessable Entity', '423' => 'Locked', '424' => 'Failed Dependency', '425' => 'Too Early', '426' => 'Upgrade Required', '428' => 'Precondition Required', '429' => 'Too Many Requests', '431' => 'Request Header Fields Too Large', '451' => 'Unavailable For Legal Reasons',
+        '500' => 'Internal Server Error', '501' => 'Not Implemented', '502' => 'Bad Gateway', '503' => 'Service Unavailable', '504' => 'Gateway Timeout', '505' => 'HTTP Version Not Supported', '506' => 'Variant Also Negotiates', '507' => 'Insufficient Storage', '508' => 'Loop Detected', '510' => 'Not Extended', '511' => 'Network Authentication Required', 
+    ];
     
     #Function sends headers, related to security
     public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false)
@@ -120,8 +128,7 @@ class Headers
         header('Access-Control-Allow-Methods: '.implode(', ', $allowMethods));
         #Handle wrong type of method from client
         if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allowMethods)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allowMethods))) {
-            header($_SERVER['SERVER_PROTOCOL'].' 405 Method Not Allowed');
-            exit;
+            $this->clientReturn('405', true);
         }
         #Sanitize Origins list
         foreach ($allowOrigins as $key=>$origin) {
@@ -139,8 +146,7 @@ class Headers
                 header('Timing-Allow-Origin: '.$allowOrigins);
             } else {
                 #Send proper header denying access and stop processing
-                header($_SERVER['SERVER_PROTOCOL'].' 403 Forbidden');
-                exit;
+                $this->clientReturn('403', true);
             }
         } else {
             #Vary is requried by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
@@ -396,8 +402,7 @@ class Headers
         }
         if ($badRequest) {
             #Send proper header denying access and stop processing
-            header($_SERVER['SERVER_PROTOCOL'].' 403 Forbidden');
-            exit;
+            $this->clientReturn('403', true);
         }
         return $this;
     }
@@ -466,10 +471,7 @@ class Headers
            $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
            if ($IfModifiedSince >= $modtime) {
                 #If content has not beend modified - return 304
-                header($_SERVER['SERVER_PROTOCOL'].' 304 Not Modified');
-                if ($exit === true) {
-                    exit;
-                }
+                $this->clientReturn('304', $exit);
             }
         }
         return $this;
@@ -524,22 +526,48 @@ class Headers
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not beend modified - return 304
-                header($_SERVER['SERVER_PROTOCOL'].' 304 Not Modified');
-                if ($exit === true) {
-                    exit;
-                }
+                $this->clientReturn('304', $exit);
             }
         }
         #Return error if If-Match was sent and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
-                header($_SERVER['SERVER_PROTOCOL'].' 412 Precondition Failed');
-                if ($exit === true) {
-                    exit;
-                }
+                $this->clientReturn('412', $exit);
             }
         }
         return $this;
+    }
+    
+    #Function to return to client and optionally force-close connection
+    public function clientReturn(string $code = '500', bool $exit = true): bool
+    {
+        #Generate response
+        if (is_numeric($code)) {
+            if (isset(self::HTTPCodes[$code])) {
+                $response = $code.' '.self::HTTPCodes[$code];
+            } else {
+                #Non standard code without text, not compliant with the standard
+                $response = '500 Internal Server Error';
+            }
+        } else {
+            $response = $code;
+        }
+        #If response doe snot comply with HTTP standard - replace it with 500
+        if (preg_match('/^([12345]\d{2})( .{1,})$/', $response) !== 1) {
+            $response = '500 Internal Server Error';
+        }
+        if (preg_match('/^([123]\d{2})( .{1,})$/', $response) !== 1) {
+            $positive = true;
+        } else {
+            $positive = false;
+        }
+        #Send response header
+        @header($_SERVER['SERVER_PROTOCOL'].' '.$response);
+        if ($exit) {
+            (new \http20\Common)->forceClose();
+        } else {
+            return $positive;
+        }
     }
 }
 

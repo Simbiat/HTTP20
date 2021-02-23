@@ -288,5 +288,17 @@ class Common
             file_put_contents($tofile, $content);
         }
     }
+    
+    #Function to force close HTTP connection
+    public function forceClose()
+    {
+        #Send header to notify, that connection was closed
+        @header('Connection: close');
+        #Clean output buffer and close it
+        ob_end_clean();
+        #Clean system buffer
+        flush();
+        exit;
+    }
 }
 ?>
