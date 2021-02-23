@@ -1096,8 +1096,15 @@ class Sharing
                                     $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                                 } else {
                                     #Get extension (if any)
-                                    $ext = strval(pathinfo($_FILES[$field][$key]['name'])['extension']);
-                                    if (!empty($ext)) {
+                                    $ext = array_search($_FILES[$field][$key]['type'], self::extToMime);
+                                    if ($ext === false) {
+                                        $ext = strval(pathinfo($_FILES[$field][$key]['name'])['extension']);
+                                        if (!empty($ext)) {
+                                            $ext = '.'.$ext;
+                                        } else {
+                                            $ext = '';
+                                        }
+                                    } else {
                                         $ext = '.'.$ext;
                                     }
                                     #Generate name from hash and extension from original file
@@ -1155,7 +1162,7 @@ class Sharing
                             $uploadedFiles[] = ['server_name' => $file['new_name'], 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
                         } else {
                             if ($intollerant) {
-                                return false;
+                                return $uploadedFiles;
                             }
                         }
                     }
@@ -1175,6 +1182,12 @@ class Sharing
             #Check that destination is a string
             if (!is_string($destPath)) {
                 return (new \http20\Headers)->clientReturn('500', $exit);
+            }
+            if (!empty($allowedMime) && isset($_SERVER['CONTENT_TYPE'])) {
+                #Get MIME from file (not relying on what was sent by client)
+                if (!in_array($_SERVER['CONTENT_TYPE'], $allowedMime)) {
+                    return (new \http20\Headers)->clientReturn('415', $exit);
+                }
             }
             #Attempt to get name from header
             $name = '';
@@ -1285,6 +1298,14 @@ class Sharing
                 }
                 if (extension_loaded('fileinfo')) {
                     $filetype = mime_content_type(sys_get_temp_dir().'/'.$name);
+                }
+                #Check against allowed MIME types if any was set and fileinfo is loaded
+                if (!empty($allowedMime)) {
+                    #Get MIME from file (not relying on what was sent by client)
+                    if (!in_array($filetype, $allowedMime)) {
+                        @unlink(sys_get_temp_dir().'/'.$name);
+                        return (new \http20\Headers)->clientReturn('415', $exit);
+                    }
                 }
                 #Get extension of the file
                 $ext = array_search($filetype, self::extToMime);

@@ -202,7 +202,7 @@ Function that can be used in processes related to file sharing.
 download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true);
 ```
 Function to download files (or more precisely, feed them to client). Unlike other functions, that can be found, this one can:
-- Send proper headers both in positive and negative sitautions
+- Send proper headers both in positive and negative situations
 - Determine MIME type of the file based on extension, yet allow overriding both file name and MIME
 - Allow feeding file "inline" instead of as attachment
 - Limit speed, but in a way, that will limit the chances of exceeding allocated memory on server in a smart way
@@ -218,6 +218,66 @@ Function to download files (or more precisely, feed them to client). Unlike othe
 `$exit` - if set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a `false` or `true` value, that you can utilize somehow.
 
 While this function can return the number of bytes, that may be useful for some statistics, I'd recommend not using it as confirmation of successful file download, because it is not possible to reliably track client success on server without some scripting on client side.
+
+### upload
+```php
+upload($destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intollerant = true, bool $exit = true);
+```
+Function to handle uploads. It's not fancy as https://tus.io/, but if you need hadnling some simple file uploads, this still can provide you useful features:
+- Send proper headers both in positive and negative situations
+- Support both POST and PUT methods
+- Sanitize filenames if you have https://github.com/Simbiat/filename-sanitizer (PUT supports names from `Content-disposition` header)
+- Do not actually save the files with those names: hash them instead
+- Sanitized names are not discarded: they are returned as one of the values of the array, after the upload
+- MIME type of the files is determined after upload is completed
+- For POST method you can use multiple forms and they can even be uploading multiple files
+- PUT method somewhat supports resumable uploads
+
+`$destPath` is the only setting, that is mandatory and it can be a `string` or a named `array`, where each element of the array is equal to the name of the field (`<input type="file"></input>`) in your web-form (as element key) and the path to save files from that field to. Both `string` value and each value of the `array` are expected to be existing and writable directories (no auto-creation, since this may be abused). Example of the array is below:
+```php
+[
+   'avatar' => './upload/avatar',
+   'background' => './upload/background',
+]
+```
+`$preserveNames` (only for POST) is set to false by default to replace names of the files with their hash + extension, based on actual MIME type (if we were able to grab it). This is done to avoid potential exploits, that may arise depending on how you use the fiels afterwards.
+
+`$overwrite` (only for POST) allows to overwrite files, if set to `true`. Otherwise - they will be ignored (but still will be returned in the resulting array).
+
+`$allowedMime` - optional array of MIME types, that you accept for upload.
+
+`$intollerant` (only for POST) changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array).
+
+`$exit` - if set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a value, that you can utilize somehow.
+
+In case a file has been uploaded, you will get an array like below. It is useful, if you are going to store the data in database: add any additional data, generate a query - write it to database. Be sure to set `$exit` to `false` though.
+```php
+[
+  0 => 
+  [
+    #Name of the file, that it recieved on server
+    'server_name' => 'bb345ba5253d677fe6bac0d553040ca62faa02347d316f30bc436009543c5d92.jpg',
+    #Name of the file as provided by client. For PUT it will be empty, unless provided in Content-Dsiposition header
+    'user_name' => 'WodFws_Awfc.jpg',
+    #Size of the file. For POST - as seen on server. For PUT - as provided in Content-Length header
+    'size' => 945001,
+    #File MIME type
+    'type' => 'image/jpeg',
+    #sha3-256 hash of the file
+    'hash' => 'bb345ba5253d677fe6bac0d553040ca62faa02347d316f30bc436009543c5d92',
+    #Name of the field to which file was uploaded. For PUT will always be 'PUT'
+    'field' => 'userfile',
+  ],
+]
+```
+If you're going to use PUT, there are some peculiarities, that you need to be aware of:
+- You need to send `Content-Length` header: it's used to determine proper end of input stream
+- Upload will be considered `resumable` if there is a header `Content-Disposition` with `filename` or `filename*` parameter
+- `resumable` upload will utilize filename from the header to be saved, but it will not be preserved, when upload it successful
+- To avoid potential collisions during multiple PUT uploads it will be up to you to send unique names
+- Already saved portion of the `resumable` file will still be uploaded, but to a temp stream, that will be discarded before the stream will be continued into a previously saved file
+- MIME type is checked twice: firstly using `Content-Type` header, if it's present, secondly after the upload is finished
+- If MIME type check against allowed types fails after the upload file will be removed
 
 ### streamCopy
 ```php
