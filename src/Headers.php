@@ -4,23 +4,8 @@ namespace http20;
 
 class Headers
 {    
-    #separate function for authentication headers?
-    
-    #Link headers:
-    #if Save-Data is On do not do HTTP2.0 Push
-    #ensure to send Vary: Save-Data as well
-    
-    #consider https://github.com/bspot/phpsourcemaps for https://www.html5rocks.com/en/tutorials/developertools/sourcemaps/ https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/SourceMap
-    
-    #consider fucntion for server-timing:
-    #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
-    #Probably needs to be a separate class and also be called from zEcho
-    #https://www.smashingmagazine.com/2018/10/performance-server-timing/
-    
     #Regex to validate Origins (essentially, an URI in https://examplecom:443 format)
     public const originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
-    #Regex for MIME type
-    public const mimeRegex = '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
     #Safe HTTP methods which can, generally, be allowed for processing
     public const safeMethods = ['GET', 'HEAD', 'POST'];
     #Full list of HTTP methods
@@ -221,7 +206,7 @@ class Headers
                         break;
                     case 'plugin-types':
                         #Validate the value we have
-                        if (preg_match('/^(('.self::mimeRegex.') ?){1,}$/i', $value) === 1) {
+                        if (preg_match('/^(('.(new \http20\Common)::mimeRegex.') ?){1,}$/i', $value) === 1) {
                             $defaultDirectives['plugin-types'] = $value;
                         } else {
                             #Ignore the value entirely
@@ -374,11 +359,13 @@ class Headers
                                 $contenttype = $_SERVER['CONTENT_TYPE'];
                             }
                         }
+                        #Cache mimeRegex
+                        $mimeRegex = (new \http20\Common)::mimeRegex;
                         #Check if we have already sent our own content-type header
                         foreach (headers_list() as $header) {
                             if (preg_match('/^Content-type:/', $header) === 1) {
                                 #Get MIME
-                                $contenttype = preg_replace('/^(Content-type:\s*)('.self::mimeRegex.')$/', '$2', $header);
+                                $contenttype = preg_replace('/^(Content-type:\s*)('.$mimeRegex.')$/', '$2', $header);
                                 break;
                             }
                         }
@@ -567,6 +554,230 @@ class Headers
             (new \http20\Common)->forceClose();
         } else {
             return $positive;
+        }
+    }
+    
+    #Link headers (Header, <tag>, HAL (REST), Siren?):
+    
+    #Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
+    public function links(array $links = [], string $type = 'header', bool $strictRel = true)
+    {
+        #Validate type
+        if (!in_array($type, ['header', 'head', 'body'])) {
+            throw new \UnexpectedValueException('Unsupported type was provided to `links` function');
+        }
+        #Check if Save-Data is on
+        if (isset($_SERVER['HTTP_SAVE_DATA']) && preg_match('/^on$/i', $_SERVER['HTTP_SAVE_DATA']) === 1) {
+            $savedata = true;
+        } else {
+            $savedata = false;
+        }
+        #Cache (new \http20\Common)
+        $common = (new \http20\Common);
+        #Cache langTagRegex
+        $langTagRegex = $common::langTagRegex;
+        #Cache langEncRegex
+        $langEncRegex = $common::langEncRegex;
+        #Cache extToMime
+        $extToMime = $common::extToMime;
+        #Cache mimeRegex
+        $mimeRegex = $common::mimeRegex;
+        #Destroy $common since we do not need it anymore
+        unset($common);
+        #Prepare an empty string
+        $linksToSend = [];
+        foreach ($links as $key=>$link) {
+            #Sanitize links based on https://html.spec.whatwg.org/multipage/semantics.html#the-link-element
+            if (
+                #Either href or imagesrcset or both need to be present. imagesrcset does not make sense in HTTP header
+                ((!isset($link['href'])) && !isset($link['imagesrcset']) || ($type === 'header' && !isset($link['href']))) ||
+                #Either rel or itemprop can be set at a time. itemprop does not make sense in HTTP header
+                ((!isset($link['rel']) && !isset($link['itemprop'])) || (isset($link['rel']) && isset($link['itemprop'])) || ($type === 'header' && !isset($link['rel']))) ||
+                #Validate rel values
+                (isset($link['rel']) &&
+                    #If strictRel is true, only support types from https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats (types, that NEED to be supported by clients)
+                    ($strictRel === true && (
+                        #Check that rel is valid
+                        (preg_match('/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation)( |$))*/i', $link['rel']) !== 1) ||
+                        #If crossorigin or referrerpolicy is set, check that rel type is an external resource
+                        ((isset($link['crossorigin']) || isset($link['referrerpolicy'])) && preg_match('/^(alternate )?((dns-prefetch|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet)( |$))*/i', $link['rel']) !== 1)
+                    )) ||
+                    #Is Save-Data is set to 'on', disable (that is skip link) HTTP2 push logic (that is preloads and prefetches)
+                    ($savedata === true && preg_match('/^(alternate )?.*(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender).*$/i', $link['rel']) === 1) ||
+                    #If we are using "body", check that rel is body-ok one
+                    ($type === 'body' && preg_match('/^(alternate )?.*(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet).*$/i', $link['rel']) !== 1) ||
+                    #If integrity is set, check that rel type is of proper type
+                    (isset($link['integrity']) && preg_match('/^(alternate )?.*(modulepreload|preload|stylesheet).*$/i', $link['rel']) !== 1) ||
+                    #imagesrcset and imagesizes are allowed only for preload with as=image
+                    ((isset($link['imagesrcset']) || isset($link['imagesizes'])) && (preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) !== 1 || !isset($link['as']) || $link['as'] !== 'image')) ||
+                    #sizes attribute should be set only if rel is icon of apple-touch-icon
+                    (isset($link['sizes']) && preg_match('/^(alternate )?.*(icon|apple-touch-icon|apple-touch-icon-precomposed).*$/i', $link['rel']) !== 1) ||
+                    #as is allowed only for preload
+                    (isset($link['as']) && preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) !== 1) ||
+                    #color is allowed only for mask-icon
+                    (isset($link['color']) && preg_match('/^(alternate )?.*mask-icon.*$/i', $link['rel']) !== 1)
+                ) ||
+                #imagesrcset is an image candidate with width descriptor, we need imagesizes as well
+                (isset($link['imagesrcset']) && preg_match('/ \d{1,}w(,|$)/', $link['imagesrcset']) === 1 && !isset($link['imagesizes'])) ||
+                #as is allowed to have limited set of values (as per https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content). Also check that crossorigin is set, if as=fetch
+                (isset($link['as']) && (preg_match('/^(document|object|embed|audio|font|image|script|worker|style|track|video|fetch)$/i', $link['as']) !== 1 || (preg_match('/^fetch$/i', $link['as']) === 1 && !isset($link['crossorigin']))))
+            ) {
+                #Skip the element, since it does not confirm with the standard
+                continue;
+            }
+            #referrerpolicy is allowed to have limited set of values
+            if (isset($link['referrerpolicy']) && preg_match('/^no-referrer|no-referrer-when-downgrade|strict-origin|strict-origin-when-cross-origin|same-origin|origin|origin-when-cross-origin|unsafe-url)$/i', $link['(referrerpolicy']) !== 1) {
+                unset($link['referrerpolicy']);
+            }
+            #Remove hreflang, if it's a wrong language value
+            if (isset($link['hreflang']) && preg_match($langTagRegex, $link['hreflang']) !== 1) {
+                unset($link['hreflang']);
+            }
+            #Remove sizez if wrong format
+            if (isset($link['sizes']) && preg_match('/((any|[1-9]\d{1,}[xX][1-9]\d{1,})( |$)){1,}$/i', $link['sizes']) !== 1) {
+                unset($link['sizes']);
+            }
+            #Sanitize crossorigin, if set
+            if (isset($link['crossorigin']) && (empty($link['crossorigin']) || !in_array($link['crossorigin'], ['anonymous', 'use-credentials']))) {
+                $link['crossorigin'] = 'anonymous';
+            }
+            #Sanitize title if set
+            if (isset($link['title'])) {
+                $link['title'] = htmlspecialchars($link['title']);
+            } else {
+                $link['title'] = htmlspecialchars(basename($link['href']));
+            }
+            #Validate title*, which is valid only for HTTP header
+            if (isset($link['title*']) && ($type !== 'header' || preg_match('/'.$langEncRegex.'.*/i', $link['title*']) !== 1)) {
+                unset($link['title*']);
+            }
+            #If integrity is set, validate if it's a valid value
+            if (isset($link['integrity'])) {
+                if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) !== 1) {
+                    #If not valid, check if it's a file and generate hash
+                    if (is_file($link['integrity'])) {
+                        #Attempt to get actual MIME type while we're at it
+                        if (extension_loaded('fileinfo')) {
+                            $link['type'] = mime_content_type(realpath($link['integrity']));
+                        }
+                        #Get size of the image, if the file is an image
+                        if (isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1 && parse_url($link['integrity'], PHP_URL_HOST) === NULL) {
+                            #Set to 'any' if it's SVG
+                            if (preg_match('/^image\/svg+xml$/i', $link['type']) === 1) {
+                                $size = 'any';
+                            } else {
+                                $size = getimagesize(realpath($link['integrity']));
+                                if ($size !== false) {
+                                    $size = $size[0].'x'.$size[1];
+                                    #Unset it if it's empty
+                                    if ($size === '0x0') {
+                                        $size = '';
+                                    }
+                                } else {
+                                    $size = '';
+                                }
+                            }
+                            #Set tags if we were able to get size
+                            if (!empty($size)) {
+                                if (isset($link['rel']) && preg_match('/^(alternate )?.*(icon|apple-touch-icon|apple-touch-icon-precomposed).*$/i', $link['rel']) === 1) {
+                                    $link['sizes'] = $size;
+                                } else {
+                                    if (preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) === 1) {
+                                        $link['imagesizes'] = $size;
+                                        #Sanitize 'as' attribute
+                                        if (isset($link['as']) && $link['as'] !== 'image') {
+                                            #Assume error or malicoious intent and skip
+                                            continue;
+                                        } else {
+                                            #Set 'as' attribute is rel is preload
+                                            if (isset($link['rel']) && preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
+                                                $link['as'] = 'image';
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        #Get hash if we have a script or style
+                        if (isset($link['type']) && preg_match('/^(application\/javascript|text\/css)$/i', $link['type']) === 1 && parse_url($link['integrity'], PHP_URL_HOST) === NULL) {
+                            $link['integrity'] = 'sha512-'.base64_encode(hash_file('sha512', realpath($link['integrity'])));
+                        } else {
+                            unset($link['integrity']);
+                        }
+                    } else {
+                        unset($link['integrity']);
+                    }
+                }
+            }
+            #Empty MIME type if it does ont confirm with the standard
+            if (isset($link['type']) && preg_match('/'.$mimeRegex.'/', $link['type']) !== 1) {
+                $link['type'] = '';
+            }
+            #Set or update media type based on link. Or, at least, try to
+            if (empty($link['type']) && isset($link['href'])) {
+                $ext = pathinfo($link['href'], PATHINFO_EXTENSION);
+                if (isset($extToMime[$ext])) {
+                    $link['type'] = $extToMime[$ext];
+                } else {
+                    $link['type'] = '';
+                }
+            }
+            #If type is defined, check it corresponds to 'as'. If not - do not process, assume error or malicious intent
+            if (!empty($link['type']) && isset($link['as']) && preg_match('/^'.$link['as'].'\/.*$/i', $link['type']) !== 1) {
+                continue;
+            }
+            
+            #Validte media query if set
+            #https://drafts.csswg.org/mediaqueries/#mq-syntax
+            
+            #Generate element as string
+            if ($type === 'header') {
+                $linksToSend[] = '<'.$link['href'].'>'.
+                    (empty($link['title']) ? '' : '; title="'.$link['title'].'"').
+                    (empty($link['title*']) ? '' : '; title*="'.$link['title*'].'"').
+                    (empty($link['rel']) ? '' : '; rel="'.$link['rel'].'"').
+                    (empty($link['hreflang']) ? '' : '; hreflang="'.$link['hreflang'].'"').
+                    (empty($link['type']) ? '' : '; type="'.$link['type'].'"').
+                    (empty($link['as']) ? '' : '; as="'.$link['as'].'"').
+                    (empty($link['sizes']) ? '' : '; sizes="'.$link['sizes'].'"').
+                    (empty($link['imagesizes']) ? '' : '; imagesizes="'.$link['imagesizes'].'"').
+                    (empty($link['media']) ? '' : '; media="'.$link['media'].'"').
+                    (empty($link['integrity']) ? '' : '; integrity="'.$link['integrity'].'"').
+                    (empty($link['crossorigin']) ? '' : '; crossorigin="'.$link['crossorigin'].'"').
+                    (empty($link['referrerpolicy']) ? '' : '; referrerpolicy="'.$link['referrerpolicy'].'"')
+                ;
+            } else {
+                $linksToSend[] = '<link'.
+                    (empty($link['href']) ? '' : ' href="'.$link['href'].'"').
+                    (empty($link['imagesrcset']) ? '' : ' imagesrcset="'.$link['imagesrcset'].'"').
+                    (empty($link['title']) ? '' : ' title="'.$link['title'].'"').
+                    (empty($link['rel']) ? '' : ' rel="'.$link['rel'].'"').
+                    (empty($link['itemprop']) ? '' : ' itemprop="'.$link['itemprop'].'"').
+                    (empty($link['hreflang']) ? '' : ' hreflang="'.$link['hreflang'].'"').
+                    (empty($link['type']) ? '' : ' type="'.$link['type'].'"').
+                    (empty($link['as']) ? '' : ' as="'.$link['as'].'"').
+                    (empty($link['color']) ? '' : ' color="'.$link['color'].'"').
+                    (empty($link['sizes']) ? '' : ' sizes="'.$link['sizes'].'"').
+                    (empty($link['imagesizes']) ? '' : ' imagesizes="'.$link['imagesizes'].'"').
+                    (empty($link['media']) ? '' : ' media="'.$link['media'].'"').
+                    (empty($link['integrity']) ? '' : ' integrity="'.$link['integrity'].'"').
+                    (empty($link['crossorigin']) ? '' : ' crossorigin="'.$link['crossorigin'].'"').
+                    (empty($link['referrerpolicy']) ? '' : ' referrerpolicy="'.$link['referrerpolicy'].'"').
+                '>';
+            }
+        }
+        if (empty($linksToSend)) {
+            if ($type === 'header') {
+                return $this;
+            } else {
+                return '';
+            }
+        } else {
+            if ($type === 'header') {
+                header('Link: '.implode(', ', $linksToSend));
+            } else {
+                return implode("\r\n", $linksToSend);
+            }
         }
     }
 }
