@@ -513,13 +513,13 @@ class Headers
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not beend modified - return 304
-                $this->clientReturn('304', $exit);
+                $this->clientReturn('304', true);
             }
         }
         #Return error if If-Match was sent and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
-                $this->clientReturn('412', $exit);
+                $this->clientReturn('412', true);
             }
         }
         return $this;
@@ -557,8 +557,6 @@ class Headers
         }
     }
     
-    #Link headers (Header, <tag>, HAL (REST), Siren?):
-    
     #Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
     public function links(array $links = [], string $type = 'header', bool $strictRel = true)
     {
@@ -587,6 +585,16 @@ class Headers
         #Prepare an empty string
         $linksToSend = [];
         foreach ($links as $key=>$link) {
+            #Is Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches)
+            if ($savedata === true && isset($link['rel'])) {
+                $link['rel'] = preg_replace('/(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender)/i', '', $link['rel']);
+                #Replace multiple whitespaces with single space and trim
+                $link['rel'] = trim(preg_replace('/\s{2,}/', ' ', $link['rel']));
+                #Unset rel if it's empty
+                if (empty($link['rel'])) {
+                    unset($link['rel']);
+                }
+            }
             #Sanitize links based on https://html.spec.whatwg.org/multipage/semantics.html#the-link-element
             if (
                 #Either href or imagesrcset or both need to be present. imagesrcset does not make sense in HTTP header
@@ -602,12 +610,8 @@ class Headers
                         #If crossorigin or referrerpolicy is set, check that rel type is an external resource
                         ((isset($link['crossorigin']) || isset($link['referrerpolicy'])) && preg_match('/^(alternate )?((dns-prefetch|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet)( |$))*/i', $link['rel']) !== 1)
                     )) ||
-                    #Is Save-Data is set to 'on', disable (that is skip link) HTTP2 push logic (that is preloads and prefetches)
-                    ($savedata === true && preg_match('/^(alternate )?.*(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender).*$/i', $link['rel']) === 1) ||
                     #If we are using "body", check that rel is body-ok one
                     ($type === 'body' && preg_match('/^(alternate )?.*(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet).*$/i', $link['rel']) !== 1) ||
-                    #If integrity is set, check that rel type is of proper type
-                    (isset($link['integrity']) && preg_match('/^(alternate )?.*(modulepreload|preload|stylesheet).*$/i', $link['rel']) !== 1) ||
                     #imagesrcset and imagesizes are allowed only for preload with as=image
                     ((isset($link['imagesrcset']) || isset($link['imagesizes'])) && (preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) !== 1 || !isset($link['as']) || $link['as'] !== 'image')) ||
                     #sizes attribute should be set only if rel is icon of apple-touch-icon
@@ -657,11 +661,11 @@ class Headers
                     #If not valid, check if it's a file and generate hash
                     if (is_file($link['integrity'])) {
                         #Attempt to get actual MIME type while we're at it
-                        if (extension_loaded('fileinfo')) {
+                        if (!isset($link['type']) && extension_loaded('fileinfo')) {
                             $link['type'] = mime_content_type(realpath($link['integrity']));
                         }
                         #Get size of the image, if the file is an image
-                        if (isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1 && parse_url($link['integrity'], PHP_URL_HOST) === NULL) {
+                        if (!isset($link['sizes']) && isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1 && parse_url($link['integrity'], PHP_URL_HOST) === NULL) {
                             #Set to 'any' if it's SVG
                             if (preg_match('/^image\/svg+xml$/i', $link['type']) === 1) {
                                 $size = 'any';
@@ -709,6 +713,10 @@ class Headers
                     }
                 }
             }
+            #If integrity is set, check that rel type is of proper type, otherwise remove it
+            if (isset($link['integrity']) && isset($link['rel']) && preg_match('/^(alternate )?.*(modulepreload|preload|stylesheet).*$/i', $link['rel']) !== 1) {
+                unset($link['integrity']);
+            }
             #Empty MIME type if it does ont confirm with the standard
             if (isset($link['type']) && preg_match('/'.$mimeRegex.'/', $link['type']) !== 1) {
                 $link['type'] = '';
@@ -726,10 +734,6 @@ class Headers
             if (!empty($link['type']) && isset($link['as']) && preg_match('/^'.$link['as'].'\/.*$/i', $link['type']) !== 1) {
                 continue;
             }
-            
-            #Validte media query if set
-            #https://drafts.csswg.org/mediaqueries/#mq-syntax
-            
             #Generate element as string
             if ($type === 'header') {
                 $linksToSend[] = '<'.$link['href'].'>'.

@@ -629,6 +629,7 @@ class Common
         'wbxml' => 'application/vnd.wap.wbxml',
         'weba' => 'audio/webm',
         'webm' => 'video/webm',
+        'webmanifest' => 'application/manifest+json',
         'webp' => 'image/webp',
         'wg' => 'application/vnd.pmi.widget',
         'wgt' => 'application/widget',
