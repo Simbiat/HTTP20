@@ -195,7 +195,7 @@ Function to generate sitemape in XML, HTML or text formats. For XML specificatio
   #Loc is mandatory for all entries. All entries wil also be checked for relation to same schema and domain. Duplicats will be removed
   'loc' => 'https://example.com',
   'name' => 'optional name used only for HTML sitemaps',
-  #Lastmod will be used to calculate the freshest entry in the list and it will be sent out to lastModified() function (read below). That will allow earlier exit. Using numeric values is recommended.
+  #Lastmod will be used to calculate the freshest entry in the list and it will be sent out to [lastModified](#lastmodified) function. That will allow earlier exit. Using numeric values is recommended.
   'lastmod' => '20210302'
   'changefreq' => 'change frequency as per specification'
   'priority' => 'priority as per specification'
@@ -207,7 +207,7 @@ Function to generate sitemape in XML, HTML or text formats. For XML specificatio
 ```
 `<p>` is used to provide human-readable output. Use of CSS is advisable to properly style it.
 
-`$directOutput` - if set to `true` will send the generated string directly to client using `zEcho` function (see below) and also send appropriate `Content-Type` header.
+`$directOutput` - if set to `true` will send the generated string directly to client using [zEcho](#zecho) and also send appropriate `Content-Type` header.
 
 ## PrettyURL
 ```php
