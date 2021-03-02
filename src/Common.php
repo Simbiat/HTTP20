@@ -222,6 +222,8 @@ class Common
         'gtw' => 'model/vnd.gtw',
         'gv' => 'text/vnd.graphviz',
         'gxt' => 'application/vnd.geonext',
+        'gz' => 'application/gzip',
+        'gzip' => 'application/gzip',
         'h261' => 'video/h261',
         'h263' => 'video/h263',
         'h264' => 'video/h264',
@@ -568,7 +570,8 @@ class Common
         'sxw' => 'application/vnd.sun.xml.writer',
         't' => 'text/troff',
         'tao' => 'application/vnd.tao.intent-module-archive',
-        'tar' => 'application/x-tar',
+        'tar' => 'application/tar',
+        'tar.gz' => 'application/tar+gz',
         'tcap' => 'application/vnd.3gpp2.tcap',
         'tcl' => 'application/x-tcl',
         'teacher' => 'application/vnd.smart.teacher',
@@ -577,6 +580,7 @@ class Common
         'texinfo' => 'application/x-texinfo',
         'tfi' => 'application/thraud+xml',
         'tfm' => 'application/x-tex-tfm',
+        'tgz' => 'application/tar+gz',
         'thmx' => 'application/vnd.ms-officetheme',
         'tiff' => 'image/tiff',
         'tmo' => 'application/vnd.tmobile-livetv',
@@ -769,6 +773,7 @@ class Common
             #Send the output
             echo $string;
         }
+        exit;
     }
     
     #Function to check if string is a mail address as per RFC 5322
