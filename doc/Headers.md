@@ -8,13 +8,13 @@
 - [clientReturn](#clientreturn)
 - [links](#links)
 
-## Headers
+# Headers
 Functions that send/handle different HTTP headers.
 ```php
 (new \http20\Headers)->nameOfFunction();
 ```
 
-### cacheControl
+## cacheControl
 ```php
 cacheControl(string $string, string $cacheStrat = '', bool $exit = false);
 ```
@@ -49,13 +49,13 @@ ETag procesing using `eTag()` will happen regardless (unless string is empty: th
 
 `$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
 
-### eTag
+## eTag
 ```php
 eTag(string $etag)
 ```
 Sends ETag header and handles its validation depending on requesting headers (If-Match, If-None-Match).
 
-### lastModified
+## lastModified
 ```php
 lastModified(int $modtime = 0, bool $exit = false);
 ```
@@ -63,7 +63,7 @@ Sends Last-Modified header based on either parameter provided or the freshest da
 
 `$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
 
-### performance
+## performance
 ```php
 performance(int $keepalive = 0, array $clientHints = []);
 ```
@@ -73,7 +73,7 @@ Sends some headers that may improve performance on client side.
 
 `$clientHints` instructs clients, that your server supports Client Hints (https://developer.mozilla.org/en-US/docs/Glossary/Client_hints) like DPR, Width, Viewport-Width, Downlink, .etc and client should cache the output accordingly, in order to increase allow cache hitting and thus improve performance.
 
-### security
+## security
 ```php
 security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false);
 ```
@@ -115,7 +115,7 @@ default:
 
 `$reportonly` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
 
-### features
+## features
 ```php
 features(array $features = [], bool $forcecheck = true);
 ```
@@ -125,7 +125,7 @@ Allows to control different features through Feature-Policy header.
 
 `$forcecheck` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
 
-### secFetch
+## secFetch
 ```php
 secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false);
 ```
@@ -135,13 +135,13 @@ Allows validation of Sec-Fetch-* headers from client against the provided list o
 
 **Be mindful**: unlike `security`, which, essentially, attempts to be as secure as possible by default, this may be too lax for some use-cases. It is recommended, that you you call it with different parameters depending on what is calling what on your server. For example, you may want to restrict certain code getting called with `Sec-Fetch-Destination: image`, especially, if it's a `POST` request, let alone `DELETE`. Thus the best way to use this is in some `switch` or `if-elseif-else` scenario, rather than universally.
 
-### clientReturn
+## clientReturn
 ```php
 clientReturn(string $code = '500', bool $exit = true);
 ```
 Returns a selected HTTP status code (defaults to 500) with option to forcibly close HTTP connection (`$exit = true`). This is mostly useful for returnring error codes, especially, when you want to close the connection, even if the client is still sending something, thus the default values are `500` and `true`.
 
-### links
+## links
 ```php
 links(array $links = [], string $type = 'header', bool $strictRel = true);
 ```

@@ -8,25 +8,25 @@
 - [reductor](#reductor)
 - [forceClose](#forceclose)
 
-## Common
+# Common
 Assortment of functions, that are used by classes inside the library, but can also be used directly. They are all called as
 ```php
 (new \http20\Common)->nameOfFunction();
 ```
 
-### valueToTime
+## valueToTime
 ```php
 valueToTime($time, string $format, string $validregex = '')
 ```
 This is more of a wrapper for `date()`. Integrated function expects an integer, but you may have a time, that is already a string in some format. This function tries to handle that. Furthermore, it supports validation after conversion using provided Regexp. This is useful for when you provided a formatted string, because depending on the string the output may be "corrupted" (simply not what you expected), and improper format may cause issues. Validating the result here, may help avoid that. You will have to provide your own Regexp, though, since currently only the one for `'c'` (ISO 8601 format) is built in. Feel free to create a push request to add other common cases.
 
-### atomIDGen
+## atomIDGen
 ```php
 atomIDGen(string $link, $date = NULL);
 ```
 Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id. Doubt it will be useful anywhere outside of Atom feeds, but still.
 
-### zEcho
+## zEcho
 ```php
 zEcho(string $string, string $cacheStrat = '');
 ```
@@ -34,25 +34,25 @@ A function for outputting data to web-browser while attempting to use compressio
 
 `$cacheStrat` is an optional caching strategy to apply (as described for `cacheControl`)
 
-### emailValidator
+## emailValidator
 ```php
 uriValidator(string $string);
 ```
 Simple boolean function to check that string is a proper e-mail address compliant with RFC 5322
 
-### uriValidator
+## uriValidator
 ```php
 emailValidator(string $string);
 ```
 Simple boolean function to check that string is a proper URI compliant with RFC 3986
 
-### LangCodeCheck
+## LangCodeCheck
 ```php
 LangCodeCheck(string $string);
 ```
 Simple boolean function to check that string is a valid language code. I was not able to find a proper list beside the one meant for RSS, though. If you know of other codes, please, feel free to create a push request to update it.
 
-### htmlToRFC3986
+## htmlToRFC3986
 ```php
 htmlToRFC3986(string $string, bool $full = true);
 ```
@@ -60,7 +60,7 @@ Function does the same as `rawurlencode` (which converts characters to strings l
 
 `$full` set to `true` means that all of them (`'"&<>`) will be converted (useful when text is inside a tag). If `false` only `<` and `&` are converted (useful when inside attribute value). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML.
 
-### reductor
+## reductor
 ```php
 reductor($files, string $type, bool $minify = false, string $tofile = '', string $cacheStrat = '');
 ```
@@ -78,7 +78,7 @@ Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
 
 `$cacheStrat` is an optional caching strategy to apply (as described for `cacheControl`)
 
-### forceClose
+## forceClose
 ```php
 forceClose();
 ```

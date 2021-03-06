@@ -5,13 +5,13 @@
 - [phpMemoryToInt](#phpmemorytoint)
 - [rangesValidate](#rangesvalidate)
 
-## Sharing
+# Sharing
 Function that can be used in processes related to file sharing.
 ```php
 (new \http20\Sharing)->nameOfFunction();
 ```
 
-### download
+## download
 ```php
 download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true);
 ```
@@ -33,7 +33,7 @@ Function to download files (or more precisely, feed them to client). Unlike othe
 
 While this function can return the number of bytes, that may be useful for some statistics, I'd recommend not using it as confirmation of successful file download, because it is not possible to reliably track client success on server without some scripting on client side.
 
-### upload
+## upload
 ```php
 upload($destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intollerant = true, bool $exit = true);
 ```
@@ -93,7 +93,7 @@ If you're going to use PUT, there are some peculiarities, that you need to be aw
 - MIME type is checked twice: firstly using `Content-Type` header, if it's present, secondly after the upload is finished
 - If MIME type check against allowed types fails after the upload file will be removed
 
-### streamCopy
+## streamCopy
 ```php
 streamCopy(&$input, &$output, int $totalsize = 0, int $offset = 0, int $speed = 10485760);
 ```
@@ -107,7 +107,7 @@ Function to copy data in small chunks (not HTTP1.1 chunks) with speed limitation
 
 `$speed` - the maximum of bytes you want to copy per second. Default is 10MBs. Note, that if it's too large it will be overriden by internal logic (`speedLimit()`).
 
-### speedLimit
+## speedLimit
 ```php
 speedLimit(int $speed = 0, float $percentage = 0.9);
 ```
@@ -117,13 +117,13 @@ Function calculates maximum number of bytes that can be allocated for streaming 
 
 `$percentage` - percent of available memory, that we can use. For example, if we have 256M as memory limit and 200M available, 0.9 will allow us to use 180M. Default was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
 
-### phpMemoryToInt
+## phpMemoryToInt
 ```php
 phpMemoryToInt(string $memory);
 ```
 Converts PHP's memory strings (like 256M) used in some settings to integer value (bytes).
 
-### rangesValidate
+## rangesValidate
 ```php
 rangesValidate(int $size);
 ```

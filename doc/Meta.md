@@ -2,10 +2,10 @@
 - [facebook](#facebook)
 - [msTile](#mstile)
 
-## Meta
+# Meta
 Functions, that generate sets of meta-tags, that may be useful for your website.
 
-### twitter
+## twitter
 ```php
 twitter(array $general, array $playerApp = [], bool $pretty = false);
 ```
