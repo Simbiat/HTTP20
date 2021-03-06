@@ -1,9 +1,9 @@
-    + [download](#download)
-    + [upload](#upload)
-    + [streamCopy](#streamcopy)
-    + [speedLimit](#speedlimit)
-    + [phpMemoryToInt](#phpmemorytoint)
-    + [rangesValidate](#rangesvalidate)
+- [download](#download)
+- [upload](#upload)
+- [streamCopy](#streamcopy)
+- [speedLimit](#speedlimit)
+- [phpMemoryToInt](#phpmemorytoint)
+- [rangesValidate](#rangesvalidate)
 
 ## Sharing
 Function that can be used in processes related to file sharing.

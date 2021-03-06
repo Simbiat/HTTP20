@@ -1,6 +1,6 @@
-    + [twitter](#twitter)
-    + [facebook](#facebook)
-    + [msTile](#mstile)
+- [twitter](#twitter)
+- [facebook](#facebook)
+- [msTile](#mstile)
 
 ## Meta
 Functions, that generate sets of meta-tags, that may be useful for your website.

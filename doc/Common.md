@@ -1,12 +1,12 @@
-    + [valueToTime](#valuetotime)
-    + [atomIDGen](#atomidgen)
-    + [zEcho](#zecho)
-    + [emailValidator](#emailvalidator)
-    + [uriValidator](#urivalidator)
-    + [LangCodeCheck](#langcodecheck)
-    + [htmlToRFC3986](#htmltorfc3986)
-    + [reductor](#reductor)
-    + [forceClose](#forceclose)
+- [valueToTime](#valuetotime)
+- [atomIDGen](#atomidgen)
+- [zEcho](#zecho)
+- [emailValidator](#emailvalidator)
+- [uriValidator](#urivalidator)
+- [LangCodeCheck](#langcodecheck)
+- [htmlToRFC3986](#htmltorfc3986)
+- [reductor](#reductor)
+- [forceClose](#forceclose)
 
 ## Common
 Assortment of functions, that are used by classes inside the library, but can also be used directly. They are all called as

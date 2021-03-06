@@ -1,12 +1,12 @@
-    + [cacheControl](#cachecontrol)
-    + [eTag](#etag)
-    + [lastModified](#lastmodified)
-    + [performance](#performance)
-    + [security](#security)
-    + [features](#features)
-    + [secFetch](#secFetch)
-    + [clientReturn](#clientreturn)
-    + [links](#links)
+- [cacheControl](#cachecontrol)
+- [eTag](#etag)
+- [lastModified](#lastmodified)
+- [performance](#performance)
+- [security](#security)
+- [features](#features)
+- [secFetch](#secFetch)
+- [clientReturn](#clientreturn)
+- [links](#links)
 
 ## Headers
 Functions that send/handle different HTTP headers.
