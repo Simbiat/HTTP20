@@ -10,6 +10,9 @@
 
 # Headers
 Functions that send/handle different HTTP headers.
+
+I hope that at some point this will become popular. While some frameworks do seem to implement some similar functionality it seems to be generally ignored, while HTTP headers can make user experience better and more secure. If you start using `Headers` (especially `security`) it will (by default) force you into following best practices when designing your website. And if you need to loosen up your security for some reason, it is possible in a relatively convinient way. And if you find that it isn't (like you need to use `unsafe` directives, for example), most likely you are trying to save a security hole, that you should not be saving.
+
 ```php
 (new \http20\Headers)->nameOfFunction();
 ```

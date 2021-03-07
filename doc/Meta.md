@@ -1,5 +1,4 @@
 - [twitter](#twitter)
-- [facebook](#facebook)
 - [msTile](#mstile)
 
 # Meta
@@ -68,3 +67,80 @@ For app cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/
 ```
 `$pretty` if set to `true` will add new line to the end of each `meta` tag. May be useful if you prefer a bit cleaner and human-readable look.
 
+## msTile
+```php
+msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true);
+```
+#Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file. Based on following specification:
+- Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
+- browserconfig.xml specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
+
+`$general` - array of basic settings:
+```php
+[
+  #Name for the tile. Not used by XML config. Not mandatory by Meta specification, but mandatory in this function to provide you with proper control (other wise tile takes tile of current page)
+  'name' => 'Simbiat Software',
+  #Optional tooltip. If not set will be set to the name. Not used by XML config.
+  'tooltip' => 'Simbiat Software',
+  #Starting URL. Generally should by your home page. If not set will use values of the address the value is being requested from. Not used by XML config.
+  'starturl' => 'https://simbiat.ru',
+  #Size of the window. If not set or invalid will be set to minimum values of 800x600. Not used by XML config.
+  'window' => 'width=800;height=600',
+  #Two values that allow "tasks" using subdomains of your main domain (starturl). Unclear what the difference is. Defaults to true. Not used by XML config.
+  'allowDomainApiCalls' => 'true',
+  'allowDomainMetaTags' => 'true',
+  #Badge details. Link should lead to XML file formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/badgeschema/schema-root
+  'badge' => 'frequency=30;polling-uri=https://simbiat.ru/mstilebadge.xml',
+  #Optional color for navigation buttons (used only by IE). Not used by XML config.
+  'navbutton-color' => '#000000',
+  #Optional tile color. There have been reports that after some update Win10 disregards it.
+  'TileColor' => '#000000',
+  #Paths to images of various sizes. It looks like Win10 may not be using them, instead relying on other icons referenced in you your code (`<link>` elements, `webmanifest` file) or there may be some condition to utilize them.
+  'square150x150logo' => 'https://local.simbiat.ru/frontend/images/favicons/mstile-150x150.png',
+  'square310x310logo' => 'https://local.simbiat.ru/frontend/images/favicons/mstile-310x310.png',
+  'square70x70logo' => 'https://local.simbiat.ru/frontend/images/favicons/mstile-70x70.png',
+  'wide310x150logo' => 'https://local.simbiat.ru/frontend/images/favicons/mstile-310x150.png',
+  #Image for the tile. Unclear what is the difference from the ones above, especially, since specification states, that 150x150 is recommended. Yet somewhere long ago I had encountered a different recommendation for this image: 144x144.
+  'TileImage' => 'https://local.simbiat.ru/frontend/images/favicons/mstile-144x144.png',
+]
+```
+`$tasks` - array of so called "tasks", that appear as pinned links, if pinned from IE. Does not seem to be used by Edge. Not used by XML config.
+```php
+[
+  #Array for an actual task
+  '1st' => [
+    #Name to show on the menu
+    'name' => 'FFXIV Tracker',
+    #URL to the page referenced by this "task"
+    'action-uri' => 'https://simbiat.ru/fftracker/',
+    #It's icon. Seems to be mandatory.
+    'icon-uri' => 'https://simbiat.ru/frontend/images/service/fftracker_icon.png',
+    #Optional type of window to open in (tab, self or window). Defaults to tab.
+    'window-type' => 'tab',
+  ],
+  #Optional separator (will draw a line in the menu). Just use 'separator' string.
+  1 => 'separator',
+  #Another task
+  'nth' => [
+    'name' => 'BICs Tracker',
+    'action-uri' => 'https://simbiat.ru/bic/',
+    'icon-uri' => 'https://simbiat.ru/frontend/images/service/bic_icon.png',
+    'window-type' => 'tab',
+  ],
+]
+```
+`$notifications` - array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
+```php
+[
+  #List of up to 5 links
+  'https://simbiat.ru/notification.xml',
+  'https://simbiat.ru/notification2.xml',
+  #Optional frequency for refreshing the data. Defaults to 1440
+  'frequency' => '30',
+  #Optional cycle tyoe (as per specification). Defaults to 0 or 1 based on number of links
+  'cycle' => 1,
+]
+```
+`$xml` indicates whether you want to generate XML config file. `False` by default.
+
+`$prettyDirect` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.

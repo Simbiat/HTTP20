@@ -1,7 +1,7 @@
 # HTTP20
 Set of classes/functions that may be universally useful for websites (or some parts of them, at least).
 
-I hope that at some point in future `Headers` part will become quite popular. While some frameworks do seem to implement some similar functionality it seems to be generally ignored, while HTTP headers can make user experience better and more secure. If you start using `Headers` (especially `security`) it will (by default) force you into following best practices when designing your website. And if you need to loosen up your security for some reason, it is possible in a relatively convinient way. And if you find that it isn't (like you need to use `unsafe` directives, for example), most likely you are trying to save a security hole, that you should not be saving.
+They are provided in single library and not separately, not only because of some inter-dependencies, but also because if you are building a website from scratch, most likely, you will be interested in a bunch of them at the same time either way.
 
 - [HTTP20](#http20)
   * [Atom](doc/Atom.md)
@@ -27,7 +27,6 @@ I hope that at some point in future `Headers` part will become quite popular. Wh
     + [links](doc/Headers.md#links)
   * [Meta](doc/Meta.md)
     + [twitter](doc/Meta.md#twitter)
-    + [facebook](doc/Meta.md#facebook)
     + [msTile](doc/Meta.md#mstile)
   * [Common](doc/Common.md)
     + [valueToTime](doc/Common.md#valuetotime)

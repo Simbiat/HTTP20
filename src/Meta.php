@@ -119,5 +119,262 @@ class Meta
             return true;
         }
     }
+    
+    #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file
+    #Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
+    #browserconfig specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
+    public function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true): string
+    {
+        #Check that settings are not an empty array
+        if (empty($general)) {
+            trigger_error('Empty array of general settings was provided for Microsoft Tile', E_USER_NOTICE);
+            return '';
+        }
+        #Check name
+        if (empty($general['name']) && $xml === false) {
+            #While name (application-name) is replaced by page title by default, this may not be a good idea, if some "random" page is pinned by user. You do want to avhe at least some control of how your website is presented on uesr's system.
+            trigger_error('Empty name was provided for Microsoft Tile', E_USER_NOTICE);
+            return '';
+        }
+        #If tooltip is not provided, use the name
+        if (empty($general['tooltip'])) {
+            $general['tooltip'] = $general['name'];
+        }
+        #If starturl is not provided set it to current host. Same if it's a bad URL, which is not an HTTPS - return empty string. Technically the standard does support HTTP, but since pure HTTP is currently discouraged, we can safely disregard it
+        if (empty($general['starturl']) || $this->isHTTPS($general['starturl']) === false) {
+            $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
+        }
+        #If window is not provided set or incorrect
+        if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d{1,})\d{2};\s*height=([89]|[1-9]\d{1,})\d{2})|(height=([89]|[1-9]\d{1,})\d{2};\s*width=([89]|[1-9]\d{1,})\d{2})$/i', $general['window']) !== 1) {
+            $general['window'] = 'width=800;height=600';
+        }
+        #If allowDomainApiCalls is not set, set it to true by default
+        if (!isset($general['allowDomainApiCalls'])) {
+            $general['allowDomainApiCalls'] = 'true';
+        } else {
+            $general['allowDomainApiCalls'] = boolval($general['allowDomainApiCalls']);
+            $general['allowDomainApiCalls'] = ($general['allowDomainApiCalls'] ? 'true' : 'false');
+        }
+        #If allowDomainApiCalls is not set, set it to true by default
+        if (!isset($general['allowDomainMetaTags'])) {
+            $general['allowDomainMetaTags'] = 'true';
+        } else {
+            $general['allowDomainMetaTags'] = boolval($general['allowDomainMetaTags']);
+            $general['allowDomainMetaTags'] = ($general['allowDomainMetaTags'] ? 'true' : 'false');
+        }
+        #Validate URI for badge (https://docs.microsoft.com/en-us/uwp/schemas/tiles/badgeschema/schema-root) and remove it if it's invalid
+        if (empty($general['badge']) || preg_match('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge']) !== 1) {
+            unset($general['badge']);
+        } else {
+            #Enforce explicit frequency, if it's not set
+            if (preg_match('/^frequency=(30|60|360|720|1440);.*$/i', $general['badge']) !== 1) {
+                $general['badge'] = 'frequency=1440; '.$general['badge'];
+            }
+        }
+        #Validate colors
+        if (empty($general['navbutton-color']) || preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $general['navbutton-color']) !== 1) {
+            unset($general['navbutton-color']);
+        }
+        #Technically TileColor supports named colors, but forcing only Hex values makes it consistenet with navbutton-color
+        if (empty($general['TileColor']) || preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $general['TileColor']) !== 1) {
+            unset($general['TileColor']);
+        }
+        #Validate images
+        if (empty($general['square150x150logo']) || $this->isHTTPS($general['square150x150logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square150x150logo']) !== 1) {
+            unset($general['square150x150logo']);
+        }
+        if (empty($general['square310x310logo']) || $this->isHTTPS($general['square310x310logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square310x310logo']) !== 1) {
+            unset($general['square310x310logo']);
+        }
+        if (empty($general['square70x70logo']) || $this->isHTTPS($general['square70x70logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square70x70logo']) !== 1) {
+            unset($general['square70x70logo']);
+        }
+        if (empty($general['wide310x150logo']) || $this->isHTTPS($general['wide310x150logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['wide310x150logo']) !== 1) {
+            unset($general['wide310x150logo']);
+        }
+        if (empty($general['TileImage']) || $this->isHTTPS($general['TileImage']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['TileImage']) !== 1) {
+            unset($general['TileImage']);
+        }
+        #Prepare notification value (should lead to XML formatted like https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root)
+        if (!empty($notifications)) {
+            #Check links
+            foreach ($notifications as $key=>$value) {
+                #Skip frequency and cycle
+                if (!in_array($key, ['frequency', 'cycle'])) {
+                    #If not a valid HTTPS - remove from list
+                    if ($this->isHTTPS($value) === false) {
+                        unset($notifications[$key]);
+                    }
+                }
+            }
+            #Count elements (links)
+            $links = count($notifications);
+            #Exclude frequency
+            if (isset($notifications['frequency'])) {
+                $links--;
+            }
+            #Exclude cycle
+            if (isset($notifications['cycle'])) {
+                $links--;
+            }
+            if ($links > 0) {
+                if ($links > 5) {
+                    $links = 0;
+                    foreach ($notifications as $key=>$value) {
+                        #Skip frequency and cycle
+                        if (!in_array($key, ['frequency', 'cycle'])) {
+                            #Remove any extra links
+                            if ($links > 5) {
+                                unset($notifications[$key]);
+                            } else {
+                                $links++;
+                            }
+                        }
+                    }
+                }
+                #Sanitize frequency
+                if (empty($notifications['frequency']) || preg_match('/^(30|60|360|720|1440)$/', $notifications['frequency']) !== 1) {
+                    $notifications['frequency'] = 1440;
+                }
+                #Sanitize cycle
+                if (empty($notifications['cycle']) || preg_match('/^[0-7]$/', $notifications['cycle']) !== 1) {
+                    if ($links > 1) {
+                        $notifications['cycle'] = 1;
+                    } else {
+                        $notifications['cycle'] = 0;
+                    }
+                }
+            } else {
+                #We do not have any links left (if we even had any)
+                unset($notifications);
+            }
+        }
+        #Prepare tasks
+        if (!empty($tasks)) {
+            #Start counter for valid tasks
+            $tasksCount = 0;
+            foreach ($tasks as $key=>$task) {
+                #Skip separators
+                if ($task !== 'separator') {
+                    if (is_array($task)) {
+                        #Validate settings
+                        if (!empty($task['name']) && is_string($task['name']) &&
+                            !empty($task['action-uri']) && is_string($task['action-uri']) && $this->isHTTPS($task['action-uri']) === true &&
+                            !empty($task['icon-uri']) && is_string($task['icon-uri']) && $this->isHTTPS($task['icon-uri']) === true && preg_match('/.*\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
+                        ) {
+                            $tasksCount++;
+                            if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
+                                $tasks[$key]['window-type'] = 'tab';
+                            }
+                        } else {
+                            #Remove value
+                            unset($tasks[$key]);
+                        }
+                    } else {
+                        #Remove if not an array
+                        unset($tasks[$key]);
+                    }
+                }
+            }
+            #If there are no valid tasks, unset the array
+            if ($tasksCount === 0) {
+                unset($tasks);
+            } else {
+                #Reset indexes for future use
+                $tasks = array_values($tasks);
+            }
+        }
+        #Generate output
+        #msapplication-config
+        if ($xml) {
+            #Open XML
+            $output = '<?xml version="1.0" encoding="utf-8"?><browserconfig><msapplication>';
+            #Add tile settings, if any are set
+            if (!empty($general['square70x70logo']) || !empty($general['square150x150logo']) || !empty($general['wide310x150logo']) || !empty($general['square310x310logo']) || !empty($general['TileImage']) || !empty($general['TileColor'])) {
+                $output .= '<tile>';
+                if (!empty($general['square70x70logo'])) {
+                    $output .= '<square70x70logo src="'.htmlspecialchars($general['square70x70logo']).'"/>';
+                }
+                if (!empty($general['square150x150logo'])) {
+                    $output .= '<square150x150logo src="'.htmlspecialchars($general['square150x150logo']).'"/>';
+                }
+                if (!empty($general['wide310x150logo'])) {
+                    $output .= '<wide310x150logo src="'.htmlspecialchars($general['wide310x150logo']).'"/>';
+                }
+                if (!empty($general['square310x310logo'])) {
+                    $output .= '<square310x310logo src="'.htmlspecialchars($general['square310x310logo']).'"/>';
+                }
+                if (!empty($general['TileImage'])) {
+                    $output .= '<TileImage src="'.htmlspecialchars($general['TileImage']).'"/>';
+                }
+                if (!empty($general['TileColor'])) {
+                    $output .= '<TileColor>'.$general['TileColor'].'</TileColor>';
+                }
+                $output .= '</tile>';
+            }
+            #Add badge if set
+            if (!empty($general['badge'])) {
+                $output .= '<badge><polling-uri src="'.preg_replace('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge'], '$4').'"/><frequency>'.preg_replace('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge'], '$2').'</frequency></badge>';
+            }
+            #Add notifications if set
+            if (!empty($notifications)) {
+                $output .= '<notification><frequency>'.$notifications['frequency'].'</frequency><cycle>'.$notifications['cycle'].'</cycle>';
+                unset($notifications['frequency'], $notifications['cycle']);
+                #Reset keys just in case
+                $notifications = array_values($notifications);
+                #Add URLs
+                foreach ($notifications as $key=>$value) {
+                    $output .= '<polling-uri'.($key != 0 ? $key : '').' src="'.htmlspecialchars($value).'"/>';
+                }
+                $output .= '</notification>';
+            }
+            #Close XML
+            $output .= '</msapplication></browserconfig>';
+            #Output directly to client if parameter is true
+            if ($prettyDirect) {
+                header('Content-Type: text/xml; charset=utf-8');
+                (new \http20\Common)->zEcho($output);
+            }
+        } else {
+            $output = '';
+            #Iterate through settings adding them to the output
+            foreach ($general as $setting=>$value) {
+                #'name' is the only special case, since it uses 'application' prefix, not 'msapplication'
+                if ($setting === 'name') {
+                    $output .= '<meta name="application-name" content="'.htmlspecialchars($value).'" />';
+                } else {
+                    $output .= '<meta name="msapplication-'.$setting.'" content="'.htmlspecialchars($value).'" />';
+                }
+            }
+            #Add notifications if set
+            if (!empty($notifications)) {
+                $output .= '<meta name="msapplication-notification" content="frequency='.$notifications['frequency'].';cycle='.$notifications['cycle'].';';
+                unset($notifications['frequency'], $notifications['cycle']);
+                #Reset keys just in case
+                $notifications = array_values($notifications);
+                #Add URLs
+                foreach ($notifications as $key=>$value) {
+                    $output .= 'polling-uri'.($key != 0 ? $key : '').'='.htmlspecialchars($value).';';
+                }
+                #Close the tag
+                $output .= '" />';
+            }
+            #Add tasks if set (seems to be used only by IE11 at the time of writing)
+            if (!empty($tasks)) {
+                foreach ($tasks as $key=>$task) {
+                    if ($task === 'separator') {
+                        $output .= '<meta name="msapplication-task-separator" content="'.$key.'" />';
+                    } else {
+                        $output .= '<meta name="msapplication-task" content="name='.htmlspecialchars($task['name']).'; action-uri='.htmlspecialchars($task['action-uri']).'; icon-uri='.htmlspecialchars($task['icon-uri']).'; window-type='.$task['window-type'].'" />';
+                    }
+                }
+            }
+            #Add new lines at the end of the tags for a more readable output
+            if ($prettyDirect) {
+                $output = str_replace('>', '>'."\r\n", $output);
+            }
+        }
+        return $output;
+    }
 }
 ?>
