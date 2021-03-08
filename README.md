@@ -28,6 +28,7 @@ They are provided in single library and not separately, not only because of some
   * [Meta](doc/Meta.md)
     + [twitter](doc/Meta.md#twitter)
     + [msTile](doc/Meta.md#mstile)
+    + [facebook](doc/Meta.md#facebook)
   * [Common](doc/Common.md)
     + [valueToTime](doc/Common.md#valuetotime)
     + [atomIDGen](doc/Common.md#atomidgen)

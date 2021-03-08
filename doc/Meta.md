@@ -1,5 +1,6 @@
 - [twitter](#twitter)
 - [msTile](#mstile)
+- [facebook](#facebook)
 
 # Meta
 Functions, that generate sets of meta-tags, that may be useful for your website.
@@ -144,3 +145,13 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
 `$xml` indicates whether you want to generate XML config file. `False` by default.
 
 `$prettyDirect` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
+
+## facebook
+```php
+facebook(int $appid, array $admins = []);
+```
+Simple function to prepare a string of Facebook meta tags.
+
+`$appid` is mandatory application ID, that you want to link to the page.
+
+`$admins` is an optional list of admin IDs. All non-numeric values will be removed and numeric ones will be converted to integers.

@@ -376,5 +376,27 @@ class Meta
         }
         return $output;
     }
+    
+    #Function to generate Facebook speacial meta tags
+    public function facebook(int $appid, array $admins = []): string
+    {
+        #Add appid tag
+        $output = '<meta property="fb:app_id" content="'.$appid.'"/>';
+        #Check values of admins IDs
+        foreach ($admins as $key=>$admin) {
+            if (is_numeric($admin)) {
+                #Convert to int
+                $admins[$key] = intval($admin);
+            } else {
+                #Remove value
+                unset($admins[$key]);
+            }
+        }
+        #Add admins, if any
+        if (!empty($admins)) {
+            $output .= '<meta property="fb:admins" content="'.implode(',', $admins).'"/>';
+        }
+        return $output;
+    }
 }
 ?>
