@@ -707,7 +707,7 @@ class Common
     ];
     
     #Wrapper for date(), that handles strings and allows validation of result
-    public function valueToTime($time, string $format, string $validregex = ''): string
+    public function valueToTime(string|int|float|null $time, string $format, string $validregex = ''): string
     {
         #If we want to use a constant, but it was sent as a string
         if (str_starts_with(strtoupper($format), 'DATE_')) {
@@ -738,7 +738,7 @@ class Common
     }
     
     #Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
-    public function atomIDGen(string $link, $date = NULL): string
+    public function atomIDGen(string $link, string|int|float|null $date = NULL): string
     {
         $date = $this->valueToTime($date, 'Y-m-d', '/^\d{4}-\d{2}-\d{2}$/i');
         #Remove URI protocol (if any)
@@ -821,7 +821,7 @@ class Common
     
     #Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that.
     #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
-    public function reductor($files, string $type, bool $minify = false, string $tofile = '', string $cacheStrat = ''): void
+    public function reductor(string|array $files, string $type, bool $minify = false, string $tofile = '', string $cacheStrat = ''): void
     {
         #Set content to empty string as precaution
         $content = '';
@@ -855,15 +855,13 @@ class Common
                     $content = $files;
                 }
             }
-        } else {
-            if (!is_array($files)) {
-                throw new \UnexpectedValueException('Value provided to `reductor` function is neither string nor array');
-            }
         }
         #Get contents of all files mentioned in array
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                $content .= file_get_contents($file);
+        if (is_array($files)) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    $content .= file_get_contents($file);
+                }
             }
         }
         #Minify
@@ -993,7 +991,7 @@ class Common
     }
     
     #Function to force close HTTP connection
-    public function forceClose()
+    public function forceClose(): void
     {
         #Send header to notify, that connection was closed
         @header('Connection: close');

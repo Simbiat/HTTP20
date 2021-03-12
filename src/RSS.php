@@ -14,7 +14,7 @@ class RSS
     }
     
     #Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
-    public function RSS(string $title, array $entries, string $feedlink = '', array $feed_settings = [])
+    public function RSS(string $title, array $entries, string $feedlink = '', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
@@ -222,7 +222,7 @@ class RSS
     }
     
     #Helper function to add actual entries
-    private function rssAddEntries(\DOMNode &$element, \DOMDocument &$feed, array $entry)
+    private function rssAddEntries(\DOMNode &$element, \DOMDocument &$feed, array $entry): void
     {
         if (!empty($entry['title'])) {
             $element->appendChild($feed->createElement('title', $entry['title']));

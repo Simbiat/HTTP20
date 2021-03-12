@@ -95,7 +95,7 @@ class Headers
     ];
     
     #Function sends headers, related to security
-    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false)
+    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false): self
     {
         #Default list of allowed methods, limited to only "simple" ones
         $defaultMethods = self::safeMethods;
@@ -284,7 +284,7 @@ class Headers
     #https://www.w3.org/TR/fetch-metadata/
     #https://fetch.spec.whatwg.org/
     #https://web.dev/fetch-metadata/
-    public function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false)
+    public function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false): self
     {
         #Set flag for processing
         $badRequest = false;
@@ -395,7 +395,7 @@ class Headers
     }
     
     #Function to send headers, that may improve performance on client side
-    public function performance(int $keepalive = 0, array $clientHints = [])
+    public function performance(int $keepalive = 0, array $clientHints = []): self
     {
         #Prevent content type sniffing (determening file type by content, not by extension or header)
         header('X-Content-Type-Options: nosniff');
@@ -422,7 +422,7 @@ class Headers
     #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
     #https://feature-policy-demos.appspot.com/
     #https://featurepolicy.info/
-    public function features(array $features = [], bool $forcecheck = true)
+    public function features(array $features = [], bool $forcecheck = true):self 
     {
         $defaults = self::secureFeatures;
         foreach ($features as $feature=>$allowlist) {
@@ -445,7 +445,7 @@ class Headers
     }
     
     #Function to set Last-Modified header. This header is generally not required if you already have Cache-Control and ETag, but still may be useful in case of conditional requests. At least if you will provide it with proper modification time.
-    public function lastModified(int $modtime = 0, bool $exit = false)
+    public function lastModified(int $modtime = 0, bool $exit = false): self
     {
         if ($modtime <= 0) {
             #Get freshest modification time of all PHP files used ot PHP's getlastmod time
@@ -465,7 +465,7 @@ class Headers
     }
     
     #Function to prepare and send cache-related headers
-    public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false)
+    public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false): self
     {
         #Send headers related to cache based on strategy selected
         #Some of the strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
@@ -505,7 +505,7 @@ class Headers
     }
     
     #Handle Etag header and its validation depending on request headers
-    public function eTag(string $etag)
+    public function eTag(string $etag): self
     {
         #Send ETag for caching purposes
         header('ETag: '.$etag);
@@ -513,7 +513,7 @@ class Headers
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not beend modified - return 304
-                $this->clientReturn('304', true);
+                return $this->clientReturn('304', true);
             }
         }
         #Return error if If-Match was sent and it's different from our etag
@@ -558,7 +558,7 @@ class Headers
     }
     
     #Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
-    public function links(array $links = [], string $type = 'header', bool $strictRel = true)
+    public function links(array $links = [], string $type = 'header', bool $strictRel = true): self|string
     {
         #Validate type
         if (!in_array($type, ['header', 'head', 'body'])) {
@@ -606,7 +606,7 @@ class Headers
                     #If strictRel is true, only support types from https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats (types, that NEED to be supported by clients)
                     ($strictRel === true && (
                         #Check that rel is valid
-                        (preg_match('/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation)( |$))*/i', $link['rel']) !== 1) ||
+                        (preg_match('/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation|up|first|last|index|home|top)( |$))*/i', $link['rel']) !== 1) ||
                         #If crossorigin or referrerpolicy is set, check that rel type is an external resource
                         ((isset($link['crossorigin']) || isset($link['referrerpolicy'])) && preg_match('/^(alternate )?((dns-prefetch|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet)( |$))*/i', $link['rel']) !== 1)
                     )) ||
@@ -647,9 +647,9 @@ class Headers
             }
             #Sanitize title if set
             if (isset($link['title'])) {
-                $link['title'] = htmlspecialchars($link['title']);
+                $link['title'] = urldecode(htmlspecialchars($link['title']));
             } else {
-                $link['title'] = htmlspecialchars(basename($link['href']));
+                $link['title'] = urldecode(htmlspecialchars(basename($link['href'])));
             }
             #Validate title*, which is valid only for HTTP header
             if (isset($link['title*']) && ($type !== 'header' || preg_match('/'.$langEncRegex.'.*/i', $link['title*']) !== 1)) {
@@ -779,6 +779,7 @@ class Headers
         } else {
             if ($type === 'header') {
                 header('Link: '.implode(', ', $linksToSend));
+                return $this;
             } else {
                 return implode("\r\n", $linksToSend);
             }

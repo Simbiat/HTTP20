@@ -18,7 +18,7 @@ class Sharing
     }
     
     #Function for smart resumable download with proper headers
-    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true)
+    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true): bool|int
     {
         #Sanitize speedlimit
         $speedlimit = $this->speedLimit($speedlimit);
@@ -199,7 +199,7 @@ class Sharing
     }
     
     #Function to handle file uploads
-    public function upload($destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intollerant = true, bool $exit = true)
+    public function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intollerant = true, bool $exit = true): bool|array
     {
         #Cache some PHP settings
         $maxUpload = $this-> phpMemoryToInt(ini_get('upload_max_filesize'));
@@ -656,11 +656,11 @@ class Sharing
     }
     
     #Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
-    public function streamCopy(&$input, &$output, int $totalsize = 0, int $offset = 0, int $speed = 10485760)
+    public function streamCopy(&$input, &$output, int $totalsize = 0, int $offset = 0, int $speed = 10485760): bool|int
     {
         #Ignore user abort to attempt identify when client has aborted
         ignore_user_abort(true);
-        #Check that we have resources
+        #Check that we have resources, since PHP does not have type hinting for resources
         if (!is_resource($input) || !is_resource($output)) {
             return false;
         }
@@ -723,17 +723,12 @@ class Sharing
         $suffix = strtolower($memory[strlen($memory)-1]);
         #Get int value
         $memory = intval(substr($memory, 0, -1));
-        switch($suffix) {
-            case 'g':
-                $memory *= 1073741824;
-                break;
-            case 'm':
-                $memory *= 1048576;
-                break;
-            case 'k':
-                $memory *= 1024;
-                break;
-        }
+        $memory *= match($suffix) {
+            'g' => 1073741824,
+            'm' => 1048576,
+            'k' => 1024,
+            default => 1,
+        };
         return $memory;
     }
     

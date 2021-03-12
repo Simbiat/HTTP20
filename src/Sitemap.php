@@ -21,34 +21,27 @@ class Sitemap
         if (in_array($format, ['text', 'txt'])) {
             $output = implode("\r\n", array_column($links, 'loc'));
         } else {
-            switch ($format) {
-                case 'html':
-                    $output = '';
-                    $strlen = 0;
-                    break;
-                case 'xml':
-                    $output = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
-                    $strlen = strlen($output) + strlen('</urlset>');
-                    break;
-                case 'index':
-                    $output = '<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
-                    $strlen = strlen($output) + strlen('</sitemapindex>');
-                    break;
-            }
+            #Set initial output
+            $output = match($format) {
+                'xml' => '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+                'index' => '<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+                default => '',
+            };
+            #Set initial string length
+            $strlen = match($format) {
+                'xml' => strlen($output) + strlen('</urlset>'),
+                'index' => strlen($output) + strlen('</sitemapindex>'),
+                default => 0,
+            };
             foreach ($links as $key=>$link) {
                 #Generate entry
-                switch ($format) {
-                    case 'html':
-                        #Wrapping in <p> so that even if the string is sent to client directly, it would still be human-readable
-                        $toAdd = '<p><a class="sitemaplink" id="sitemaplink_'.$key.'" href="'.$link['loc'].'" target="_blank">'.$link['name'].'</a></p>';
-                        break;
-                    case 'xml':
-                        $toAdd = '<url><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : $link['lastmod']).(empty($link['changefreq']) ? '' : $link['changefreq']).(empty($link['priority']) ? '' : $link['priority']).'</url>';
-                        break;
-                    case 'index':
-                        $toAdd = '<sitemap><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : $link['lastmod']).'</sitemap>';
-                        break;
-                }
+                $toAdd = match($format) {
+                    #Wrapping in <p> so that even if the string is sent to client directly, it would still be human-readable
+                    'html' => '<p><a class="sitemaplink" id="sitemaplink_'.$key.'" href="'.$link['loc'].'" target="_blank">'.$link['name'].'</a></p>',
+                    'xml' => '<url><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : $link['lastmod']).(empty($link['changefreq']) ? '' : $link['changefreq']).(empty($link['priority']) ? '' : $link['priority']).'</url>',
+                    'index' => '<sitemap><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : $link['lastmod']).'</sitemap>',
+                    default => '',
+                };
                 #Get its length
                 $lenToAdd = strlen($toAdd);
                 #Check, that we are not exceeding the limit of 50MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather then from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
@@ -57,14 +50,12 @@ class Sitemap
                     $strlen += $lenToAdd;
                 }
             }
-            switch ($format) {
-                case 'xml':
-                    $output .= '</urlset>';
-                    break;
-                case 'index':
-                    $output .= '</sitemapindex>';
-                    break;
-            }
+            #Close tags
+            $output .= match($format) {
+                'xml' => '</urlset>',
+                'index' => '</sitemapindex>',
+                default => '',
+            };
         }
         #Output directly, if flag is set to true
         if ($directOutput) {

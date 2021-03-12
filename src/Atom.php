@@ -14,7 +14,7 @@ class Atom
     }
     
     #Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
-    public function Atom(string $title, array $entries, string $id = '', string $texttype = 'text', array $feed_settings = [])
+    public function Atom(string $title, array $entries, string $id = '', string $texttype = 'text', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
@@ -184,7 +184,7 @@ class Atom
     }
     
     #Helper function to add some elements
-    private function atomAddSubElements(\DOMNode &$element, \DOMDocument &$feed, array $toptag, array $subnodes)
+    private function atomAddSubElements(\DOMNode &$element, \DOMDocument &$feed, array $toptag, array $subnodes): \DOMNode
     {
         if (empty($subnodes)) {
             throw new \UnexpectedValueException('Empty list of subnodes provided for `atomAddSubElements` function');
@@ -202,7 +202,7 @@ class Atom
     }
     
     #Helper function to add some elements
-    private function atomAddAttributes(\DOMNode &$element, \DOMDocument &$feed, array $toptag, array $attributes)
+    private function atomAddAttributes(\DOMNode &$element, \DOMDocument &$feed, array $toptag, array $attributes): \DOMNode
     {
         if (empty($attributes)) {
             throw new \UnexpectedValueException('Empty list of atrributes provided for `atomAddAttributes` function');
@@ -220,7 +220,7 @@ class Atom
     }
     
     #Helper function to add actual entries
-    private function atomAddEntries(\DOMNode &$element, \DOMDocument &$feed, array $entry, string $texttype)
+    private function atomAddEntries(\DOMNode &$element, \DOMDocument &$feed, array $entry, string $texttype): void
     {
         #Adding mandatory tags
         if (empty($entry['id'])) {
