@@ -306,7 +306,7 @@ class Headers
                 #Setting defaults
                 $site = array_intersect($site, self::fetchSite);
                 if (empty($site)) {
-                    #Alloes only same-origin (site and subdomain) or top-navigation
+                    #Allows only same-origin (site and subdomain) or top-navigation
                     $site = ['same-origin', 'none'];
                 }
                 $mode = array_intersect($mode, self::fetchMode);
@@ -369,7 +369,7 @@ class Headers
                                 break;
                             }
                         }
-                        #If MIME is found and it amtches CSV, audio, image or video - reject
+                        #If MIME is found and it matches CSV, audio, image or video - reject
                         if (!empty($contenttype) && preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $contenttype) === 1) {
                             $badRequest = true;
                         }
