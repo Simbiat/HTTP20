@@ -329,6 +329,10 @@ class Headers
                         #Allow empty
                         'empty',
                     ];
+                    #If we have only 'same-origin' and/or 'none', allow script as well, because otherwise default settings will prevent access to JS files hosted on same domain
+                    if (in_array($site, [['same-origin', 'none'], ['same-origin'], ['none']])) {
+                        $dest[] = 'script';
+                    }
                 }
                 #Actual validation
                 if (
