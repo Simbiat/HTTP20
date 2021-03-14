@@ -449,8 +449,14 @@ class Headers
     }
     
     #Function to set Last-Modified header. This header is generally not required if you already have Cache-Control and ETag, but still may be useful in case of conditional requests. At least if you will provide it with proper modification time.
-    public function lastModified(int $modtime = 0, bool $exit = false): self
+    public function lastModified(int|string $modtime = 0, bool $exit = false): self
     {
+        #In case it's not numeric, replace with 0
+        if (!is_numeric($modtime)) {
+            $modtime = 0;
+        } else {
+            $modtime = intval($modtime);
+        }
         if ($modtime <= 0) {
             #Get freshest modification time of all PHP files used ot PHP's getlastmod time
             $modtime = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file'))), getlastmod());
