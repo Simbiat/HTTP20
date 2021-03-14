@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class Meta
 {
@@ -333,7 +333,7 @@ class Meta
             #Output directly to client if parameter is true
             if ($prettyDirect) {
                 header('Content-Type: text/xml; charset=utf-8');
-                (new \http20\Common)->zEcho($output);
+                (new \Simbiat\http20\Common)->zEcho($output);
             }
         } else {
             $output = '';

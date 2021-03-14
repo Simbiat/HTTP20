@@ -1,6 +1,6 @@
 ## RSS
 ```php
-(new \http20\RSS)->RSS(string $title, array $entries, string $feedlink = '', array $feed_settings = []);
+(new \Simbiat\http20\RSS)->RSS(string $title, array $entries, string $feedlink = '', array $feed_settings = []);
 ```
 Function to generate RSS feed as per https://www.rssboard.org/rss-specification specification. Function is designed similarly to Atom described above, with minor changes listed below. Otherwise - refer to feed specifications.
 

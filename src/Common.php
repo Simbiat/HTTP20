@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class Common
 {
@@ -755,7 +755,7 @@ class Common
     #Function utilizes ob functions to attempt compresing output sent to browser and also provide browser with length of the output and some caching-related headers
     public function zEcho(string $string, string $cacheStrat = ''): void
     {
-        (new \http20\Headers)->cacheControl($string, $cacheStrat, true);
+        (new \Simbiat\http20\Headers)->cacheControl($string, $cacheStrat, true);
         #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistences with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
         if (extension_loaded('zlib') && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false) {
             #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.

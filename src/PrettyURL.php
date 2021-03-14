@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class PrettyURL
 {

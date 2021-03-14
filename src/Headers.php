@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class Headers
 {    
@@ -206,7 +206,7 @@ class Headers
                         break;
                     case 'plugin-types':
                         #Validate the value we have
-                        if (preg_match('/^(('.(new \http20\Common)::mimeRegex.') ?){1,}$/i', $value) === 1) {
+                        if (preg_match('/^(('.(new \Simbiat\http20\Common)::mimeRegex.') ?){1,}$/i', $value) === 1) {
                             $defaultDirectives['plugin-types'] = $value;
                         } else {
                             #Ignore the value entirely
@@ -364,7 +364,7 @@ class Headers
                             }
                         }
                         #Cache mimeRegex
-                        $mimeRegex = (new \http20\Common)::mimeRegex;
+                        $mimeRegex = (new \Simbiat\http20\Common)::mimeRegex;
                         #Check if we have already sent our own content-type header
                         foreach (headers_list() as $header) {
                             if (preg_match('/^Content-type:/', $header) === 1) {
@@ -561,7 +561,7 @@ class Headers
         #Send response header
         @header($_SERVER['SERVER_PROTOCOL'].' '.$response);
         if ($exit) {
-            (new \http20\Common)->forceClose();
+            (new \Simbiat\http20\Common)->forceClose();
         } else {
             return $positive;
         }
@@ -580,8 +580,8 @@ class Headers
         } else {
             $savedata = false;
         }
-        #Cache (new \http20\Common)
-        $common = (new \http20\Common);
+        #Cache (new \Simbiat\http20\Common)
+        $common = (new \Simbiat\http20\Common);
         #Cache langTagRegex
         $langTagRegex = $common::langTagRegex;
         #Cache langEncRegex

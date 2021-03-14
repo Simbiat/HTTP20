@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class Sharing
 {
@@ -9,8 +9,8 @@ class Sharing
     
     public function _construct()
     {
-        #Cache (new \http20\Common)
-        $common = (new \http20\Common);
+        #Cache (new \Simbiat\http20\Common)
+        $common = (new \Simbiat\http20\Common);
         #Cache MIMEs list
         $this->extToMime = $common::extToMime;
         #Cache mimeRegex
@@ -27,19 +27,19 @@ class Sharing
         header('Access-Control-Allow-Methods: GET');
         #Download is valid only in case of GET method
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            return (new \http20\Headers)->clientReturn('405', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('405', $exit);
         }
         #Check that path exists and is actually a file
         if (!is_file($file)) {
             if (isset($_SERVER['HTTP_RANGE'])) {
-                return (new \http20\Headers)->clientReturn('410', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('410', $exit);
             } else {
-                return (new \http20\Headers)->clientReturn('404', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('404', $exit);
             }
         }
         #Check if file is readable
         if (!is_readable($file)) {
-            return (new \http20\Headers)->clientReturn('409', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('409', $exit);
         }
         #Get file information (we need extension and basename)
         $fileinfo = pathinfo($file);
@@ -50,7 +50,7 @@ class Sharing
         #Control caching
         header('Cache-Control: must-revalidate, no-transform');
         #If file has been cached by browser since last time it has been changed - exit before everything. Depends on browser whether this will work, though.
-        (new \http20\Headers)->lastModified(filemtime($file), true)->eTag($boundary);
+        (new \Simbiat\http20\Headers)->lastModified(filemtime($file), true)->eTag($boundary);
         #Check if MIME was provided
         if (!empty($mime)) {
             #If yes, validate its format
@@ -76,7 +76,7 @@ class Sharing
         #Process ranges
         $ranges = $this->rangesValidate($filesize);
         if (isset($ranges[0]) && $ranges[0] === false) {
-            return (new \http20\Headers)->clientReturn('416', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('416', $exit);
         }
         #Send common headers
         if ($inline) {
@@ -92,13 +92,13 @@ class Sharing
         $stream = fopen($file, 'rb');
         #Check if file was opened
         if ($stream === false) {
-            return (new \http20\Headers)->clientReturn('500', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
         }
         #Open output stream
         $output = fopen('php://output', 'wb');
         #Check if stream was opened
         if ($output === false) {
-            return (new \http20\Headers)->clientReturn('500', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
         }
         #Disable buffering. This should help limiting the memory usage. At least, in some cases.
         stream_set_read_buffer($stream, 0);
@@ -124,10 +124,10 @@ class Sharing
                 fclose($stream);
                 fclose($output);
                 if ($result === false) {
-                    return (new \http20\Headers)->clientReturn('500', $exit);
+                    return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                 } else {
                     if ($exit) {
-                        return (new \http20\Headers)->clientReturn('200', true);
+                        return (new \Simbiat\http20\Headers)->clientReturn('200', true);
                     } else {
                         return $result;
                     }
@@ -162,7 +162,7 @@ class Sharing
                     if ($result === false) {
                         fclose($stream);
                         fclose($output);
-                        return (new \http20\Headers)->clientReturn('500', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                     } else {
                         $sent += $result;
                     }
@@ -172,7 +172,7 @@ class Sharing
                 fclose($output);
                 echo "\r\n--".$boundary."\r\n";
                 if ($exit) {
-                    return (new \http20\Headers)->clientReturn('200', true);
+                    return (new \Simbiat\http20\Headers)->clientReturn('200', true);
                 } else {
                     return $sent;
                 }
@@ -187,10 +187,10 @@ class Sharing
             fclose($stream);
             fclose($output);
             if ($result === false) {
-                return (new \http20\Headers)->clientReturn('500', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
             } else {
                 if ($exit) {
-                    return (new \http20\Headers)->clientReturn('200', true);
+                    return (new \Simbiat\http20\Headers)->clientReturn('200', true);
                 } else {
                     return $result;
                 }
@@ -207,11 +207,11 @@ class Sharing
         $maxFiles = ini_get('max_file_uploads');
         #Check if POST or PUT
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PUT') {
-            return (new \http20\Headers)->clientReturn('405', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('405', $exit);
         }
         #Check content type if we have POST method
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && (empty($_SERVER['CONTENT_TYPE']) || preg_match('/^multipart\/form-data(;)?.*/i', $_SERVER['CONTENT_TYPE']) !== 1)) {
-            return (new \http20\Headers)->clientReturn('415', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('415', $exit);
         }
         #Sanitize provided MIME types
         if (!empty($allowedMime)) {
@@ -222,40 +222,40 @@ class Sharing
             }
         }
         #Cache filename sanitizer
-        if (method_exists('\SafeFileName\SafeFileName','sanitize')) {
-            $SafeFileName = (new \SafeFileName\SafeFileName);
+        if (method_exists('\Simbiat\SafeFileName','sanitize')) {
+            $SafeFileName = (new \Simbiat\SafeFileName);
         } else {
             $SafeFileName = false;
         }
         #Check if file upload is enabled on server
         if (ini_get('file_uploads') == false) {
-            return (new \http20\Headers)->clientReturn('501', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('501', $exit);
         }
         #Check that we do have some space allocated for file uploads
         if ($maxUpload === 0 || $maxPost === 0 || $maxFiles === 0) {
-            return (new \http20\Headers)->clientReturn('507', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('507', $exit);
         }
         #Validate destination directory
         if (is_string($destPath)) {
             $destPath = realpath($destPath);
             if (!is_dir($destPath) || !is_writable($destPath)) {
-                return (new \http20\Headers)->clientReturn('500', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
             }
         } elseif (is_array($destPath)) {
             foreach ($destPath as $key=>$path) {
                 $destPath[$key] = realpath($path);
                 if (!is_dir($destPath[$key]) || !is_writable($destPath[$key])) {
-                    return (new \http20\Headers)->clientReturn('500', $exit);
+                    return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                 }
             }
         } else {
-            return (new \http20\Headers)->clientReturn('500', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
         }
         #Process files based on method used
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             #Check that something was sent to us at all
             if ((isset($_SERVER['CONTENT_LENGTH']) && intval($_SERVER['CONTENT_LENGTH']) === 0) || empty($_FILES) || empty($_POST)) {
-                return (new \http20\Headers)->clientReturn('400', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('400', $exit);
             }
             #Standardize $_FILES and also count them
             $totalfiles = 0;
@@ -282,7 +282,7 @@ class Sharing
             }
             #Check number of files
             if ($totalfiles > $maxFiles) {
-                return (new \http20\Headers)->clientReturn('413', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('413', $exit);
             }
             #Prepare array for uploaded files
             $uploadedFiles = [];
@@ -291,7 +291,7 @@ class Sharing
                 #Check that field has a folder to copy file to
                 if (is_array($destPath) && !isset($destPath[$field])) {
                     if ($intollerant) {
-                        return (new \http20\Headers)->clientReturn('501', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('501', $exit);
                     } else {
                         #Remove the file from list
                         unset($_FILES[$field]);
@@ -313,7 +313,7 @@ class Sharing
                         case UPLOAD_ERR_INI_SIZE:
                         case UPLOAD_ERR_FORM_SIZE:
                             if ($intollerant) {
-                                return (new \http20\Headers)->clientReturn('413', $exit);
+                                return (new \Simbiat\http20\Headers)->clientReturn('413', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
@@ -324,7 +324,7 @@ class Sharing
                         case UPLOAD_ERR_NO_FILE:
                         case UPLOAD_ERR_CANT_WRITE:
                             if ($intollerant) {
-                                return (new \http20\Headers)->clientReturn('409', $exit);
+                                return (new \Simbiat\http20\Headers)->clientReturn('409', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
@@ -334,7 +334,7 @@ class Sharing
                         case UPLOAD_ERR_NO_TMP_DIR:
                         case UPLOAD_ERR_EXTENSION:
                             if ($intollerant) {
-                                return (new \http20\Headers)->clientReturn('500', $exit);
+                                return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
@@ -343,7 +343,7 @@ class Sharing
                             break;
                         default:
                             if ($intollerant) {
-                                return (new \http20\Headers)->clientReturn('418', $exit);
+                                return (new \Simbiat\http20\Headers)->clientReturn('418', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
@@ -354,12 +354,12 @@ class Sharing
                     #Check if file being referenced was, indeed, sent to us via POST
                     if (is_uploaded_file($file['tmp_name']) === false) {
                         #Deny further processing. This is the only case, where we ignore $intollerant setting for security reasons
-                        return (new \http20\Headers)->clientReturn('403', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('403', $exit);
                     }
                     #Check file size
                     if ($file['size'] > $maxUpload) {
                         if ($intollerant) {
-                            return (new \http20\Headers)->clientReturn('413', $exit);
+                            return (new \Simbiat\http20\Headers)->clientReturn('413', $exit);
                         } else {
                             #Remove the file from list
                             unset($_FILES[$field][$key]);
@@ -368,7 +368,7 @@ class Sharing
                     } elseif ($file['size'] === 0 || empty($file['tmp_name'])) {
                         #Check if tmp_name is set or $file size is empty
                         if ($intollerant) {
-                            return (new \http20\Headers)->clientReturn('400', $exit);
+                            return (new \Simbiat\http20\Headers)->clientReturn('400', $exit);
                         } else {
                             #Remove the file from list
                             unset($_FILES[$field][$key]);
@@ -385,7 +385,7 @@ class Sharing
                             #Get MIME from file (not relying on what was sent by client)
                             if (!in_array($_FILES[$field][$key]['type'], $allowedMime)) {
                                 if ($intollerant) {
-                                    return (new \http20\Headers)->clientReturn('415', $exit);
+                                    return (new \Simbiat\http20\Headers)->clientReturn('415', $exit);
                                 } else {
                                     #Remove the file from list
                                     unset($_FILES[$field][$key]);
@@ -401,7 +401,7 @@ class Sharing
                             #If name is empty or name is too long, do not process it
                             if (empty($_FILES[$field][$key]['name']) || mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
                                 if ($intollerant) {
-                                    return (new \http20\Headers)->clientReturn('400', $exit);
+                                    return (new \Simbiat\http20\Headers)->clientReturn('400', $exit);
                                 } else {
                                     #Remove the file from list
                                     unset($_FILES[$field][$key]);
@@ -435,7 +435,7 @@ class Sharing
                                         #Check that it is writable
                                         if (!is_writable($finalPath.'/'.$_FILES[$field][$key]['new_name'])) {
                                             if ($intollerant) {
-                                                return (new \http20\Headers)->clientReturn('409', $exit);
+                                                return (new \Simbiat\http20\Headers)->clientReturn('409', $exit);
                                             } else {
                                                 #Remove the file from list
                                                 unset($_FILES[$field][$key]);
@@ -464,7 +464,7 @@ class Sharing
             #Check if any files were left
             if (empty($_FILES)) {
                 if (empty($uploadedFiles)) {
-                    return (new \http20\Headers)->clientReturn('400', $exit);
+                    return (new \Simbiat\http20\Headers)->clientReturn('400', $exit);
                 }
             } else {
                 #Process files and put them into an array
@@ -490,22 +490,22 @@ class Sharing
         #Process PUT requests
         } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             if (!isset($_SERVER['CONTENT_LENGTH']) || intval($_SERVER['CONTENT_LENGTH']) === 0) {
-                return (new \http20\Headers)->clientReturn('411', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('411', $exit);
             }
             $client_size = intval($_SERVER['CONTENT_LENGTH']);
             #Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
             set_time_limit(intval(floor($client_size/10240)));
             if ($_SERVER['CONTENT_LENGTH'] > $maxUpload) {
-                return (new \http20\Headers)->clientReturn('413', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('413', $exit);
             }
             #Check that destination is a string
             if (!is_string($destPath)) {
-                return (new \http20\Headers)->clientReturn('500', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
             }
             if (!empty($allowedMime) && isset($_SERVER['CONTENT_TYPE'])) {
                 #Get MIME from file (not relying on what was sent by client)
                 if (!in_array($_SERVER['CONTENT_TYPE'], $allowedMime)) {
-                    return (new \http20\Headers)->clientReturn('415', $exit);
+                    return (new \Simbiat\http20\Headers)->clientReturn('415', $exit);
                 }
             }
             #Attempt to get name from header
@@ -513,7 +513,7 @@ class Sharing
             if (isset($_SERVER['HTTP_CONTENT_DISPOSITION'])) {
                 #filename* is preferred over filename as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
                 #Note that this format MAY include charset
-                $name = preg_replace('/^(.*filename\*='.(new \http20\Common)::langEncRegex.'"?)(?<filename>[^";=\*]*)((("|;).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
+                $name = preg_replace('/^(.*filename\*='.(new \Simbiat\http20\Common)::langEncRegex.'"?)(?<filename>[^";=\*]*)((("|;).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
                 if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
                     #If we are here, it means that there is no filename*
                     $name = preg_replace('/^(.*filename="?)(?<filename>[^";=\*]*)((("|;).*)|($))$/i', '$2', $_SERVER['HTTP_CONTENT_DISPOSITION']);
@@ -545,7 +545,7 @@ class Sharing
                 $stream = fopen('php://input', 'rb');
                 #Check if file was opened
                 if ($stream === false) {
-                    return (new \http20\Headers)->clientReturn('409', $exit);
+                    return (new \Simbiat\http20\Headers)->clientReturn('409', $exit);
                 }
                 #Read input stream
                 if ($offset > 0 && $offset < $client_size) {
@@ -554,7 +554,7 @@ class Sharing
                     #Check if stream was opened
                     if ($garbage === false) {
                         fclose($stream);
-                        return (new \http20\Headers)->clientReturn('500', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                     }
                     $collected = stream_copy_to_stream($stream, $garbage, $offset);
                     #Close stream
@@ -562,7 +562,7 @@ class Sharing
                     if ($collected != $offset) {
                         #Means we failed to read appropriate amount of bytes
                         fclose($stream);
-                        return (new \http20\Headers)->clientReturn('500', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                     }
                 }
                 if (feof($stream) === false) {
@@ -576,7 +576,7 @@ class Sharing
                     #Check if stream was opened
                     if ($output === false) {
                         fclose($stream);
-                        return (new \http20\Headers)->clientReturn('500', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                     }
                     #Disable buffering. This should help limiting the memory usage. At least, in some cases.
                     stream_set_read_buffer($stream, 0);
@@ -607,7 +607,7 @@ class Sharing
                 if (!$resumable) {
                     @unlink(sys_get_temp_dir().'/'.$name);
                 }
-                return (new \http20\Headers)->clientReturn('500', $exit);
+                return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
             } else {
                 #Get file MIME type
                 if (isset($_SERVER['CONTENT_TYPE'])) {
@@ -623,7 +623,7 @@ class Sharing
                     #Get MIME from file (not relying on what was sent by client)
                     if (!in_array($filetype, $allowedMime)) {
                         @unlink(sys_get_temp_dir().'/'.$name);
-                        return (new \http20\Headers)->clientReturn('415', $exit);
+                        return (new \Simbiat\http20\Headers)->clientReturn('415', $exit);
                     }
                 }
                 #Get extension of the file
@@ -637,18 +637,18 @@ class Sharing
                 $newName = $hash.'.'.$ext;
                 #Attempt to move the file
                 if (rename(sys_get_temp_dir().'/'.$name, $destPath.'/'.$newName) === false) {
-                    return (new \http20\Headers)->clientReturn('500', $exit);
+                    return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                 }
                 #Add to array. Using array here for consistency with POST method. Field is reported as PUT to indicate the method. It's advisable not to use it for fields if you use POST method as well
                 $uploadedFiles[] = ['server_name' => $newName, 'user_name' => $name, 'size' => $client_size, 'type' => $filetype, 'hash' => $hash, 'field' => 'PUT'];
             }
         }
         if (empty($uploadedFiles)) {
-            return (new \http20\Headers)->clientReturn('500', $exit);
+            return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
         } else {
             if ($exit) {
                 #Inform client, that files were uploaded
-                return (new \http20\Headers)->clientReturn('200', true);
+                return (new \Simbiat\http20\Headers)->clientReturn('200', true);
             } else {
                 return $uploadedFiles;
             }

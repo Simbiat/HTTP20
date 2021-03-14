@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class Atom
 {
     #Object to cache some common functions
-    private \HTTP20\Common $http20;
+    private \Simbiat\http20\Common $http20;
     
     public function __construct()
     {
         #Caching common functions
-        $this->http20 = (new \http20\Common);
+        $this->http20 = (new \Simbiat\http20\Common);
     }
     
     #Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
@@ -52,7 +52,7 @@ class Atom
             $feed_settings['updated'] = $this->http20->valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
         #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
-        (new \http20\Headers)->lastModified(strtotime($feed_settings['updated']), false);
+        (new \Simbiat\http20\Headers)->lastModified(strtotime($feed_settings['updated']), false);
         #Validate authors
         if (!empty($feed_settings['authors'])) {
             $this->atomElementValidator($feed_settings['authors']);

@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class Sitemap
 {
@@ -14,7 +14,7 @@ class Sitemap
         #Validate links, if list is not empty. I did not find any recommendations for empty sitemaps and I do not see a technical reason to break here, because if sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
         $this->linksValidator($links);
         #Cache Common HTTP20 functions
-        $http20 = (new \http20\Common);
+        $http20 = (new \Simbiat\http20\Common);
         #Allow only 50000 links
         $links = array_slice($links, 0, 50000, true);
         #Generate the output string
@@ -71,7 +71,7 @@ class Sitemap
                     header('Content-Type: text/xml; charset=utf-8');
                     break;
             }
-            (new \http20\Common)->zEcho($output);
+            (new \Simbiat\http20\Common)->zEcho($output);
         } else {
             return $output;
         }
@@ -104,9 +104,9 @@ class Sitemap
             $maxdate = 0;
         }
         #Send Last-Modified header and stop further processing if client already has a fresh enough copy
-        (new \http20\Headers)->lastModified($maxdate, true);
+        (new \Simbiat\http20\Headers)->lastModified($maxdate, true);
         #Cache Common HTTP20 functions
-        $http20 = (new \http20\Common);
+        $http20 = (new \Simbiat\http20\Common);
         #Check that all links start from
         foreach ($links as $key=>$link) {
             #Check if 'loc' is set

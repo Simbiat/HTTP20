@@ -8,7 +8,7 @@
 # Sharing
 Function that can be used in processes related to file sharing.
 ```php
-(new \http20\Sharing)->nameOfFunction();
+(new \Simbiat\http20\Sharing)->nameOfFunction();
 ```
 
 ## download

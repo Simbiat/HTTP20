@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
-namespace http20;
+namespace Simbiat\http20;
 
 class RSS
 {
     #Object to cache some common functions
-    private \HTTP20\Common $http20;
+    private \Simbiat\http20\Common $http20;
     
     public function __construct()
     {
         #Caching common functions for some performance benefits
-        $this->http20 = (new \http20\Common);
+        $this->http20 = (new \Simbiat\http20\Common);
     }
     
     #Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
@@ -72,7 +72,7 @@ class RSS
             $feed_settings['lastBuildDate'] = $this->http20->valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         }
         #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
-        (new \http20\Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])), false);
+        (new \Simbiat\http20\Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])), false);
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
