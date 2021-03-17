@@ -2,14 +2,10 @@
 ```php
 (new \Simbiat\http20\Atom)->Atom(string $title, array $entries, string $id = '', string $texttype = 'text', array $feed_settings = []);
 ```
-Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.html specification.
-
-`$title` - string that will be used for `<title>` tag in the feed.
-
-`$id` - string, that will be used as `id`. It needs to be an URI, thus if it will be empty, will use `(isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']`, that is current address.
-
-`$texttype` is the text type, that will be added as attribute to some of the tags as per specification. Supported types are `text`, `html`, `xhtml`.
-
+Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.html specification.  
+`$title` - string that will be used for `<title>` tag in the feed.  
+`$id` - string, that will be used as `id`. It needs to be an URI, thus if it will be empty, will use `(isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']`, that is current address.  
+`$texttype` is the text type, that will be added as attribute to some of the tags as per specification. Supported types are `text`, `html`, `xhtml`.  
 `$feed_settings` - array with optional settings for the feed. Maximum will look like this:
 ```php
 [
@@ -50,8 +46,7 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
    ],
 ]
 ```
-For details on elements above (what they mean, recommendations, etc.), please, refer to Atom specification: names in `array` correspond to respective tags in feed.
-
+For details on elements above (what they mean, recommendations, etc.), please, refer to Atom specification: names in `array` correspond to respective tags in feed.  
 `$entries` - array of elements (arrays), that will populate the feed. Mandatory value is `link`, instead of `id` as in specification, because `id` is expected to be an URI regardless (although it will be a modified one). `title` and `updated` are also mandatory. Maximum for each element will look like this:
 ```php
 [

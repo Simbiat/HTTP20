@@ -1,6 +1,5 @@
 # HTTP20
-Set of classes/functions that may be universally useful for websites (or some parts of them, at least).
-
+Set of classes/functions that may be universally useful for websites (or some parts of them, at least).  
 They are provided in single library and not separately, not only because of some inter-dependencies, but also because if you are building a website from scratch, most likely, you will be interested in a bunch of them at the same time either way.
 
 - [HTTP20](#http20)
@@ -25,6 +24,7 @@ They are provided in single library and not separately, not only because of some
     + [secFetch](doc/Headers.md#secFetch)
     + [clientReturn](doc/Headers.md#clientreturn)
     + [links](doc/Headers.md#links)
+    + [redirect](doc/Headers.md#redirect)
   * [Meta](doc/Meta.md)
     + [twitter](doc/Meta.md#twitter)
     + [msTile](doc/Meta.md#mstile)

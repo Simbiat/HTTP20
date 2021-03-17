@@ -534,7 +534,7 @@ class Headers
     }
     
     #Function to return to client and optionally force-close connection
-    public function clientReturn(string $code = '500', bool $exit = true): bool
+    public function clientReturn(string $code = '500 Internal Server Error', bool $exit = true): bool
     {
         #Generate response
         if (is_numeric($code)) {
@@ -563,6 +563,39 @@ class Headers
         } else {
             return $positive;
         }
+    }
+    
+    #Function to handle redirects
+    public function redirect(string $newURI, bool $permanent = true, bool $preserveMethod = true, bool $forceGET = false): void
+    {
+        #If we want to enforce GET method, we can use 303: it tells client to retrieve a different page using GET method, even if original was not GET
+        if ($forceGET) {
+            $code = '303 See Other';
+        } else {
+            #Permanent redirect without change of method
+            if ($permanent && $preserveMethod) {
+                $code = '308 Permanent Redirect';
+            #Temporary redirect without change of method
+            } elseif (!$permanent && $preserveMethod) {
+                $code = '307 Temporary Redirect';
+            #Permanent redirect allowing change of method
+            } elseif ($permanent && !$preserveMethod) {
+                $code = '301 Moved Permanently';
+            #Temporary redirect allowing change of method
+            } elseif (!$permanent && !$preserveMethod) {
+                $code = '302 Found';
+            }
+        }
+        #Validate URI
+        if ((new \Simbiat\http20\Common)->uriValidator($newURI) === true) {
+            #Send Location header, indicating new URL to be used
+            header('Location: '.$newURI);
+        } else {
+            #Update code to 500, since sometihng must have gone wrong
+            $code = '500 Internal Server Error';
+        }
+        #Send code and enforce connection closure
+        $this->clientReturn($code, true);
     }
     
     #Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
