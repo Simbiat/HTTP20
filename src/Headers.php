@@ -273,8 +273,6 @@ class Headers
                 header('Content-Security-Policy-Report-Only: '.trim($cspLine));
             }
         }
-        
-        header('Link: <https://'.$_SERVER['HTTP_HOST'].str_ireplace('?onepager', '', $_SERVER['REQUEST_URI']).'>; rel=canonical;', false);
         return $this;
     }
     
