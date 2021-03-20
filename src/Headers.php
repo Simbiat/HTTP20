@@ -734,7 +734,7 @@ class Headers
                                             #Assume error or malicoious intent and skip
                                             continue;
                                         } else {
-                                            #Set 'as' attribute is rel is preload
+                                            #Set 'as' attribute if rel is preload
                                             if (isset($link['rel']) && preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
                                                 $link['as'] = 'image';
                                             }
@@ -771,8 +771,18 @@ class Headers
                     $link['type'] = '';
                 }
             }
+            if (preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
+                #Force 'as' for stylesheet
+                if ((!empty($link['type']) && preg_match('/^text\/css(;.*)?$/i', $link['type']) === 1) || (!empty($link['rel']) && preg_match('/^.*(stylesheet).*$/i', $link['rel']) === 1)) {
+                    $link['as'] = 'style';
+                }
+                #Force 'as' for JS
+                if ((!empty($link['type']) && preg_match('/^application\/javascript(;.*)?$/i', $link['type']) === 1)) {
+                    $link['as'] = 'script';
+                }
+            }
             #If type is defined, check it corresponds to 'as'. If not - do not process, assume error or malicious intent
-            if (!empty($link['type']) && isset($link['as']) && preg_match('/^'.$link['as'].'\/.*$/i', $link['type']) !== 1) {
+            if (!empty($link['type']) && !empty($link['as']) && preg_match('/^(audio|image|video|font)$/i', $link['as']) === 1 && preg_match('/^'.$link['as'].'\/.*$/i', $link['type']) !== 1) {
                 continue;
             }
             #Generate element as string
