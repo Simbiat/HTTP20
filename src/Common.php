@@ -864,6 +864,16 @@ class Common
                 }
             }
         }
+        #Get date if we are directly outputting the data
+        if (empty($tofile)) {
+            if (is_string($files)) {
+                $modDate = filemtime($files);
+            } else {
+                $modDate = max(array_map('filemtime', array_filter($files, 'is_file')));
+            }
+            #Send Last Modifed header and exit, if we hit browser cache
+            (new \Simbiat\http20\Headers)->lastModified($modDate, true);
+        }
         #Minify
         if ($minify === true) {
             switch (strtolower($type)) {
