@@ -27,7 +27,7 @@ class Meta
         #Add title
         $output .= '<meta name="twitter:title" content="'.mb_substr(htmlspecialchars($general['title']), 0, 70, 'UTF-8').'" />';
         #Add site if not empty and valid
-        if (!empty($general['site']) && preg_match('/^@?(\w){4,15}$/', $general['site']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['site']) !== 1) {
+        if (!empty($general['site']) && preg_match('/^@?(\w){4,15}$/', $general['site']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['site']) === 0) {
             $output .= '<meta name="twitter:site" content="'.(substr($general['site'], 0, 1) === '@' ? '' : '@').$general['site'].'" />';
         }
         #Add site:id if not empty and valid
@@ -35,7 +35,7 @@ class Meta
             $output .= '<meta name="twitter:site:id" content="'.$general['site:id'].'" />';
         }
         #Add creator if not empty and valid
-        if (!empty($general['creator']) && preg_match('/^@?(\w){4,15}$/', $general['creator']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['creator']) !== 1) {
+        if (!empty($general['creator']) && preg_match('/^@?(\w){4,15}$/', $general['creator']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['creator']) === 0) {
             $output .= '<meta name="twitter:creator" content="'.(substr($general['creator'], 0, 1) === '@' ? '' : '@').$general['creator'].'" />';
         }
         #Add creator:id if not empty and valid
@@ -145,7 +145,7 @@ class Meta
             $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
         }
         #If window is not provided set or incorrect
-        if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d{1,})\d{2};\s*height=([89]|[1-9]\d{1,})\d{2})|(height=([89]|[1-9]\d{1,})\d{2};\s*width=([89]|[1-9]\d{1,})\d{2})$/i', $general['window']) !== 1) {
+        if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d{1,})\d{2};\s*height=([89]|[1-9]\d{1,})\d{2})|(height=([89]|[1-9]\d{1,})\d{2};\s*width=([89]|[1-9]\d{1,})\d{2})$/i', $general['window']) === 0) {
             $general['window'] = 'width=800;height=600';
         }
         #If allowDomainApiCalls is not set, set it to true by default

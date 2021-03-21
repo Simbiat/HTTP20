@@ -551,7 +551,7 @@ class Headers
         if (preg_match('/^([12345]\d{2})( .{1,})$/', $response) !== 1) {
             $response = '500 Internal Server Error';
         }
-        if (preg_match('/^([123]\d{2})( .{1,})$/', $response) !== 1) {
+        if (preg_match('/^([123]\d{2})( .{1,})$/', $response) === 0) {
             $positive = true;
         } else {
             $positive = false;
@@ -698,7 +698,7 @@ class Headers
             }
             #If integrity is set, validate if it's a valid value
             if (isset($link['integrity'])) {
-                if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) !== 1) {
+                if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) === 0) {
                     #If not valid, check if it's a file and generate hash
                     if (is_file($link['integrity'])) {
                         #Attempt to get actual MIME type while we're at it
