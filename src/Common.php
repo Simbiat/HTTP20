@@ -819,7 +819,7 @@ class Common
                 if (!empty($allowedMime)) {
                     #Sanitize provided MIME types
                     foreach ($allowedMime as $key=>$mime) {
-                        if (preg_match('/^'.self::$mimeRegex.'$/i', $mime) !== 1) {
+                        if (preg_match('/^'.self::mimeRegex.'$/i', $mime) !== 1) {
                             unset($allowedMime[$key]);
                         }
                     }
