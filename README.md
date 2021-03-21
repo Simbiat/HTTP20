@@ -36,6 +36,7 @@ They are provided in single library and not separately, not only because of some
     + [valueToTime](doc/Common.md#valuetotime)
     + [atomIDGen](doc/Common.md#atomidgen)
     + [zEcho](doc/Common.md#zecho)
+    + [fileEcho](doc/Common.md#fileecho)
     + [emailValidator](doc/Common.md#emailvalidator)
     + [uriValidator](doc/Common.md#urivalidator)
     + [LangCodeCheck](doc/Common.md#langcodecheck)

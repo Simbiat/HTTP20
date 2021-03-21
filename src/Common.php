@@ -36,6 +36,7 @@ class Common
         'ait' => 'application/vnd.dvb.ait',
         'ami' => 'application/vnd.amiga.ami',
         'apk' => 'application/vnd.android.package-archive',
+        'appcache' => 'text/cache-manifest',
         'application' => 'application/x-ms-application',
         'apr' => 'application/vnd.lotus-approach',
         'asf' => 'video/x-ms-asf',
@@ -47,10 +48,13 @@ class Common
         'atx' => 'application/vnd.antix.game-component',
         'au' => 'audio/basic',
         'avi' => 'video/x-msvideo',
+        'avif' => 'image/avif',
+        'avifs' => 'image/avif-sequence',
         'aw' => 'application/applixware',
         'azf' => 'application/vnd.airzip.filesecure.azf',
         'azs' => 'application/vnd.airzip.filesecure.azs',
         'azw' => 'application/vnd.amazon.ebook',
+        'bbaw' => 'application/x-bb-appworld',
         'bcpio' => 'application/x-bcpio',
         'bdf' => 'application/x-font-bdf',
         'bdm' => 'application/vnd.syncml.dm+wbxml',
@@ -107,6 +111,7 @@ class Common
         'cpt' => 'application/mac-compactpro',
         'crd' => 'application/x-mscardfile',
         'crl' => 'application/pkix-crl',
+        'crx' => 'application/x-chrome-extension',
         'cryptonote' => 'application/vnd.rig.cryptonote',
         'csh' => 'application/x-csh',
         'csml' => 'chemical/x-csml',
@@ -114,6 +119,7 @@ class Common
         'css' => 'text/css',
         'csv' => 'text/csv',
         'cu' => 'application/cu-seeme',
+        'cur' => 'image/x-icon',
         'curl' => 'text/vnd.curl',
         'cww' => 'application/prs.cww',
         'dae' => 'model/vnd.collada+xml',
@@ -171,7 +177,10 @@ class Common
         'ez2' => 'application/vnd.ezpix-album',
         'ez3' => 'application/vnd.ezpix-package',
         'f' => 'text/x-fortran',
-        'f4v' => 'video/x-f4v',
+        'f4a' => 'audio/mp4',
+        'f4b' => 'audio/mp4',
+        'f4p' => 'video/mp4',
+        'f4v' => 'video/mp4',
         'fbs' => 'image/vnd.fastbidsheet',
         'fcs' => 'application/vnd.isac.fcs',
         'fdf' => 'application/vnd.fdf',
@@ -202,6 +211,7 @@ class Common
         'gac' => 'application/vnd.groove-account',
         'gdl' => 'model/vnd.gdl',
         'geo' => 'application/vnd.dynageo',
+        'geojson' => 'application/geo+json',
         'gex' => 'application/vnd.geometry-explorer',
         'ggb' => 'application/vnd.geogebra.file',
         'ggt' => 'application/vnd.geogebra.tool',
@@ -235,6 +245,7 @@ class Common
         'hpid' => 'application/vnd.hp-hpid',
         'hps' => 'application/vnd.hp-hps',
         'hqx' => 'application/mac-binhex40',
+        'htc' => 'text/x-component',
         'htke' => 'application/vnd.kenameaapp',
         'html' => 'text/html',
         'hvd' => 'application/vnd.yamaha.hv-dic',
@@ -274,6 +285,7 @@ class Common
         'jpm' => 'video/jpm',
         'js' => 'application/javascript',
         'json' => 'application/json',
+        'jsonld' => 'application/ld+json',
         'karbon' => 'application/vnd.kde.karbon',
         'kfo' => 'application/vnd.kde.kformula',
         'kia' => 'application/vnd.kidspiration',
@@ -292,6 +304,7 @@ class Common
         'lbe' => 'application/vnd.llamagraphics.life-balance.exchange+xml',
         'les' => 'application/vnd.hhe.lesson-player',
         'link66' => 'application/vnd.route66.link66+xml',
+        'log' => 'text/plain',
         'lrm' => 'application/vnd.ms-lrm',
         'ltf' => 'application/vnd.frogans.ltf',
         'lvp' => 'audio/vnd.lucent.voice',
@@ -299,16 +312,20 @@ class Common
         'm21' => 'application/mp21',
         'm3u' => 'audio/x-mpegurl',
         'm3u8' => 'application/vnd.apple.mpegurl',
-        'm4v' => 'video/x-m4v',
+        'm4a' => 'audio/mp4',
+        'm4v' => 'video/mp4',
         'ma' => 'application/mathematica',
         'mads' => 'application/mads+xml',
         'mag' => 'application/vnd.ecowin.chart',
+        'map' => 'application/json',
+        'markdown' => 'text/markdown',
         'mathml' => 'application/mathml+xml',
         'mbk' => 'application/vnd.mobius.mbk',
         'mbox' => 'application/mbox',
         'mc1' => 'application/vnd.medcalcdata',
         'mcd' => 'application/vnd.mcd',
         'mcurl' => 'text/vnd.curl.mcurl',
+        'md' => 'text/markdown',
         'mdb' => 'application/x-msaccess',
         'mdi' => 'image/vnd.ms-modi',
         'meta4' => 'application/metalink4+xml',
@@ -319,6 +336,7 @@ class Common
         'mid' => 'audio/midi',
         'mif' => 'application/vnd.mif',
         'mj2' => 'video/mj2',
+        'mjs' => 'application/javascript',
         'mlp' => 'application/vnd.dolby.mlp',
         'mmd' => 'application/vnd.chipnuts.karaoke-mmd',
         'mmf' => 'application/vnd.smaf',
@@ -383,16 +401,19 @@ class Common
         'odp' => 'application/vnd.oasis.opendocument.presentation',
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
         'odt' => 'application/vnd.oasis.opendocument.text',
+        'oex' => 'application/x-opera-extension',
         'oga' => 'audio/ogg',
+        'ogg' => 'audio/ogg',
         'ogv' => 'video/ogg',
         'ogx' => 'application/ogg',
         'onetoc' => 'application/onenote',
         'opf' => 'application/oebps-package+xml',
+        'opus' => 'audio/ogg',
         'org' => 'application/vnd.lotus-organizer',
         'osf' => 'application/vnd.yamaha.openscoreformat',
         'osfpvg' => 'application/vnd.yamaha.openscoreformat.osfpvg+xml',
         'otc' => 'application/vnd.oasis.opendocument.chart-template',
-        'otf' => 'application/x-font-otf',
+        'otf' => 'font/otf',
         'otg' => 'application/vnd.oasis.opendocument.graphics-template',
         'oth' => 'application/vnd.oasis.opendocument.text-web',
         'oti' => 'application/vnd.oasis.opendocument.image-template',
@@ -494,6 +515,7 @@ class Common
         'rtx' => 'text/richtext',
         's' => 'text/x-asm',
         'saf' => 'application/vnd.yamaha.smaf-audio',
+        'safariextz' => 'application/octet-stream',
         'sbml' => 'application/sbml+xml',
         'sc' => 'application/vnd.ibm.secure-container',
         'scd' => 'application/x-msschedule',
@@ -560,6 +582,7 @@ class Common
         'svc' => 'application/vnd.dvb.service',
         'svd' => 'application/vnd.svd',
         'svg' => 'image/svg+xml',
+        'svgz' => 'image/svg+xml',
         'swf' => 'application/x-shockwave-flash',
         'swi' => 'application/vnd.aristanetworks.swi',
         'sxc' => 'application/vnd.sun.xml.calc',
@@ -584,6 +607,7 @@ class Common
         'thmx' => 'application/vnd.ms-officetheme',
         'tiff' => 'image/tiff',
         'tmo' => 'application/vnd.tmobile-livetv',
+        'topojson' => 'application/json',
         'torrent' => 'application/x-bittorrent',
         'tpl' => 'application/vnd.groove-tool-template',
         'tpt' => 'application/vnd.trid.tpt',
@@ -591,7 +615,8 @@ class Common
         'trm' => 'application/x-msterminal',
         'tsd' => 'application/timestamped-data',
         'tsv' => 'text/tab-separated-values',
-        'ttf' => 'application/x-font-ttf',
+        'ttc' => 'font/collection',
+        'ttf' => 'font/ttf',
         'ttl' => 'text/turtle',
         'twd' => 'application/vnd.simtech-mindmapper',
         'txd' => 'application/vnd.genomatix.tuxedo',
@@ -616,22 +641,26 @@ class Common
         'vcd' => 'application/x-cdlink',
         'vcf' => 'text/x-vcard',
         'vcg' => 'application/vnd.groove-vcard',
+        'vcard' => 'text/vcard',
         'vcs' => 'text/x-vcalendar',
         'vcx' => 'application/vnd.vcx',
         'vis' => 'application/vnd.visionary',
         'viv' => 'video/vnd.vivo',
         'vsd' => 'application/vnd.visio',
         'vsdx' => 'application/vnd.visio2013',
-        'vsf' => 'application/vnd.vsf',
+        'vsf' => 'text/vcard',
+        'vtt' => 'text/vtt',
         'vtu' => 'model/vnd.vtu',
         'vxml' => 'application/voicexml+xml',
         'wad' => 'application/x-doom',
+        'wasm' => 'application/wasm',
         'wav' => 'audio/x-wav',
         'wax' => 'audio/x-ms-wax',
         'wbmp' => 'image/vnd.wap.wbmp',
         'wbs' => 'application/vnd.criticaltools.wbs+xml',
         'wbxml' => 'application/vnd.wap.wbxml',
         'weba' => 'audio/webm',
+        'webapp' => 'application/x-web-app-manifest+json',
         'webm' => 'video/webm',
         'webmanifest' => 'application/manifest+json',
         'webp' => 'image/webp',
@@ -648,7 +677,8 @@ class Common
         'wmv' => 'video/x-ms-wmv',
         'wmx' => 'video/x-ms-wmx',
         'wmz' => 'application/x-ms-wmz',
-        'woff' => 'application/x-font-woff',
+        'woff' => 'font/woff',
+        'woff2' => 'font/woff2',
         'wpd' => 'application/vnd.wordperfect',
         'wpl' => 'application/vnd.ms-wpl',
         'wps' => 'application/vnd.ms-works',
@@ -677,6 +707,7 @@ class Common
         'xhtml' => 'application/xhtml+xml',
         'xif' => 'image/vnd.xiff',
         'xlam' => 'application/vnd.ms-excel.addin.macroenabled.12',
+        'xloc' => 'text/vnd.rim.location.xloc',
         'xls' => 'application/vnd.ms-excel',
         'xlsb' => 'application/vnd.ms-excel.sheet.binary.macroenabled.12',
         'xlsm' => 'application/vnd.ms-excel.sheet.macroenabled.12',
@@ -774,6 +805,86 @@ class Common
             echo $string;
         }
         exit;
+    }
+    
+    #Function to send a file to browser
+    public function fileEcho(string $filepath, array $allowedMime = [], string $cacheStrat = 'month', bool $exit = true): int
+    {
+        #Check if file exists
+        if (is_file($filepath)) {
+            #Process MIME
+            if (extension_loaded('fileinfo')) {
+                #Get MIME from file
+                $mimeType = mime_content_type($filepath);
+                if (!empty($allowedMime)) {
+                    #Sanitize provided MIME types
+                    foreach ($allowedMime as $key=>$mime) {
+                        if (preg_match('/^'.self::$mimeRegex.'$/i', $mime) !== 1) {
+                            unset($allowedMime[$key]);
+                        }
+                    }
+                    #Check if MIME is allowed
+                    if (!empty($allowedMime) && !in_array($mimeType, $allowedMime)) {
+                        (new \Simbiat\http20\Headers)->clientReturn('403', $exit);
+                        return 403;
+                    }
+                }
+            }
+            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus we rely on extension here, since it can provide a more approriate MIME type
+            $extension = pathinfo($filepath)['extension'];
+            #Set MIME from extesnion, of available
+            if (!empty($extension) && !empty(self::extToMime[$extension])) {
+                $mimeType = self::extToMime[$extension];
+            }
+            #Set MIME type to stream, if it's empty
+            if (empty($mimeType)) {
+                $mimeType = 'application/octet-stream';
+            }
+            #Send Last Modified, eTag and Cache-Control headers
+            (new \Simbiat\http20\Headers)->lastModified(filemtime($filepath), true)->eTag(hash_file('sha3-256', $filepath), true)->cacheControl('', $cacheStrat, true);
+            #Send MIME types
+            header('Content-Type: '.$mimeType);
+            #Send content disposition
+            header('Content-Type: inline; filename="'.basename($filepath).'"');
+            #Open stream
+            $stream = fopen($filepath, 'rb');
+            if ($stream === false) {
+                (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
+                return 500;
+            }
+            #Some MIME types can be zipped nicely
+            if (preg_match('/^((font|text)\/.*)|(application\/(.*javascript|.*json|.*xml|vnd\.ms-fontobject|wasm|x-font-ttf))|(image\/(bmp|svg\+xml|vnd.microsoft.icon))$/i', $mimeType) === 1) {
+                #Read the file
+                $output = fread($stream, filesize($filepath));
+                #Close stream
+                fclose($stream);
+                if ($output === false) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
+                    return 500;
+                } else {
+                    $this->zEcho($output, $cacheStrat);
+                }
+            } else {
+                #Send size information
+                header('Content-Length: '.filesize($filepath));
+                #Send data
+                if (fpassthru($stream) === false) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
+                    return 500;
+                }
+                #Close stream
+                fclose($stream);
+            }
+            #Either exit or return
+            if ($exit) {
+               exit; 
+            } else {
+                return 200;
+            }
+        } else {
+            (new \Simbiat\http20\Headers)->clientReturn('404', $exit);
+            return 404;
+        }
     }
     
     #Function to check if string is a mail address as per RFC 5322

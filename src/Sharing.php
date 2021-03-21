@@ -45,12 +45,12 @@ class Sharing
         $fileinfo = pathinfo($file);
         #Get file size
         $filesize = filesize($file);
-        #Get MD5 to use as boundary in case we have a multipart download
+        #Get MD5 to use as boundary in case we have a multipart download. It may be better to use SHA3 for hash, but it looks like MD5 for boundary works as standard for such cases.
         $boundary = hash_file('md5', $file);
         #Control caching
         header('Cache-Control: must-revalidate, no-transform');
         #If file has been cached by browser since last time it has been changed - exit before everything. Depends on browser whether this will work, though.
-        (new \Simbiat\http20\Headers)->lastModified(filemtime($file), true)->eTag($boundary);
+        (new \Simbiat\http20\Headers)->lastModified(filemtime($file), true)->eTag($boundary, true);
         #Check if MIME was provided
         if (!empty($mime)) {
             #If yes, validate its format
