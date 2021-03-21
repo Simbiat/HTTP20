@@ -38,8 +38,8 @@ class Sitemap
                 $toAdd = match($format) {
                     #Wrapping in <p> so that even if the string is sent to client directly, it would still be human-readable
                     'html' => '<p><a class="sitemaplink" id="sitemaplink_'.$key.'" href="'.$link['loc'].'" target="_blank">'.$link['name'].'</a></p>',
-                    'xml' => '<url><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : $link['lastmod']).(empty($link['changefreq']) ? '' : $link['changefreq']).(empty($link['priority']) ? '' : $link['priority']).'</url>',
-                    'index' => '<sitemap><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : $link['lastmod']).'</sitemap>',
+                    'xml' => '<url><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : '<lastmod>'.$link['lastmod'].'</lastmod>').(empty($link['changefreq']) ? '' : '<changefreq>'.$link['changefreq'].'</changefreq>').(empty($link['priority']) ? '' : '<priority>'.$link['priority'].'</priority>').'</url>',
+                    'index' => '<sitemap><loc>'.$link['loc'].'</loc>'.(empty($link['lastmod']) ? '' : '<lastmod>'.$link['lastmod'].'</lastmod>').'</sitemap>',
                     default => '',
                 };
                 #Get its length
