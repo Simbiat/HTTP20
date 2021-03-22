@@ -507,13 +507,13 @@ class Headers
         header('Vary: Save-Data, Accept-Encoding', false);
         #Set ETag
         if (!empty($string)) {
-            $this->eTag(hash('sha3-256', $string));
+            $this->eTag(hash('sha3-256', $string), $exit);
         }
         return $this;
     }
     
     #Handle Etag header and its validation depending on request headers
-    public function eTag(string $etag): self
+    public function eTag(string $etag, bool $exit = false): self
     {
         #Send ETag for caching purposes
         header('ETag: '.$etag);
@@ -521,13 +521,13 @@ class Headers
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not beend modified - return 304
-                return $this->clientReturn('304', true);
+                $this->clientReturn('304', $exit);
             }
         }
         #Return error if If-Match was sent and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
-                $this->clientReturn('412', true);
+                $this->clientReturn('412', $exit);
             }
         }
         return $this;

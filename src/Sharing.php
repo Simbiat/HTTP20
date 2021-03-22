@@ -15,6 +15,7 @@ class Sharing
         $this->extToMime = $common::extToMime;
         #Cache mimeRegex
         $this->mimeRegex = $common::mimeRegex;
+        unset($common);
     }
     
     #Function for smart resumable download with proper headers
@@ -791,6 +792,137 @@ class Sharing
         } else {
             return [];
         }
+    }
+    
+    #Function to send a file to browser
+    public function fileEcho(string $filepath, array $allowedMime = [], string $cacheStrat = 'month', bool $exit = true): int
+    {
+        #Check if file exists
+        if (is_file($filepath)) {
+            #Process MIME
+            if (extension_loaded('fileinfo')) {
+                #Get MIME from file
+                $mimeType = mime_content_type($filepath);
+                if (!empty($allowedMime)) {
+                    #Sanitize provided MIME types
+                    foreach ($allowedMime as $key=>$mime) {
+                        if (preg_match('/^'.$this->mimeRegex.'$/i', $mime) !== 1) {
+                            unset($allowedMime[$key]);
+                        }
+                    }
+                    #Check if MIME is allowed
+                    if (!empty($allowedMime) && !in_array($mimeType, $allowedMime)) {
+                        (new \Simbiat\http20\Headers)->clientReturn('403', $exit);
+                        return 403;
+                    }
+                }
+            }
+            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus we rely on extension here, since it can provide a more approriate MIME type
+            $extension = pathinfo($filepath)['extension'];
+            #Set MIME from extesnion, of available
+            if (!empty($extension) && !empty($this->extToMime[$extension])) {
+                $mimeType = $this->extToMime[$extension];
+            }
+            #Set MIME type to stream, if it's empty
+            if (empty($mimeType)) {
+                $mimeType = 'application/octet-stream';
+            }
+            #Send Last Modified, eTag and Cache-Control headers
+            (new \Simbiat\http20\Headers)->lastModified(filemtime($filepath), true)->eTag(hash_file('sha3-256', $filepath), true)->cacheControl('', $cacheStrat, true);
+            #Send MIME types
+            header('Content-Type: '.$mimeType);
+            #Send content disposition
+            header('Content-Type: inline; filename="'.basename($filepath).'"');
+            #Open stream
+            $stream = fopen($filepath, 'rb');
+            if ($stream === false) {
+                (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
+                return 500;
+            }
+            #Some MIME types can be zipped nicely
+            if (preg_match('/^((font|text)\/.*)|(application\/(.*javascript|.*json|.*xml|vnd\.ms-fontobject|wasm|x-font-ttf))|(image\/(bmp|svg\+xml|vnd.microsoft.icon))$/i', $mimeType) === 1) {
+                #Read the file
+                $output = fread($stream, filesize($filepath));
+                #Close stream
+                fclose($stream);
+                if ($output === false) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
+                    return 500;
+                } else {
+                    (new \Simbiat\http20\Common)->zEcho($output, $cacheStrat);
+                }
+            } else {
+                #Send size information
+                header('Content-Length: '.filesize($filepath));
+                #Send data
+                if (fpassthru($stream) === false) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
+                    return 500;
+                }
+                #Close stream
+                fclose($stream);
+            }
+            #Either exit or return
+            if ($exit) {
+               exit; 
+            } else {
+                return 200;
+            }
+        } else {
+            (new \Simbiat\http20\Headers)->clientReturn('404', $exit);
+            return 404;
+        }
+    }
+    
+    #Function to proxy-stream file from another server
+    public function proxyFile(string $url, string $cacheStrat = ''): void
+    {
+        #Cache headers object
+        $headers = (new \Simbiat\http20\Headers);
+        #Get headers
+        $headersData = get_headers($url, context: stream_context_create(['http' => [
+            'method' => 'HEAD',
+            'follow_location' => 1,
+            'protocol_version' => 2.0
+        ]]));
+        #Cache-Control flag
+        $cache = false;
+        #Send the headers from remote server
+        foreach ($headersData as $headerValue) {
+            if (preg_match('/^Cache-Control:.*$/', $headerValue) === 1) {
+                $cache = true;
+            }
+            header($headerValue);
+        }
+        #Add Cache-Control
+        if ($cache === false) {
+            $headers->cacheControl('', $cacheStrat, true);
+        }
+        #Process lastModified and eTag to attempt to rely on client cache and not waste server resources
+        foreach ($headersData as $headerValue) {
+            if (preg_match('/^Last-Modified:.*$/', $headerValue) === 1) {
+               $headers->lastModified(strtotime(preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $headerValue)), true);
+            } elseif (preg_match('/^ETag:.*$/', $headerValue) === 1) {
+                $headers->eTag(preg_replace('/^(ETag:\s*"?)([^"]*)("?)$/', '$2', $headerValue), true);
+            }
+        }
+        #Open streams
+        $url = fopen($url, 'rb', context: stream_context_create(['http' => [
+            'method' => 'GET',
+            'follow_location' => 1,
+            'protocol_version' => 2.0
+        ]]));
+        $output = fopen('php://output', 'wb');
+        #Send contents
+        if ($url !== false && $output !== false) {
+            stream_copy_to_stream($url, $output);
+            fclose($output);
+            fclose($url);
+        } else {
+            $headers->clientReturn('500', true);
+        }
+        #Ensure we exit
+        exit;
     }
 }
 

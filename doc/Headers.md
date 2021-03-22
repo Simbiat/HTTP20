@@ -53,9 +53,10 @@ ETag procesing using `eTag()` will happen regardless (unless string is empty: th
 
 ## eTag
 ```php
-eTag(string $etag)
+eTag(string $etag, bool $exit = false);
 ```
-Sends ETag header and handles its validation depending on requesting headers (If-Match, If-None-Match).
+Sends ETag header and handles its validation depending on requesting headers (If-Match, If-None-Match).  
+`$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
 
 ## lastModified
 ```php

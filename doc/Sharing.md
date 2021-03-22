@@ -4,6 +4,8 @@
 - [speedLimit](#speedlimit)
 - [phpMemoryToInt](#phpmemorytoint)
 - [rangesValidate](#rangesvalidate)
+- [fileEcho](#fileecho)
+- [proxyFile](#proxyfile)
 
 # Sharing
 Function that can be used in processes related to file sharing.
@@ -112,3 +114,20 @@ rangesValidate(int $size);
 Function to validate `Range` request header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range). It is mandatory to provide it with the `$size` of the file in bytes, because one of the conditions for "bad" range is that start or end of the range is after the last byte in the file. The most important thing here is checking for overlapping ranges, which should not happen as per as per https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html.  
 It will always return an array. If there was a "bad" range, though it will not be empty (which is considered a valid value), but rather `[0 => false]`, that is an array with 1 index valued as `false`. Be careful with this when validating the output.  
 I can't think of a case, when this can be used outside of `download` function, except for custom version of it, but keeping this separate if there is one.
+
+## fileEcho
+```php
+fileEcho(string $filepath, array $allowedMime = [], string $cacheStrat = 'month', bool $exit = true)
+```
+A function, that will pass a file to client while sending appropriate headers. Note, that, while this can be used for download, I'd recommend against that: for downloads, please, use [download](doc/Sharing.md#download) function, instead. Use `fileEcho` for small files, that you want to display inline.  
+`$filepath` - path to the file. If path is not a file, fucntion will return 404.  
+`$allowedMime` - array of allowed MIME types, if you want to restrict the use of this function by the type. Note, that it will check the actual file MIME type, but attempt to send the MIME type based on file extension to the client. If MIME type is not allowed, will return 403.  
+`$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](doc/Headers.md#cachecontrol))
+
+## fileEcho
+```php
+proxyFile(string $url, string $cacheStrat = '')
+```
+A function, that will proxy a remote file to client while duplicating headers from that URL. It's not something you should use randomly, since it will increase load on your server, but it can be used when you need to keep your CSP rules strict, but still access resources without proper CORS support. This function will try to utilize Last-Modified and ETag headers if available and will also add Cache-Control, if it's missing in order to rely on client caching more.  
+`$url` - URL to proxy.  
+`$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](doc/Headers.md#cachecontrol))
