@@ -832,7 +832,7 @@ class Sharing
             #Send MIME types
             header('Content-Type: '.$mimeType);
             #Send content disposition
-            header('Content-Type: inline; filename="'.basename($filepath).'"');
+            header('Content-Disposition: inline; filename="'.basename($filepath).'"');
             #Open stream
             $stream = fopen($filepath, 'rb');
             if ($stream === false) {
