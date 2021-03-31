@@ -56,7 +56,7 @@ class HTML
             $itemDepth--;
             $position++;
             #Add page as "parent" to current one, if links were requested and this not the first (and only) link in set. Technically, "up" was dropped from specification, but if not supported by client, the link should be silently ignored as per specification, so no worries
-            if ($links && $itemDepth === 0 && $position !== 1) {
+            if ($links && $itemDepth === 1 && $position !== 1) {
                 $linksArr[] = ['href' => $item['href'], 'rel' => 'up prefetch', 'title' => $item['name']];
             }
         }
