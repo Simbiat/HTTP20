@@ -626,6 +626,10 @@ class Headers
         #Prepare an empty string
         $linksToSend = [];
         foreach ($links as $key=>$link) {
+            #Check that element is an array;
+            if (!is_array($link)) {
+                continue;
+            }
             #Is Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches)
             if ($savedata === true && isset($link['rel'])) {
                 $link['rel'] = preg_replace('/(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender)/i', '', $link['rel']);
