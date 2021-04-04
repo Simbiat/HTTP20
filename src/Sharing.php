@@ -854,6 +854,10 @@ class Sharing
             } else {
                 #Send size information
                 header('Content-Length: '.filesize($filepath));
+                #Exit if HEAD method was used (by this time all headers should have been sent
+                if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+                    exit;
+                }
                 #Send data
                 if (fpassthru($stream) === false) {
                     (new \Simbiat\http20\Headers)->clientReturn('500', $exit);

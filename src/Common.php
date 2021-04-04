@@ -796,14 +796,16 @@ class Common
             header('Content-Encoding: gzip');
             #Send header with length
             header('Content-Length: '.strlen($string));
-            #Send the output
-            echo $string;
         } else {
             #Send header with length
             header('Content-Length: '.strlen($string));
-            #Send the output
-            echo $string;
         }
+        #Exit if HEAD method was used (by this time all headers should have been sent
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+            exit;
+        }
+        #Send the output
+        echo $string;
         exit;
     }
     
