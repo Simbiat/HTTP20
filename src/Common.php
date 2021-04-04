@@ -820,7 +820,7 @@ class Common
     #Function to check if string is an URI as per RFC 3986
     public function uriValidator(string $string): bool
     {
-        if (preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):(?<authority>\/\/(?<user>[^@]+@)?(?<host>[a-z0-9.\-_~]+)(?<port>:\d+)?)?(?<path>(?:[a-z0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@])+)*)?(?<query>\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@]|[\/?])+)?(?<fragment>\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@]|[\/?])+)?$/i', $this->htmlToRFC3986($string)) === 1) {
+        if (preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):(?<authority>\/\/(?<user>[^@]+@)?(?<host>[\p{L}0-9.\-_~]+)(?<port>:\d+)?)?(?<path>(?:[\p{L}0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@])+(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@])*)*|(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@])+)*)?(?<query>\?(?:[\p{L}0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@]|[\/?])+)?(?<fragment>\#(?:[\p{L}0-9-._~]|%[a-f0-9]|[!$&\'()*+,;=:@]|[\/?])+)?$/iu', $this->htmlToRFC3986($string)) === 1) {
             return true;
         } else {
             return false;
