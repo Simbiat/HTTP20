@@ -833,7 +833,7 @@ class Headers
             }
         } else {
             if ($type === 'header') {
-                header('Link: '.implode(', ', $linksToSend));
+                header('Link: '.implode(', ', $linksToSend), false);
                 return $this;
             } else {
                 return implode("\r\n", $linksToSend);
