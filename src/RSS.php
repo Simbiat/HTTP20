@@ -18,6 +18,7 @@ class RSS
     {
         #Validate title
         if (empty($title)) {
+            (new \Simbiat\http20\Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         } else {
             $feed_settings['title'] = $title;
@@ -29,6 +30,7 @@ class RSS
             if ($this->http20->uriValidator($feedlink)) {
                 $feed_settings['link'] = $this->http20->htmlToRFC3986($feedlink);
             } else {
+                (new \Simbiat\http20\Headers)->clientReturn('500', false);
                 throw new \UnexpectedValueException('$feedlink provided is not a valid URI');
             }
         }
@@ -36,14 +38,14 @@ class RSS
         if (!empty($entries)) {
             foreach ($entries as $key=>$entry) {
                 if (empty($entry['title']) && empty($entry['description'])) {
-                    throw new \UnexpectedValueException('Element `'.$key.'` in entries is missing both `title` and `description`');
+                    unset($entries[$key]);continue;
                 }
                 if (!empty($entry['enclosure_url'])) {
                     if (empty($entry['enclosure_length']) || empty($entry['enclosure_type'])) {
-                    throw new \UnexpectedValueException('Element `'.$key.'` in entries is missing either `enclosure_length` or `enclosure_type`');
+                        unset($entries[$key]);continue;
                     } else {
                         if (is_numeric($entry['enclosure_length'])) {
-                            throw new \UnexpectedValueException('Element `'.$key.'` in entries has non-numeric `enclosure_length` value');
+                            unset($entries[$key]);continue;
                         }
                     }
                 }
@@ -76,31 +78,38 @@ class RSS
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
+                (new \Simbiat\http20\Headers)->clientReturn('500', false);
                 throw new \UnexpectedValueException('One or more atributes requried for `cloud` tag are missing in settings for the feed');
             }
         }
         #Check TTL
         if (!empty($feed_settings['ttl']) && !is_numeric($feed_settings['ttl'])) {
+            (new \Simbiat\http20\Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('`ttl` provided in settings for the feed is not numeric');
         }
         #Check image
         if (!empty($feed_settings['image'])) {
             if (empty($feed_settings['image']['url'])) {
+                (new \Simbiat\http20\Headers)->clientReturn('500', false);
                 throw new \UnexpectedValueException('`url` property for `image` tag is missing in settings for the feed');
             }
             if (!empty($feed_settings['image']['width'])) {
                 if (!is_numeric($feed_settings['image']['width'])) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
                 if (intval($feed_settings['image']['width']) > 144) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is more than 144 in settings for the feed');
                 }
             }
             if (!empty($feed_settings['image']['height'])) {
                 if (!is_numeric($feed_settings['image']['height'])) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
                 if (intval($feed_settings['image']['height']) > 400) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is more than 400 in settings for the feed');
                 }
             }
@@ -109,9 +118,11 @@ class RSS
         if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
             foreach ($feed_settings['skipHours'] as $hour) {
                 if (!is_numeric($hour)) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
                 if (intval($hour) < 0 || intval($hour) > 23) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('Hour property for `skipHours` tag is outside of 0-23 range in settings for the feed');
                 }
             }
@@ -120,6 +131,7 @@ class RSS
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
                 if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
+                    (new \Simbiat\http20\Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
                 }
             }

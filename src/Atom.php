@@ -18,12 +18,14 @@ class Atom
     {
         #Validate title
         if (empty($title)) {
+            (new \Simbiat\http20\Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         } else {
             $feed_settings['title'] = $title;
         }
         #validate text type
         if (!in_array(strtolower($texttype), ['text', 'html', 'xhtml'])) {
+            (new \Simbiat\http20\Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
         #Validate content
@@ -37,6 +39,7 @@ class Atom
             if ($this->http20->uriValidator($id)) {
                 $feed_settings['id'] = $this->http20->htmlToRFC3986($id);
             } else {
+                (new \Simbiat\http20\Headers)->clientReturn('500', false);
                 throw new \UnexpectedValueException('$id provided is not a valid URI');
             }
         }
@@ -146,38 +149,38 @@ class Atom
     }
     
     #Helper function to validate some elements
-    private function atomElementValidator(array $elstoval, string $type = 'author', string $element = 'name'): void
+    private function atomElementValidator(array &$elstoval, string $type = 'author', string $element = 'name'): void
     {
         foreach ($elstoval as $key=>$eltoval) {
             if (!is_array($eltoval)) {
-                throw new \UnexpectedValueException('Element `'.$key.'` in `'.$type.'` provided is not an array');
+                unset($elstoval[$key]);continue;
             }
             if (empty($eltoval[$element])) {
-                throw new \UnexpectedValueException('`'.$element.'` for element `'.$key.'` in `'.$type.'` is not provided');
+                unset($elstoval[$key]);continue;
             } else {
                 if (!is_string($eltoval[$element])) {
-                    throw new \UnexpectedValueException('`'.$element.'` for element `'.$key.'` in `'.$type.'` is not a string');
+                    unset($elstoval[$key]);continue;
                 }
             }
             if ($type === 'link') {
                 if (!$this->http20->uriValidator($eltoval['href'])) {
-                    throw new \UnexpectedValueException('`href` for element `'.$key.'` in `'.$type.'` is not a valid URI');
+                    unset($elstoval[$key]);continue;
                 }
                 if (!empty($eltoval['rel'])) {
                     if (!in_array($eltoval['rel'], ['alternate', 'self', 'ecnlosure', 'related', 'via'])) {
-                        throw new \UnexpectedValueException('Unsupported `rel` value ('.$eltoval['rel'] .') provided for element `'.$key.'` in `'.$type.'s');
+                        unset($elstoval[$key]);continue;
                     }
                 }
             }
             if ($type === 'entry') {
                 if (empty($eltoval['title'])) {
-                    throw new \UnexpectedValueException('`Title` for element `'.$key.'` in `'.$type.'` is not provided');
+                    unset($elstoval[$key]);continue;
                 }
                 if (empty($eltoval['updated'])) {
-                    throw new \UnexpectedValueException('`Updated` for element `'.$key.'` in `'.$type.'` is not provided');
+                    unset($elstoval[$key]);continue;
                 }
                 if (!$this->http20->uriValidator($eltoval['link'])) {
-                    throw new \UnexpectedValueException('`link` ('.$eltoval['link'].') for element `'.$key.'` in `'.$type.'` is not a valid URI');
+                    unset($elstoval[$key]);continue;
                 }
             }
         }
@@ -187,6 +190,7 @@ class Atom
     private function atomAddSubElements(\DOMNode &$element, \DOMDocument &$feed, array $toptag, array $subnodes): \DOMNode
     {
         if (empty($subnodes)) {
+            (new \Simbiat\http20\Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('Empty list of subnodes provided for `atomAddSubElements` function');
         }
         foreach ($subnodes as $subnode) {
@@ -205,6 +209,7 @@ class Atom
     private function atomAddAttributes(\DOMNode &$element, \DOMDocument &$feed, array $toptag, array $attributes): \DOMNode
     {
         if (empty($attributes)) {
+            (new \Simbiat\http20\Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('Empty list of atrributes provided for `atomAddAttributes` function');
         }
         foreach ($attributes as $attribute) {
