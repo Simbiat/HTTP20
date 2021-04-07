@@ -27,6 +27,7 @@ They are provided in single library and not separately, not only because of some
     + [clientReturn](doc/Headers.md#clientreturn)
     + [links](doc/Headers.md#links)
     + [redirect](doc/Headers.md#redirect)
+    + [notAccept](doc/Headers.md#notaccept)
   * [Meta](doc/Meta.md)
     + [twitter](doc/Meta.md#twitter)
     + [msTile](doc/Meta.md#mstile)

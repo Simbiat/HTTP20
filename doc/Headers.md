@@ -8,6 +8,7 @@
 - [clientReturn](#clientreturn)
 - [links](#links)
 - [redirect](#redirect)
+- [notAccept](#notaccept)
 
 # Headers
 Functions that send/handle different HTTP headers.  
@@ -149,3 +150,13 @@ Function to allow redirects.
 `$permanent` governs whether this is a permanent redirect or a temporary one. Permanent redirects tell browser to always use the new address, while temporary - only this time. `true` by default.  
 `$preserveMethod` governs whether method is allowed to be changed when redirecting. Historically 301 and 302 redirects does no restrict client in this regard, which may cause some issues sometimes. If set to `true` (default) 307 and 308 codes will be used.  
 `$forceGET` is a flag to use 303 code. If you want client to specifically change method to GET when redirecting, you can use this one. Useful, if after POST or PUT you want to show output, that is handled by some other page.
+
+## notaccept
+```php
+notAccept(array $supported = ['text/html'], bool $exit = true)
+```
+This is quite niche, but still may be useful in some cases. If you provide several formats of the data (for example, JSON and XML) and you want client to negotiate the format that the client will recieve, you can use this function.  
+Client will send standard `Accept` HTTP header with list of acceptable MIME types, this function will check if any of the MIME types your backend provides is in the list and the use the one with the highest priority. That is, if client will accept both JSON and XML, but JSON will have priority 0.9 and XML - 0.8, function will return `application/json`, to let you know, that you should provide the data in JSON format.  
+If none of your supported MIME types match `Accept` header, `406` header will be returned to client. If header is not provided by client, function will return `true`. It will also return `true`, if client provides `*/*` MIME type. And this is why it will be niche: most browsers are sending it in their `Accept` headers. But, if you are using some custom API - this may be useful, still.  
+`$supported` - array of MIME types you support.  
+`$exit` if set to `true` will exit the script right after HTTP 406 is sent, otherwise will return `false`.

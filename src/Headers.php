@@ -840,6 +840,48 @@ class Headers
             }
         }
     }
+    
+    #Function to handle Accept request header
+    public function notAccept(array $supported = ['text/html'], bool $exit = true): bool|string
+    {
+        #Check if header is set and we do have a limit on supported MIME types
+        if (isset($_SERVER['HTTP_ACCEPT']) && !empty($supported)) {
+            #text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+            #Generate list of acceptable values
+            $acceptable = [];
+            foreach ($supported as $mime) {
+                #Split MIME
+                $mime = explode('/', $mime);
+                #Attempt to get priority for supported MIME type (with optional subtype)
+                if (preg_match('/.*('.$mime[0].'\/('.$mime[1].'|\*))(;q=((0\.[0-9])|[0-1])(?>\s*(,|$)))?.*/m', $_SERVER['HTTP_ACCEPT'], $matches) === 1) {
+                    #Add to array
+                    if (!isset($matches[4]) || $matches[4] === '') {
+                        $acceptable[$mime[0].'/'.$mime[1]] = floatval(1);
+                    } else {
+                        $acceptable[$mime[0].'/'.$mime[1]] = floatval($matches[4]);
+                    }
+                }
+            }
+            #Check if any of the supported types are acceptable
+            if (empty($acceptable)) {
+                #If not - check if */* is supported
+                if (preg_match('/\*\/\*/', $_SERVER['HTTP_ACCEPT']) === 1) {
+                    #Consider as no limitation
+                    return true;
+                } else {
+                    #Send 406 Not Acceptable
+                    return $this->clientReturn('406', $exit);
+                }
+            } else {
+                #Get the one with highest priority and return its value
+                return array_keys($acceptable, max($acceptable))[0];
+            }
+            exit;
+        } else {
+            #Consider as no limitation
+            return true;
+        }
+    }
 }
 
 ?>
