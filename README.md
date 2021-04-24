@@ -22,6 +22,7 @@ They are provided in single library and not separately, not only because of some
     + [lastModified](doc/Headers.md#lastmodified)
     + [performance](doc/Headers.md#performance)
     + [security](doc/Headers.md#security)
+    + [contentPolicy](doc/Headers.md#contentpolicy)
     + [features](doc/Headers.md#features)
     + [secFetch](doc/Headers.md#secFetch)
     + [clientReturn](doc/Headers.md#clientreturn)

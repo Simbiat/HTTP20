@@ -95,7 +95,7 @@ class Headers
     ];
     
     #Function sends headers, related to security
-    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false): self
+    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = []): self
     {
         #Default list of allowed methods, limited to only "simple" ones
         $defaultMethods = self::safeMethods;
@@ -177,6 +177,12 @@ class Headers
                 header('Referrer-Policy: no-referrer');
                 break;
         }
+        return $this;
+    }
+    
+    #Function to process CSP header
+    public function contentPolicy(array $cspDirectives = [], bool $reportonly = false): self
+    {
         #Set defaults directives for CSP
         $defaultDirectives = self::secureDirectives;
         #Apply custom directives

@@ -3,6 +3,7 @@
 - [lastModified](#lastmodified)
 - [performance](#performance)
 - [security](#security)
+- [contentPolicy](#contentpolicy)
 - [features](#features)
 - [secFetch](#secFetch)
 - [clientReturn](#clientreturn)
@@ -76,7 +77,7 @@ Sends some headers that may improve performance on client side.
 
 ## security
 ```php
-security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = [], array $cspDirectives = [], bool $reportonly = false);
+security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = []);
 ```
 Sends headers that can improve security of your page.
 
@@ -110,11 +111,19 @@ default:
 `$cspDirectives` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) allows you to provide a list of directives and their settings (with validation) to control CSP headers. By default, essentially eveyrthing is either disabled or allowed only from `self`, which give you a solid base in terms of restricting access.  
 `$reportonly` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
 
+## contentPolicy
+```php
+contentPolicy(array $cspDirectives = [], bool $reportonly = false);
+```
+Sends Content-Security-Policy header, that improves your page security. It's done separately from other security stuff, because unlike the rest of the headers this is usable only for HTML.  
+`$cspDirectives` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) allows you to provide a list of directives and their settings (with validation) to control CSP headers. By default, essentially eveyrthing is either disabled or allowed only from `self`, which give you a solid base in terms of restricting access.  
+`$reportonly` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
+
 ## features
 ```php
 features(array $features = [], bool $forcecheck = true);
 ```
-Allows to control different features through Feature-Policy header.  
+Allows to control different features through Feature-Policy header. It should only be used, when sending HTML.  
 `$features` expectes assotiative array, where each key is name of the policy in lower case and value - expected `allow list`. If an empty array is sent default values will be applied (most features are disabled).  
 `$forcecheck` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
 
