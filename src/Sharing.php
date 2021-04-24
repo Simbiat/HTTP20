@@ -833,8 +833,12 @@ class Sharing
             }
             #Send Last Modified, eTag and Cache-Control headers
             (new \Simbiat\http20\Headers)->lastModified(filemtime($filepath), true)->eTag(hash_file('sha3-256', $filepath), true)->cacheControl('', $cacheStrat, true);
-            #Send MIME types
-            header('Content-Type: '.$mimeType);
+            #Send MIME types. Add Charset to those, that are recommended to have it
+            if (preg_match('/^(text\/.*)|(application\/(.*javascript|.*json|.*xml))$/i', $mimeType) === 1) {
+                header('Content-Type: '.$mimeType.'; charset=utf-8');
+            } else {
+                header('Content-Type: '.$mimeType);
+            }
             #Send content disposition
             header('Content-Disposition: inline; filename="'.basename($filepath).'"');
             #Open stream
