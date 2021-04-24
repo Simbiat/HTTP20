@@ -4,10 +4,10 @@ namespace Simbiat\http20;
 
 class Sharing
 {
-    private $extToMime = [];
-    private $mimeRegex = '';
+    private array $extToMime = [];
+    private string $mimeRegex = '';
     
-    public function _construct()
+    public function __construct()
     {
         #Cache (new \Simbiat\http20\Common)
         $common = (new \Simbiat\http20\Common);
@@ -821,11 +821,15 @@ class Sharing
             $extension = pathinfo($filepath)['extension'];
             #Set MIME from extesnion, of available
             if (!empty($extension) && !empty($this->extToMime[$extension])) {
-                $mimeType = $this->extToMime[$extension];
+                $mimeTypeAlt = $this->extToMime[$extension];
             }
             #Set MIME type to stream, if it's empty
-            if (empty($mimeType)) {
-                $mimeType = 'application/octet-stream';
+            if (empty($mimeTypeAlt)) {
+                if (empty($mimeType)) {
+                    $mimeType = 'application/octet-stream';
+                }
+            } else {
+                $mimeType = $mimeTypeAlt;
             }
             #Send Last Modified, eTag and Cache-Control headers
             (new \Simbiat\http20\Headers)->lastModified(filemtime($filepath), true)->eTag(hash_file('sha3-256', $filepath), true)->cacheControl('', $cacheStrat, true);
