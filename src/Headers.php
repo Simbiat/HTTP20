@@ -636,8 +636,8 @@ class Headers
             if (!is_array($link)) {
                 continue;
             }
-            #Is Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches)
-            if ($savedata === true && isset($link['rel'])) {
+            #If Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches)
+            if ($savedata === true && isset($link['rel']) && preg_match('/(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender)/i', $link['rel']) === 1) {
                 $link['rel'] = preg_replace('/(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender)/i', '', $link['rel']);
                 #Replace multiple whitespaces with single space and trim
                 $link['rel'] = trim(preg_replace('/\s{2,}/', ' ', $link['rel']));
@@ -645,6 +645,8 @@ class Headers
                 if (empty($link['rel'])) {
                     unset($link['rel']);
                 }
+                #Unset 'imagesrcset', 'imagesizes' and 'as', since they are allowed only with preload. If we do not do this some links may get skipped by logic below.
+                unset($link['imagesrcset'], $link['imagesizes'], $link['as']);
             }
             #Sanitize links based on https://html.spec.whatwg.org/multipage/semantics.html#the-link-element
             if (
