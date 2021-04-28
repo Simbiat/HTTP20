@@ -6,6 +6,7 @@ class Sharing
 {
     private array $extToMime = [];
     private string $mimeRegex = '';
+    private ?string $uploaddir = NULL;
     
     public function __construct()
     {
@@ -16,6 +17,14 @@ class Sharing
         #Cache mimeRegex
         $this->mimeRegex = $common::mimeRegex;
         unset($common);
+        #Set upload directory
+        if (is_writable(ini_get('upload_tmp_dir')) === true) {
+            $this->uploaddir = ini_get('upload_tmp_dir');
+        } else {
+            $this->uploaddir = sys_get_temp_dir();
+        }
+        #Ensure we do not have trailing slash
+        $this->uploaddir = preg_replace('/(.*[^\\\\\/]{1,})([\\\\\/]{1,}$)/', '$1', $this->uploaddir);
     }
     
     #Function for smart resumable download with proper headers
@@ -536,8 +545,8 @@ class Sharing
                 $resumable = true;
             }
             #Check if file already exists
-            if ($resumable && is_file(sys_get_temp_dir().'/'.$name)) {
-                $offset = filesize(sys_get_temp_dir().'/'.$name);
+            if ($resumable && is_file($this->uploaddir.'/'.$name)) {
+                $offset = filesize($this->uploaddir.'/'.$name);
             } else {
                 $offset = 0;
             }
@@ -569,10 +578,10 @@ class Sharing
                 if (feof($stream) === false) {
                     #Open output stream
                     if ($offset < $client_size) {
-                        $output = fopen(sys_get_temp_dir().'/'.$name, 'ab');
+                        $output = fopen($this->uploaddir.'/'.$name, 'ab');
                     } else {
                         #Means the file is different and we better rewrite it
-                        $output = fopen(sys_get_temp_dir().'/'.$name, 'wb');
+                        $output = fopen($this->uploaddir.'/'.$name, 'wb');
                     }
                     #Check if stream was opened
                     if ($output === false) {
@@ -606,7 +615,7 @@ class Sharing
             }
             if ($result === false) {
                 if (!$resumable) {
-                    @unlink(sys_get_temp_dir().'/'.$name);
+                    @unlink($this->uploaddir.'/'.$name);
                 }
                 return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
             } else {
@@ -617,13 +626,13 @@ class Sharing
                     $filetype = 'application/octet-stream';
                 }
                 if (extension_loaded('fileinfo')) {
-                    $filetype = mime_content_type(sys_get_temp_dir().'/'.$name);
+                    $filetype = mime_content_type($this->uploaddir.'/'.$name);
                 }
                 #Check against allowed MIME types if any was set and fileinfo is loaded
                 if (!empty($allowedMime)) {
                     #Get MIME from file (not relying on what was sent by client)
                     if (!in_array($filetype, $allowedMime)) {
-                        @unlink(sys_get_temp_dir().'/'.$name);
+                        @unlink($this->uploaddir.'/'.$name);
                         return (new \Simbiat\http20\Headers)->clientReturn('415', $exit);
                     }
                 }
@@ -633,11 +642,11 @@ class Sharing
                     $ext = 'PUT';
                 }
                 #Get hash
-                $hash = hash_file('sha3-256', sys_get_temp_dir().'/'.$name);
+                $hash = hash_file('sha3-256', $this->uploaddir.'/'.$name);
                 #Set new name
                 $newName = $hash.'.'.$ext;
                 #Attempt to move the file
-                if (rename(sys_get_temp_dir().'/'.$name, $destPath.'/'.$newName) === false) {
+                if (rename($this->uploaddir.'/'.$name, $destPath.'/'.$newName) === false) {
                     return (new \Simbiat\http20\Headers)->clientReturn('500', $exit);
                 }
                 #Add to array. Using array here for consistency with POST method. Field is reported as PUT to indicate the method. It's advisable not to use it for fields if you use POST method as well
