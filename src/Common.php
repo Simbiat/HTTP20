@@ -1036,6 +1036,10 @@ class Common
     #Function to force close HTTP connection
     public function forceClose(): void
     {
+        #Close session
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         #Send header to notify, that connection was closed
         @header('Connection: close');
         #Clean output buffer and close it
