@@ -672,6 +672,10 @@ class Sharing
         ignore_user_abort(true);
         #Check that we have resources, since PHP does not have type hinting for resources
         if (!is_resource($input) || !is_resource($output)) {
+            #Close session
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
             return false;
         }
         #Get size if not provided
@@ -690,6 +694,10 @@ class Sharing
             if ($sentStat !== false) {
                 $sent += $sentStat;
             } else {
+                #Close session
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_write_close();
+                }
                 return false;
             }
             $offset += $speed;
@@ -697,6 +705,10 @@ class Sharing
             flush();
             #Sleep to limit data rate
             sleep(1);
+        }
+        #Close session
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
         }
         if (connection_status() === CONNECTION_NORMAL && $sent >= $totalsize) {
             return $sent;
@@ -873,6 +885,10 @@ class Sharing
                 header('Content-Length: '.filesize($filepath));
                 #Exit if HEAD method was used (by this time all headers should have been sent
                 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+                    #Close session
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        session_write_close();
+                    }
                     exit;
                 }
                 #Send data
@@ -882,6 +898,10 @@ class Sharing
                 }
                 #Close stream
                 fclose($stream);
+            }
+            #Close session
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
             }
             #Either exit or return
             if ($exit) {
@@ -941,6 +961,10 @@ class Sharing
             fclose($url);
         } else {
             $headers->clientReturn('500', true);
+        }
+        #Close session
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
         }
         #Ensure we exit
         exit;
