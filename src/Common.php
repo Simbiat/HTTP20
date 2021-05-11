@@ -878,7 +878,7 @@ class Common
             #Check if string is file
             if (is_file($file)) {
                 #Check extension
-                if (pathinfo($file)['extension'] === $type) {
+                if (strcasecmp(pathinfo($file)['extension'], $type) === 0) {
                     #Add date to list
                     $dates[] = filemtime($file);
                     #Add contents
@@ -889,7 +889,7 @@ class Common
                 if (is_dir($file)) {
                     $filelist = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
                     foreach ($filelist as $subfile) {
-                        if ($subfile->getExtension() === $type && $subfile->isReadable()) {
+                        if (strcasecmp($subfile->getExtension(), $type) === 0) {
                             #Add date to list
                             $dates[] = $subfile->getMTime();
                             #Add contents
