@@ -868,48 +868,41 @@ class Common
         }
         #Check if a string
         if (is_string($files)) {
-            #Check if it's a dir
-            if (is_dir($files)) {
-                if (strrpos('/', $files) === false) {
-                    $files = $files . '/';
-                }
-                #Get list of files
-                $filelist = glob($files.'*');
-                #Check if any files were returned
-                if (empty($files)) {
-                    throw new \UnexpectedValueException('`reductor` did not find any files matching `'.$files.'` criteria.');
-                } else {
-                    $files = $filelist;
-                    unset($filelist);
+            #Convert to array
+           $files = [$files];
+        }
+        #Prepare array of dates
+        $dates = [];
+        #Iterate array
+        foreach ($files as $file) {
+            #Check if string is file
+            if (is_file($file)) {
+                #Check extension
+                if (pathinfo($file)['extension'] === $type) {
+                    #Add date to list
+                    $dates[] = filemtime($file);
+                    #Add contents
+                    $content .= file_get_contents($file);
                 }
             } else {
-                #Check if it's a file
-                if (is_file($files)) {
-                    #Read file into variable
-                    $content = file_get_contents($files);
-                } else {
-                    #Assume it's a regular string
-                    $content = $files;
-                }
-            }
-        }
-        #Get contents of all files mentioned in array
-        if (is_array($files)) {
-            foreach ($files as $file) {
-                if (is_file($file)) {
-                    $content .= file_get_contents($file);
+                #Check if directory
+                if (is_dir($file)) {
+                    $filelist = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                    foreach ($filelist as $subfile) {
+                        if ($subfile->getExtension() === $type && $subfile->isReadable()) {
+                            #Add date to list
+                            $dates[] = $subfile->getMTime();
+                            #Add contents
+                            $content .= file_get_contents($subfile->getRealPath());
+                        }
+                    }
                 }
             }
         }
         #Get date if we are directly outputting the data
         if (empty($tofile)) {
-            if (is_string($files)) {
-                $modDate = filemtime($files);
-            } else {
-                $modDate = max(array_map('filemtime', array_filter($files, 'is_file')));
-            }
             #Send Last Modifed header and exit, if we hit browser cache
-            (new \Simbiat\http20\Headers)->lastModified($modDate, true);
+            (new \Simbiat\http20\Headers)->lastModified(max($dates), true);
         }
         #Minify
         if ($minify === true) {
