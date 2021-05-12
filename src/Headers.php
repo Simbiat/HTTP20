@@ -841,7 +841,7 @@ class Headers
             }
         } else {
             if ($type === 'header') {
-                header('Link: '.implode(', ', $linksToSend), false);
+                header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $linksToSend)), false);
                 return $this;
             } else {
                 return implode("\r\n", $linksToSend);
