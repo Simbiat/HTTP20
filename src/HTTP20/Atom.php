@@ -187,7 +187,7 @@ class Atom
     }
 
     #Helper function to add some elements
-    private function atomAddSubElements(\DOMNode &$element, \DOMDocument &$feed, array $topTag): void
+    private function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $topTag): void
     {
         foreach (['name', 'email', 'uri'] as $subNode) {
             if (!empty($topTag[$subNode])) {
@@ -201,7 +201,7 @@ class Atom
     }
 
     #Helper function to add some elements
-    private function atomAddAttributes(\DOMElement &$element, array $topTag, array $attributes): void
+    private function atomAddAttributes(\DOMElement $element, array $topTag, array $attributes): void
     {
         if (empty($attributes)) {
             (new Headers)->clientReturn('500', false);
@@ -219,7 +219,7 @@ class Atom
     }
 
     #Helper function to add actual entries
-    private function atomAddEntries(\DOMNode &$element, \DOMDocument &$feed, array $entry, string $textType): void
+    private function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $textType): void
     {
         #Adding mandatory tags
         if (empty($entry['id'])) {

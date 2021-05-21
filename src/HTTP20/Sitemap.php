@@ -4,7 +4,7 @@ namespace Simbiat\HTTP20;
 
 class Sitemap
 {
-    #Function to generate sitemape in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html
+    #Function to generate sitemap in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html
     public function sitemap(array $links, string $format = 'xml', bool $directOutput = false): string
     {
         #Sanitize format
@@ -13,8 +13,6 @@ class Sitemap
         }
         #Validate links, if list is not empty. I did not find any recommendations for empty sitemaps and I do not see a technical reason to break here, because if sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
         $this->linksValidator($links);
-        #Cache Common HTTP20 functions
-        $HTTP20 = (new \Simbiat\HTTP20\Common);
         #Allow only 50000 links
         $links = array_slice($links, 0, 50000, true);
         #Generate the output string
@@ -23,12 +21,12 @@ class Sitemap
         } else {
             #Set initial output
             $output = match($format) {
-                'xml' => '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-                'index' => '<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+                'xml' => '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">',
+                'index' => '<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">',
                 default => '',
             };
             #Set initial string length
-            $strlen = match($format) {
+            $strLen = match($format) {
                 'xml' => strlen($output) + strlen('</urlset>'),
                 'index' => strlen($output) + strlen('</sitemapindex>'),
                 default => 0,
@@ -45,9 +43,9 @@ class Sitemap
                 #Get its length
                 $lenToAdd = strlen($toAdd);
                 #Check, that we are not exceeding the limit of 50MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather then from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
-                if (($strlen + $lenToAdd) < 52428800) {
+                if (($strLen + $lenToAdd) < 52428800) {
                     $output .= $toAdd;
-                    $strlen += $lenToAdd;
+                    $strLen += $lenToAdd;
                 }
             }
             #Close tags
@@ -71,16 +69,15 @@ class Sitemap
                     header('Content-Type: text/xml; charset=utf-8');
                     break;
             }
-            (new \Simbiat\HTTP20\Common)->zEcho($output);
-        } else {
-            return $output;
+            (new Common)->zEcho($output);
         }
+        return $output;
     }
-    
+
     #Function to validate the links provided
-    private function linksValidator(array &$links): bool
+    private function linksValidator(array &$links): void
     {
-        #Get first element of the array to use it as base for next. Need to use array_key_first, because we may get an assotiative array
+        #Get first element of the array to use it as base for next. Need to use array_key_first, because we may get an associative array
         $first = @$links[array_key_first($links)];
         #Check if 'loc' is set
         if (!isset($first['loc'])) {
@@ -93,20 +90,20 @@ class Sitemap
             throw new \UnexpectedValueException('Failed to determine scheme or host for provided links');
         }
         #Build base URL
-        $first = $first['scheme'].'://'.(empty($first['user']) ? '' : $first['user'].(empty($first['pass']) ? '' : ':'.$first['pass']).'@').$first['host'].(empty($first['port']) ? '' : ':'.strval($first['port']));
+        $first = $first['scheme'].'://'.(empty($first['user']) ? '' : $first['user'].(empty($first['pass']) ? '' : ':'.$first['pass']).'@').$first['host'].(empty($first['port']) ? '' : ':'. $first['port']);
         #Get counts of `loc` values
         $valueCounts = array_count_values(array_column($links, 'loc'));
         #Get max value of lastmod
-        $maxdate = array_map('intval', array_column($links, 'lastmod'));
-        if (!empty($maxdate)) {
-            $maxdate = max($maxdate);
+        $maxDate = array_map('intval', array_column($links, 'lastmod'));
+        if (!empty($maxDate)) {
+            $maxDate = max($maxDate);
         } else {
-            $maxdate = 0;
+            $maxDate = 0;
         }
         #Send Last-Modified header and stop further processing if client already has a fresh enough copy
-        (new \Simbiat\HTTP20\Headers)->lastModified($maxdate, true);
+        (new Headers)->lastModified($maxDate, true);
         #Cache Common HTTP20 functions
-        $HTTP20 = (new \Simbiat\HTTP20\Common);
+        $HTTP20 = (new Common);
         #Check that all links start from
         foreach ($links as $key=>$link) {
             #Check if 'loc' is set
@@ -125,7 +122,7 @@ class Sitemap
                 $valueCounts[$link['loc']]--;
             }
             #Sanitize values
-            $links[$key]['loc'] = $HTTP20->htmlToRFC3986($link['loc'], true);
+            $links[$key]['loc'] = $HTTP20->htmlToRFC3986($link['loc']);
             #Sanitize name (used only for HTML format
             if (isset($link['name'])) {
                 $links[$key]['name'] = htmlspecialchars($link['name']);
@@ -148,14 +145,12 @@ class Sitemap
                     } elseif ($link['priority'] < 0.0) {
                         $links[$key]['priority'] = '0.0';
                     } else {
-                        $links[$key]['priority'] = number_format($link['priority'], 1, '.');
+                        $links[$key]['priority'] = number_format($link['priority'], 1);
                     }
                 } else {
                     unset($links[$key]['priority']);
                 }
             }
         }
-        return true;
     }
 }
-?>

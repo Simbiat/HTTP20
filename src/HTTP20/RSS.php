@@ -5,33 +5,33 @@ namespace Simbiat\HTTP20;
 class RSS
 {
     #Object to cache some common functions
-    private \Simbiat\HTTP20\Common $HTTP20;
-    
+    private Common $HTTP20;
+
     public function __construct()
     {
         #Caching common functions for some performance benefits
-        $this->HTTP20 = (new \Simbiat\HTTP20\Common);
+        $this->HTTP20 = (new Common);
     }
-    
+
     #Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
-    public function RSS(string $title, array $entries, string $feedlink = '', array $feed_settings = []): void
+    public function RSS(string $title, array $entries, string $feedLink = '', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
-            (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+            (new Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         } else {
             $feed_settings['title'] = $title;
         }
         #Check feed link
-        if (empty($feedlink)) {
+        if (empty($feedLink)) {
             $feed_settings['link'] = $this->HTTP20->htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } else {
-            if ($this->HTTP20->uriValidator($feedlink)) {
-                $feed_settings['link'] = $this->HTTP20->htmlToRFC3986($feedlink);
+            if ($this->HTTP20->uriValidator($feedLink)) {
+                $feed_settings['link'] = $this->HTTP20->htmlToRFC3986($feedLink);
             } else {
-                (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
-                throw new \UnexpectedValueException('$feedlink provided is not a valid URI');
+                (new Headers)->clientReturn('500', false);
+                throw new \UnexpectedValueException('$feedLink provided is not a valid URI');
             }
         }
         #Validate content
@@ -74,42 +74,42 @@ class RSS
             $feed_settings['lastBuildDate'] = $this->HTTP20->valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         }
         #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
-        (new \Simbiat\HTTP20\Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])), false);
+        (new Headers)->lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])));
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
-                (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
-                throw new \UnexpectedValueException('One or more atributes requried for `cloud` tag are missing in settings for the feed');
+                (new Headers)->clientReturn('500', false);
+                throw new \UnexpectedValueException('One or more attributes required for `cloud` tag are missing in settings for the feed');
             }
         }
         #Check TTL
         if (!empty($feed_settings['ttl']) && !is_numeric($feed_settings['ttl'])) {
-            (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+            (new Headers)->clientReturn('500', false);
             throw new \UnexpectedValueException('`ttl` provided in settings for the feed is not numeric');
         }
         #Check image
         if (!empty($feed_settings['image'])) {
             if (empty($feed_settings['image']['url'])) {
-                (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                (new Headers)->clientReturn('500', false);
                 throw new \UnexpectedValueException('`url` property for `image` tag is missing in settings for the feed');
             }
             if (!empty($feed_settings['image']['width'])) {
                 if (!is_numeric($feed_settings['image']['width'])) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
                 if (intval($feed_settings['image']['width']) > 144) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is more than 144 in settings for the feed');
                 }
             }
             if (!empty($feed_settings['image']['height'])) {
                 if (!is_numeric($feed_settings['image']['height'])) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
                 if (intval($feed_settings['image']['height']) > 400) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is more than 400 in settings for the feed');
                 }
             }
@@ -118,11 +118,11 @@ class RSS
         if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
             foreach ($feed_settings['skipHours'] as $hour) {
                 if (!is_numeric($hour)) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
                 if (intval($hour) < 0 || intval($hour) > 23) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('Hour property for `skipHours` tag is outside of 0-23 range in settings for the feed');
                 }
             }
@@ -131,7 +131,7 @@ class RSS
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
                 if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', false);
+                    (new Headers)->clientReturn('500', false);
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
                 }
             }
@@ -145,7 +145,7 @@ class RSS
         #Add version
         $version = $feed->appendChild($feed->createElement('rss'));
         $version->setAttribute('version', '2.0');
-        $version->setAttribute('xmlns:atom', 'http://www.w3.org/2005/Atom');
+        $version->setAttribute('xmlns:atom', 'https://www.w3.org/2005/Atom');
         #Create root element
         $root = $version->appendChild($feed->createElement('channel'));
         #Add atom:link
@@ -232,9 +232,9 @@ class RSS
         header('Content-type: application/rss+xml;charset=utf-8');
         $this->HTTP20->zEcho($feed->saveXML(), 'hour');
     }
-    
+
     #Helper function to add actual entries
-    private function rssAddEntries(\DOMNode &$element, \DOMDocument &$feed, array $entry): void
+    private function rssAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry): void
     {
         if (!empty($entry['title'])) {
             $element->appendChild($feed->createElement('title', $entry['title']));
@@ -251,7 +251,7 @@ class RSS
             $element->appendChild($feed->createElement('description', $entry['description']));
         }
         if (!empty($feed_settings['author']) && $this->HTTP20->emailValidator($feed_settings['author'])) {
-            $root->appendChild($feed->createElement('author', $feed_settings['author']));
+            $element->appendChild($feed->createElement('author', $feed_settings['author']));
         }
         if (!empty($entry['category'])) {
             $element->appendChild($feed->createElement('category', $entry['category']));
@@ -270,4 +270,3 @@ class RSS
         }
     }
 }
-?>

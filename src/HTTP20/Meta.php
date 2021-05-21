@@ -12,12 +12,12 @@ class Meta
             trigger_error('Empty array of general settings was provided for Twitter card', E_USER_NOTICE);
             return '';
         }
-        #Title is manadtory
+        #Title is mandatory
         if (empty($general['title'])) {
             trigger_error('Empty title was provided for Twitter card', E_USER_NOTICE);
             return '';
         }
-        
+
         #If card type is not set or is unsupported - use 'summary'
         if (empty($general['card']) || !in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'])) {
             $general['card'] = 'summary';
@@ -31,7 +31,7 @@ class Meta
             $output .= '<meta name="twitter:site" content="'.(substr($general['site'], 0, 1) === '@' ? '' : '@').$general['site'].'" />';
         }
         #Add site:id if not empty and valid
-        if (!empty($general['site:id']) && preg_match('/^\d{1,}$/', $general['site:id']) === 1) {
+        if (!empty($general['site:id']) && preg_match('/^\d+$/', $general['site:id']) === 1) {
             $output .= '<meta name="twitter:site:id" content="'.$general['site:id'].'" />';
         }
         #Add creator if not empty and valid
@@ -39,7 +39,7 @@ class Meta
             $output .= '<meta name="twitter:creator" content="'.(substr($general['creator'], 0, 1) === '@' ? '' : '@').$general['creator'].'" />';
         }
         #Add creator:id if not empty and valid
-        if (!empty($general['creator:id']) && preg_match('/^\d{1,}$/', $general['creator:id']) === 1) {
+        if (!empty($general['creator:id']) && preg_match('/^\d+$/', $general['creator:id']) === 1) {
             $output .= '<meta name="twitter:creator:id" content="'.$general['creator:id'].'" />';
         }
         #Add description if not empty
@@ -62,7 +62,7 @@ class Meta
         #Process player tags
         if ($general['card'] === 'player') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
-            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || preg_match('/.*twitter:image".*/i', $output) !== 1 || empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || $this->isHTTPS($playerApp['player']) === false || preg_match('/^\d{1,}$/', $playerApp['width']) !== 1 || preg_match('/^\d{1,}$/', $playerApp['height']) !== 1) {
+            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || preg_match('/.*twitter:image".*/i', $output) !== 1 || empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || $this->isHTTPS($playerApp['player']) === false || preg_match('/^\d+$/', $playerApp['width']) !== 1 || preg_match('/^\d+$/', $playerApp['height']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
                 trigger_error('One or more Twitter player card parameter is missing or incorrect', E_USER_NOTICE);
                 return '';
@@ -78,7 +78,7 @@ class Meta
             }
         } elseif ($general['card'] === 'app') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card
-            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || empty($playerApp['id:iphone']) || empty($playerApp['id:ipad']) || empty($playerApp['id:googleplay']) || preg_match('/^\d{1,}$/', $playerApp['id:iphone']) !== 1 || preg_match('/^\d{1,}$/', $playerApp['id:ipad']) !== 1 || preg_match('/^\d{1,}$/', $playerApp['id:googleplay']) !== 1) {
+            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || empty($playerApp['id:iphone']) || empty($playerApp['id:ipad']) || empty($playerApp['id:googleplay']) || preg_match('/^\d+$/', $playerApp['id:iphone']) !== 1 || preg_match('/^\d+$/', $playerApp['id:ipad']) !== 1 || preg_match('/^\d+$/', $playerApp['id:googleplay']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
                 trigger_error('One or more Twitter app card parameter is missing or incorrect', E_USER_NOTICE);
                 return '';
@@ -98,7 +98,7 @@ class Meta
                 $output .= '<meta name="twitter:app:url:googleplay" content="'.$playerApp['url:googleplay'].'" />';
             }
             #Add country code
-            if (!empty($playerApp['country']) && preg_match('/^A[^ABCHJKNPVY]|B[^CKPUX]|C  [^BEJPQST]|D[EJKMOZ]|E[CEGHRST]|F[IJKMOR]|G[^CJKOVXZ]|H[KMNRTU]|I[DEL-OQ-T]|J[EMOP]|K[EGHIMNPRWYZ]|L[ABCIKR-VY]|M[^BIJ]|N[ACEFGILOPRUZ]|OM|P[AE-HK-NRSTWY]|QA|R[EOSUW]|S[^FPQUW]|T[^ABEIPQSUXY]|U[AGMSYZ]|V[ACEGINU]|WF|WS|YE|YT|Z[AMW]$/i', $playerApp['country']) === 1) {
+            if (!empty($playerApp['country']) && preg_match('/^A[^ABCHJKNPVY]|B[^CKPUX]|C[^BEJPQST]|D[EJKMOZ]|E[CEGHRST]|F[IJKMOR]|G[^CJKOVXZ]|H[KMNRTU]|I[DEL-OQ-T]|J[EMOP]|K[EGHIMNPRWYZ]|L[ABCIKR-VY]|M[^BIJ]|N[ACEFGILOPRUZ]|OM|P[AE-HK-NRSTWY]|QA|R[EOSUW]|S[^FPQUW]|T[^ABEIPQSUXY]|U[AGMSYZ]|V[ACEGINU]|WF|WS|YE|YT|Z[AMW]$/i', $playerApp['country']) === 1) {
                 $output .= '<meta name="twitter:app:country" content="'.$playerApp['country'].'" />';
             }
         }
@@ -108,7 +108,7 @@ class Meta
         }
         return $output;
     }
-    
+
     #Helper function to check whether a string is a recognizable URL (not URI!) with HTTPS scheme
     private function isHTTPS(string $url): bool
     {
@@ -119,7 +119,7 @@ class Meta
             return true;
         }
     }
-    
+
     #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file
     #Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
     #browserconfig specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
@@ -132,7 +132,7 @@ class Meta
         }
         #Check name
         if (empty($general['name']) && $xml === false) {
-            #While name (application-name) is replaced by page title by default, this may not be a good idea, if some "random" page is pinned by user. You do want to avhe at least some control of how your website is presented on uesr's system.
+            #While name (application-name) is replaced by page title by default, this may not be a good idea, if some "random" page is pinned by user. You do want to have at least some control of how your website is presented on user's system.
             trigger_error('Empty name was provided for Microsoft Tile', E_USER_NOTICE);
             return '';
         }
@@ -145,7 +145,7 @@ class Meta
             $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
         }
         #If window is not provided set or incorrect
-        if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d{1,})\d{2};\s*height=([89]|[1-9]\d{1,})\d{2})|(height=([89]|[1-9]\d{1,})\d{2};\s*width=([89]|[1-9]\d{1,})\d{2})$/i', $general['window']) === 0) {
+        if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d+)\d{2};\s*height=([89]|[1-9]\d+)\d{2})|(height=([89]|[1-9]\d+)\d{2};\s*width=([89]|[1-9]\d+)\d{2})$/i', $general['window']) === 0) {
             $general['window'] = 'width=800;height=600';
         }
         #If allowDomainApiCalls is not set, set it to true by default
@@ -175,7 +175,7 @@ class Meta
         if (empty($general['navbutton-color']) || preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $general['navbutton-color']) !== 1) {
             unset($general['navbutton-color']);
         }
-        #Technically TileColor supports named colors, but forcing only Hex values makes it consistenet with navbutton-color
+        #Technically TileColor supports named colors, but forcing only Hex values makes it consistent with navbutton-color
         if (empty($general['TileColor']) || preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $general['TileColor']) !== 1) {
             unset($general['TileColor']);
         }
@@ -333,7 +333,7 @@ class Meta
             #Output directly to client if parameter is true
             if ($prettyDirect) {
                 header('Content-Type: text/xml; charset=utf-8');
-                (new \Simbiat\HTTP20\Common)->zEcho($output);
+                (new Common)->zEcho($output);
             }
         } else {
             $output = '';
@@ -376,12 +376,12 @@ class Meta
         }
         return $output;
     }
-    
-    #Function to generate Facebook speacial meta tags
-    public function facebook(int $appid, array $admins = []): string
+
+    #Function to generate Facebook special meta tags
+    public function facebook(int $appId, array $admins = []): string
     {
-        #Add appid tag
-        $output = '<meta property="fb:app_id" content="'.$appid.'"/>';
+        #Add appId tag
+        $output = '<meta property="fb:app_id" content="'.$appId.'"/>';
         #Check values of admins IDs
         foreach ($admins as $key=>$admin) {
             if (is_numeric($admin)) {
@@ -399,4 +399,3 @@ class Meta
         return $output;
     }
 }
-?>

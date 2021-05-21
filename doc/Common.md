@@ -64,9 +64,9 @@ reductor($files, string $type, bool $minify = false, string $toFile = '', string
 ```
 Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that.
 Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
-`$files` can be a string, a path to file, a path to folder or an array of filepaths.
+`$files` can be a string, a path to file, a path to folder or an array of file paths.
 `$type` can be anything, technically, but currently `css`, `js` or `html` are supported.
-`$minify` trigger the minification if set to `true`. It's set to `false` by default, because minifcation is known to cause some issues, especially with HTML, so you need to be careful with this.
+`$minify` trigger the minification if set to `true`. It's set to `false` by default, because minification is known to cause some issues, especially with HTML, so you need to be careful with this.
 `$toFile` allows to output the data to a file, instead of to browser. Useful if you do not want to do this dynamically, but would rather prepare the files beforehand.
 `$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](doc/Headers.md#cachecontrol))
 `$exit` if set to `true` will exit the script, if to `false` - return an `int` representing the HTTP status code, unless text, font or some image/application MIME types is encountered: in this case `zEcho` will be used, which will exit the code regardless.

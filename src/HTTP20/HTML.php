@@ -8,7 +8,7 @@ class HTML
     public static int $crumbs = 0;
     #Static to count paginations in case multiple ones are created
     public static int $paginations = 0;
-    
+
     #Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList
     public function breadcrumbs(array $items, string $delimiter = '>', bool $links = false, bool $headers = false): string|array
     {
@@ -40,18 +40,16 @@ class HTML
         #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some of the elements in the list. Adding 1 to avoid last element getting ID of 0.
         $itemDepth = count($items);
         #Open data
-        $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="http://schema.org/BreadcrumbList" numberOfItems="'.$itemDepth.'" itemListOrder="ItemListUnordered">';
+        $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$itemDepth.'" itemListOrder="ItemListUnordered">';
         #Open links
-        if ($links) {
-            $linksArr = [];
-        }
+        $linksArr = [];
         foreach ($items as $key=>$item) {
             #Add top page if links were requested and this if the first link in set. Technically, it looks like only "home" should be currently supported, but if not supported by client, the link should be silently ignored as per specification, so no worries
             if ($links && $position === 1) {
                 $linksArr[] = ['href' => $item['href'], 'rel' => 'home index top begin prefetch', 'title' => $item['name']];
             }
             #Update item value to string. First element will always have its ID end with 0, because you may want to hide first element (generally home page) with CSS
-            $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem"'.($itemDepth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.htmlspecialchars($item['href']).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemprop="name">'.htmlspecialchars($item['name']).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
+            $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '.($itemDepth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.htmlspecialchars($item['href']).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemprop="name">'.htmlspecialchars($item['name']).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
             #Update counters
             $itemDepth--;
             $position++;
@@ -68,10 +66,10 @@ class HTML
             #Send headers, if this was requested
             if ($headers) {
                 #Create object, since we will need it twice
-                $headersObj = (new \Simbiat\HTTP20\Headers);
+                $headersObj = (new Headers);
                 #Send headers
-                $headersObj->links($linksArr, 'header');
-                #Replace array of links with prepared strings for future use, if requried
+                $headersObj->links($linksArr);
+                #Replace array of links with prepared strings for future use, if required
                 $linksArr = $headersObj->links($linksArr, 'head');
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
@@ -80,7 +78,7 @@ class HTML
             return $output;
         }
     }
-    
+
     #Function to generate pagination navigation
     public function pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page', 'next_text' => 'Next page', 'last_text' => 'Last page', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false): string|array
     {
@@ -242,10 +240,10 @@ class HTML
             #Send headers, if this was requested
             if ($headers) {
                 #Create object, since we will need it twice
-                $headersObj = (new \Simbiat\HTTP20\Headers);
+                $headersObj = (new Headers);
                 #Send headers
-                $headersObj->links($linksArr, 'header');
-                #Replace array of links with prepared strings for future use, if requried
+                $headersObj->links($linksArr);
+                #Replace array of links with prepared strings for future use, if required
                 $linksArr = $headersObj->links($linksArr, 'head');
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
@@ -255,4 +253,3 @@ class HTML
         }
     }
 }
-?>

@@ -1,5 +1,5 @@
 # HTTP20
-Set of classes/functions that may be universally useful for websites (or some parts of them, at least).  
+Set of classes/functions that may be universally useful for websites (or some parts of them, at least).
 They are provided in single library and not separately, not only because of some inter-dependencies, but also because if you are building a website from scratch, most likely, you will be interested in a bunch of them at the same time either way.
 
 - [HTTP20](#HTTP20)
@@ -11,7 +11,7 @@ They are provided in single library and not separately, not only because of some
     + [download](doc/Sharing.md#download)
     + [upload](doc/Sharing.md#upload)
     + [streamCopy](doc/Sharing.md#streamcopy)
-    + [speedLimit](doc/Sharing.md#speedlimit)
+    + [speedLimit](doc/Sharing.md#speedLimit)
     + [phpMemoryToInt](doc/Sharing.md#phpmemorytoint)
     + [rangesValidate](doc/Sharing.md#rangesvalidate)
     + [fileEcho](doc/Sharing.md#fileecho)

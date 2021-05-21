@@ -2,16 +2,18 @@
 declare(strict_types=1);
 namespace Simbiat\HTTP20;
 
+use Simbiat\SafeFileName;
+
 class Sharing
 {
-    private array $extToMime = [];
-    private string $mimeRegex = '';
-    private ?string $uploaddir = NULL;
-    
+    private array $extToMime;
+    private string $mimeRegex;
+    private ?string $uploadDir;
+
     public function __construct()
     {
         #Cache (new \Simbiat\HTTP20\Common)
-        $common = (new \Simbiat\HTTP20\Common);
+        $common = (new Common);
         #Cache MIMEs list
         $this->extToMime = $common::extToMime;
         #Cache mimeRegex
@@ -19,37 +21,37 @@ class Sharing
         unset($common);
         #Set upload directory
         if (is_writable(ini_get('upload_tmp_dir')) === true) {
-            $this->uploaddir = ini_get('upload_tmp_dir');
+            $this->uploadDir = ini_get('upload_tmp_dir');
         } else {
-            $this->uploaddir = sys_get_temp_dir();
+            $this->uploadDir = sys_get_temp_dir();
         }
         #Ensure we do not have trailing slash
-        $this->uploaddir = preg_replace('/(.*[^\\\\\/]{1,})([\\\\\/]{1,}$)/', '$1', $this->uploaddir);
+        $this->uploadDir = preg_replace('/(.*[^\\\\\/]+)([\\\\\/]+$)/', '$1', $this->uploadDir);
     }
-    
+
     #Function for smart resumable download with proper headers
-    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedlimit = 10485760, bool $exit = true): bool|int
+    public function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedLimit = 10485760, bool $exit = true): bool|int
     {
-        #Sanitize speedlimit
-        $speedlimit = $this->speedLimit($speedlimit);
+        #Sanitize speed limit
+        $speedLimit = $this->speedLimit($speedLimit);
         #Some protection
         header('Access-Control-Allow-Headers: range');
         header('Access-Control-Allow-Methods: GET');
         #Download is valid only in case of GET method
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('405', $exit);
+            return (new Headers)->clientReturn('405', $exit);
         }
         #Check that path exists and is actually a file
         if (!is_file($file)) {
             if (isset($_SERVER['HTTP_RANGE'])) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('410', $exit);
+                return (new Headers)->clientReturn('410', $exit);
             } else {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('404', $exit);
+                return (new Headers)->clientReturn('404', $exit);
             }
         }
         #Check if file is readable
         if (!is_readable($file)) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('409', $exit);
+            return (new Headers)->clientReturn('409', $exit);
         }
         #Get file information (we need extension and basename)
         $fileinfo = pathinfo($file);
@@ -60,18 +62,18 @@ class Sharing
         #Control caching
         header('Cache-Control: must-revalidate, no-transform');
         #If file has been cached by browser since last time it has been changed - exit before everything. Depends on browser whether this will work, though.
-        (new \Simbiat\HTTP20\Headers)->lastModified(filemtime($file), true)->eTag($boundary, true);
+        (new Headers)->lastModified(filemtime($file), true)->eTag($boundary, true);
         #Check if MIME was provided
         if (!empty($mime)) {
             #If yes, validate its format
-            if (preg_match('/^(('.$this->mimeRegex.') ?){1,}$/i', $value) !== 1) {
+            if (preg_match('/^(('.$this->mimeRegex.') ?)+$/i', $mime) !== 1) {
                 #Empty invalid MIME
                 $mime = '';
             }
         }
         #Check if it's empty again (or was from the start)
         if (empty($mime)) {
-            #If not, attempt to check if in the constant list based on extesnion
+            #If not, attempt to check if in the constant list based on extension
             if (isset($this->extToMime[$fileinfo['extension']])) {
                 $mime = $this->extToMime[$fileinfo['extension']];
             } else {
@@ -86,7 +88,7 @@ class Sharing
         #Process ranges
         $ranges = $this->rangesValidate($filesize);
         if (isset($ranges[0]) && $ranges[0] === false) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('416', $exit);
+            return (new Headers)->clientReturn('416', $exit);
         }
         #Send common headers
         if ($inline) {
@@ -102,13 +104,13 @@ class Sharing
         $stream = fopen($file, 'rb');
         #Check if file was opened
         if ($stream === false) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+            return (new Headers)->clientReturn('500', $exit);
         }
         #Open output stream
         $output = fopen('php://output', 'wb');
         #Check if stream was opened
         if ($output === false) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+            return (new Headers)->clientReturn('500', $exit);
         }
         #Disable buffering. This should help limiting the memory usage. At least, in some cases.
         stream_set_read_buffer($stream, 0);
@@ -124,20 +126,20 @@ class Sharing
                 $filesize = $ranges[0]['end'] - $ranges[0]['start'] + 1;
                 header('Content-Length: '.$filesize);
                 #Limit speed to range length, if it's current speed limit is too large, so that it will be provided fully
-                if ($speedlimit > $filesize) {
-                    $speedlimit = $filesize;
+                if ($speedLimit > $filesize) {
+                    $speedLimit = $filesize;
                 }
-                $speedlimit = $this->speedLimit($speedlimit);
+                $speedLimit = $this->speedLimit($speedLimit);
                 #Output data
-                $result = $this->streamCopy($stream, $output, $filesize, $ranges[0]['start'], $speedlimit);
+                $result = $this->streamCopy($stream, $output, $filesize, $ranges[0]['start'], $speedLimit);
                 #Close file
                 fclose($stream);
                 fclose($output);
                 if ($result === false) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                    return (new Headers)->clientReturn('500', $exit);
                 } else {
                     if ($exit) {
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('200', true);
+                        return (new Headers)->clientReturn('200');
                     } else {
                         return $result;
                     }
@@ -155,24 +157,23 @@ class Sharing
                 #Send expected size to client
                 header('Content-Length: '.$partsSize);
                 #Iterrate the parts
-                $result = false;
                 $sent = 0;
                 foreach ($ranges as $range) {
                     #Echo supportive text
                     echo "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n";
                     #Limit speed to range length, if current speed limit is too large, so that it will be provided fully
-                    if ($speedlimit > $range['end'] - $range['start'] + 1) {
-                        $speedlimit_multi = $range['end'] - $range['start'] + 1;
+                    if ($speedLimit > $range['end'] - $range['start'] + 1) {
+                        $speedLimitMulti = $range['end'] - $range['start'] + 1;
                     } else {
-                        $speedlimit_multi = $speedlimit;
+                        $speedLimitMulti = $speedLimit;
                     }
-                    $speedlimit_multi = $this->speedLimit($speedlimit_multi);
+                    $speedLimitMulti = $this->speedLimit($speedLimitMulti);
                     #Output data
-                    $result = $this->streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speedlimit_multi);
+                    $result = $this->streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speedLimitMulti);
                     if ($result === false) {
                         fclose($stream);
                         fclose($output);
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                        return (new Headers)->clientReturn('500', $exit);
                     } else {
                         $sent += $result;
                     }
@@ -182,7 +183,7 @@ class Sharing
                 fclose($output);
                 echo "\r\n--".$boundary."\r\n";
                 if ($exit) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('200', true);
+                    return (new Headers)->clientReturn('200');
                 } else {
                     return $sent;
                 }
@@ -192,36 +193,40 @@ class Sharing
             header('Content-Length: '.$filesize);
             header($_SERVER['SERVER_PROTOCOL'].' 200 OK');
             #Output data
-            $result = $this->streamCopy($stream, $output, $filesize, 0, $speedlimit);
+            $result = $this->streamCopy($stream, $output, $filesize, 0, $speedLimit);
             #Close the file
             fclose($stream);
             fclose($output);
             if ($result === false) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                return (new Headers)->clientReturn('500', $exit);
             } else {
                 if ($exit) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('200', true);
+                    return (new Headers)->clientReturn('200');
                 } else {
                     return $result;
                 }
             }
         }
     }
-    
+
     #Function to handle file uploads
-    public function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intollerant = true, bool $exit = true): bool|array
+
+    /**
+     * @throws \Exception
+     */
+    public function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intolerant = true, bool $exit = true): bool|array
     {
         #Cache some PHP settings
         $maxUpload = $this-> phpMemoryToInt(ini_get('upload_max_filesize'));
         $maxPost = $this-> phpMemoryToInt(ini_get('post_max_size'));
-        $maxFiles = ini_get('max_file_uploads');
+        $maxFiles = intval(ini_get('max_file_uploads'));
         #Check if POST or PUT
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PUT') {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('405', $exit);
+            return (new Headers)->clientReturn('405', $exit);
         }
         #Check content type if we have POST method
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && (empty($_SERVER['CONTENT_TYPE']) || preg_match('/^multipart\/form-data(;)?.*/i', $_SERVER['CONTENT_TYPE']) !== 1)) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('415', $exit);
+            return (new Headers)->clientReturn('415', $exit);
         }
         #Sanitize provided MIME types
         if (!empty($allowedMime)) {
@@ -233,46 +238,46 @@ class Sharing
         }
         #Cache filename sanitizer
         if (method_exists('\Simbiat\SafeFileName','sanitize')) {
-            $SafeFileName = (new \Simbiat\SafeFileName);
+            $SafeFileName = (new SafeFileName);
         } else {
             $SafeFileName = false;
         }
         #Check if file upload is enabled on server
         if (ini_get('file_uploads') == false) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('501', $exit);
+            return (new Headers)->clientReturn('501', $exit);
         }
         #Check that we do have some space allocated for file uploads
         if ($maxUpload === 0 || $maxPost === 0 || $maxFiles === 0) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('507', $exit);
+            return (new Headers)->clientReturn('507', $exit);
         }
         #Validate destination directory
         if (is_string($destPath)) {
             $destPath = realpath($destPath);
             if (!is_dir($destPath) || !is_writable($destPath)) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                return (new Headers)->clientReturn('500', $exit);
             }
         } elseif (is_array($destPath)) {
             foreach ($destPath as $key=>$path) {
                 $destPath[$key] = realpath($path);
                 if (!is_dir($destPath[$key]) || !is_writable($destPath[$key])) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                    return (new Headers)->clientReturn('500', $exit);
                 }
             }
         } else {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+            return (new Headers)->clientReturn('500', $exit);
         }
         #Process files based on method used
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             #Check that something was sent to us at all
             if ((isset($_SERVER['CONTENT_LENGTH']) && intval($_SERVER['CONTENT_LENGTH']) === 0) || empty($_FILES) || empty($_POST)) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('400', $exit);
+                return (new Headers)->clientReturn('400', $exit);
             }
             #Standardize $_FILES and also count them
-            $totalfiles = 0;
+            $totalFiles = 0;
             foreach ($_FILES as $field=>$files) {
                 #Check if multiple files were uploaded to a field and process the values accordingly
                 if (is_array($files['name'])) {
-                    $totalfiles += count($files['name']);
+                    $totalFiles += count($files['name']);
                     foreach ($files['name'] as $key=>$file) {
                         $_FILES[$field][$key]['name'] = $file;
                         $_FILES[$field][$key]['type'] = $files['type'][$key];
@@ -281,7 +286,7 @@ class Sharing
                         $_FILES[$field][$key]['error'] = $files['error'][$key];
                     }
                 } else {
-                    $totalfiles += 1;
+                    $totalFiles += 1;
                     $_FILES[$field][0]['name'] = $files['name'];
                     $_FILES[$field][0]['type'] = $files['type'];
                     $_FILES[$field][0]['size'] = $files['size'];
@@ -291,8 +296,8 @@ class Sharing
                 unset($_FILES[$field]['name'], $_FILES[$field]['type'], $_FILES[$field]['size'], $_FILES[$field]['tmp_name'], $_FILES[$field]['error']);
             }
             #Check number of files
-            if ($totalfiles > $maxFiles) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('413', $exit);
+            if ($totalFiles > $maxFiles) {
+                return (new Headers)->clientReturn('413', $exit);
             }
             #Prepare array for uploaded files
             $uploadedFiles = [];
@@ -300,8 +305,8 @@ class Sharing
             foreach ($_FILES as $field=>$files) {
                 #Check that field has a folder to copy file to
                 if (is_array($destPath) && !isset($destPath[$field])) {
-                    if ($intollerant) {
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('501', $exit);
+                    if ($intolerant) {
+                        return (new Headers)->clientReturn('501', $exit);
                     } else {
                         #Remove the file from list
                         unset($_FILES[$field]);
@@ -322,54 +327,50 @@ class Sharing
                             break;
                         case UPLOAD_ERR_INI_SIZE:
                         case UPLOAD_ERR_FORM_SIZE:
-                            if ($intollerant) {
-                                return (new \Simbiat\HTTP20\Headers)->clientReturn('413', $exit);
+                            if ($intolerant) {
+                                return (new Headers)->clientReturn('413', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
                                 continue 2;
                             }
-                            break;
                         case UPLOAD_ERR_PARTIAL:
                         case UPLOAD_ERR_NO_FILE:
                         case UPLOAD_ERR_CANT_WRITE:
-                            if ($intollerant) {
-                                return (new \Simbiat\HTTP20\Headers)->clientReturn('409', $exit);
+                            if ($intolerant) {
+                                return (new Headers)->clientReturn('409', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
                                 continue 2;
                             }
-                            break;
                         case UPLOAD_ERR_NO_TMP_DIR:
                         case UPLOAD_ERR_EXTENSION:
-                            if ($intollerant) {
-                                return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                            if ($intolerant) {
+                                return (new Headers)->clientReturn('500', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
                                 continue 2;
                             }
-                            break;
                         default:
-                            if ($intollerant) {
-                                return (new \Simbiat\HTTP20\Headers)->clientReturn('418', $exit);
+                            if ($intolerant) {
+                                return (new Headers)->clientReturn('418', $exit);
                             } else {
                                 #Remove the file from list
                                 unset($_FILES[$field][$key]);
                                 continue 2;
                             }
-                            break;
                     }
                     #Check if file being referenced was, indeed, sent to us via POST
                     if (is_uploaded_file($file['tmp_name']) === false) {
-                        #Deny further processing. This is the only case, where we ignore $intollerant setting for security reasons
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('403', $exit);
+                        #Deny further processing. This is the only case, where we ignore $intolerant setting for security reasons
+                        return (new Headers)->clientReturn('403', $exit);
                     }
                     #Check file size
                     if ($file['size'] > $maxUpload) {
-                        if ($intollerant) {
-                            return (new \Simbiat\HTTP20\Headers)->clientReturn('413', $exit);
+                        if ($intolerant) {
+                            return (new Headers)->clientReturn('413', $exit);
                         } else {
                             #Remove the file from list
                             unset($_FILES[$field][$key]);
@@ -377,8 +378,8 @@ class Sharing
                         }
                     } elseif ($file['size'] === 0 || empty($file['tmp_name'])) {
                         #Check if tmp_name is set or $file size is empty
-                        if ($intollerant) {
-                            return (new \Simbiat\HTTP20\Headers)->clientReturn('400', $exit);
+                        if ($intolerant) {
+                            return (new Headers)->clientReturn('400', $exit);
                         } else {
                             #Remove the file from list
                             unset($_FILES[$field][$key]);
@@ -394,8 +395,8 @@ class Sharing
                         if (!empty($allowedMime)) {
                             #Get MIME from file (not relying on what was sent by client)
                             if (!in_array($_FILES[$field][$key]['type'], $allowedMime)) {
-                                if ($intollerant) {
-                                    return (new \Simbiat\HTTP20\Headers)->clientReturn('415', $exit);
+                                if ($intolerant) {
+                                    return (new Headers)->clientReturn('415', $exit);
                                 } else {
                                     #Remove the file from list
                                     unset($_FILES[$field][$key]);
@@ -410,15 +411,15 @@ class Sharing
                             $_FILES[$field][$key]['name'] = basename($SafeFileName->sanitize($file['name']));
                             #If name is empty or name is too long, do not process it
                             if (empty($_FILES[$field][$key]['name']) || mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
-                                if ($intollerant) {
-                                    return (new \Simbiat\HTTP20\Headers)->clientReturn('400', $exit);
+                                if ($intolerant) {
+                                    return (new Headers)->clientReturn('400', $exit);
                                 } else {
                                     #Remove the file from list
                                     unset($_FILES[$field][$key]);
                                     continue;
                                 }
                             } else {
-                                #Set new name for the file. By default we will be using hash of the file. Using sha3-256 since it has lower probability of collissions than md5, although we do lose some speed
+                                #Set new name for the file. By default we will be using hash of the file. Using sha3-256 since it has lower probability of collisions than md5, although we do lose some speed
                                 #Hash is saved regardless, though, since it may be very useful
                                 $_FILES[$field][$key]['hash'] = hash_file('sha3-256', $file['tmp_name']);
                                 if ($preserveNames) {
@@ -439,13 +440,13 @@ class Sharing
                                     #Generate name from hash and extension from original file
                                     $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['hash'].$ext;
                                 }
-                                #Check if destinatino file already exists
+                                #Check if destination file already exists
                                 if (is_file($finalPath.'/'.$_FILES[$field][$key]['new_name'])) {
                                     if ($overwrite) {
                                         #Check that it is writable
                                         if (!is_writable($finalPath.'/'.$_FILES[$field][$key]['new_name'])) {
-                                            if ($intollerant) {
-                                                return (new \Simbiat\HTTP20\Headers)->clientReturn('409', $exit);
+                                            if ($intolerant) {
+                                                return (new Headers)->clientReturn('409', $exit);
                                             } else {
                                                 #Remove the file from list
                                                 unset($_FILES[$field][$key]);
@@ -474,7 +475,7 @@ class Sharing
             #Check if any files were left
             if (empty($_FILES)) {
                 if (empty($uploadedFiles)) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('400', $exit);
+                    return (new Headers)->clientReturn('400', $exit);
                 }
             } else {
                 #Process files and put them into an array
@@ -485,12 +486,12 @@ class Sharing
                     } else {
                         $finalPath = $destPath[$field];
                     }
-                    foreach ($files as $key=>$file) {
+                    foreach ($files as $file) {
                         #Move file, but only if it's not already present in destination
                         if (!is_file($finalPath.'/'.$file['new_name']) && move_uploaded_file($file['tmp_name'], $finalPath.'/'.$file['new_name']) === true) {
                             $uploadedFiles[] = ['server_name' => $file['new_name'], 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
                         } else {
-                            if ($intollerant) {
+                            if ($intolerant) {
                                 return $uploadedFiles;
                             }
                         }
@@ -500,22 +501,22 @@ class Sharing
         #Process PUT requests
         } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             if (!isset($_SERVER['CONTENT_LENGTH']) || intval($_SERVER['CONTENT_LENGTH']) === 0) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('411', $exit);
+                return (new Headers)->clientReturn('411', $exit);
             }
             $client_size = intval($_SERVER['CONTENT_LENGTH']);
             #Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
             set_time_limit(intval(floor($client_size/10240)));
             if ($_SERVER['CONTENT_LENGTH'] > $maxUpload) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('413', $exit);
+                return (new Headers)->clientReturn('413', $exit);
             }
             #Check that destination is a string
             if (!is_string($destPath)) {
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                return (new Headers)->clientReturn('500', $exit);
             }
             if (!empty($allowedMime) && isset($_SERVER['CONTENT_TYPE'])) {
                 #Get MIME from file (not relying on what was sent by client)
                 if (!in_array($_SERVER['CONTENT_TYPE'], $allowedMime)) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('415', $exit);
+                    return (new Headers)->clientReturn('415', $exit);
                 }
             }
             #Attempt to get name from header
@@ -523,10 +524,10 @@ class Sharing
             if (isset($_SERVER['HTTP_CONTENT_DISPOSITION'])) {
                 #filename* is preferred over filename as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
                 #Note that this format MAY include charset
-                $name = preg_replace('/^(.*filename\*='.(new \Simbiat\HTTP20\Common)::langEncRegex.'"?)(?<filename>[^";=\*]*)((("|;).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
+                $name = preg_replace('/^(.*filename\*='.(new Common)::langEncRegex.'"?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
                 if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
                     #If we are here, it means that there is no filename*
-                    $name = preg_replace('/^(.*filename="?)(?<filename>[^";=\*]*)((("|;).*)|($))$/i', '$2', $_SERVER['HTTP_CONTENT_DISPOSITION']);
+                    $name = preg_replace('/^(.*filename="?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$2', $_SERVER['HTTP_CONTENT_DISPOSITION']);
                     if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
                         #If we are here, it means no filename was shared
                         $name = '';
@@ -545,8 +546,8 @@ class Sharing
                 $resumable = true;
             }
             #Check if file already exists
-            if ($resumable && is_file($this->uploaddir.'/'.$name)) {
-                $offset = filesize($this->uploaddir.'/'.$name);
+            if ($resumable && is_file($this->uploadDir.'/'.$name)) {
+                $offset = filesize($this->uploadDir.'/'.$name);
             } else {
                 $offset = 0;
             }
@@ -555,16 +556,16 @@ class Sharing
                 $stream = fopen('php://input', 'rb');
                 #Check if file was opened
                 if ($stream === false) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('409', $exit);
+                    return (new Headers)->clientReturn('409', $exit);
                 }
                 #Read input stream
                 if ($offset > 0 && $offset < $client_size) {
-                    #We can't fseek php://input, thus we need to read it. To improve peformance we will use php://temp with a memorylimit
+                    #We can't fseek php://input, thus we need to read it. To improve performance we will use php://temp with a memory limit
                     $garbage = fopen('php://temp', 'wb');
                     #Check if stream was opened
                     if ($garbage === false) {
                         fclose($stream);
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                        return (new Headers)->clientReturn('500', $exit);
                     }
                     $collected = stream_copy_to_stream($stream, $garbage, $offset);
                     #Close stream
@@ -572,21 +573,21 @@ class Sharing
                     if ($collected != $offset) {
                         #Means we failed to read appropriate amount of bytes
                         fclose($stream);
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                        return (new Headers)->clientReturn('500', $exit);
                     }
                 }
                 if (feof($stream) === false) {
                     #Open output stream
                     if ($offset < $client_size) {
-                        $output = fopen($this->uploaddir.'/'.$name, 'ab');
+                        $output = fopen($this->uploadDir.'/'.$name, 'ab');
                     } else {
                         #Means the file is different and we better rewrite it
-                        $output = fopen($this->uploaddir.'/'.$name, 'wb');
+                        $output = fopen($this->uploadDir.'/'.$name, 'wb');
                     }
                     #Check if stream was opened
                     if ($output === false) {
                         fclose($stream);
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                        return (new Headers)->clientReturn('500', $exit);
                     }
                     #Disable buffering. This should help limiting the memory usage. At least, in some cases.
                     stream_set_read_buffer($stream, 0);
@@ -615,9 +616,9 @@ class Sharing
             }
             if ($result === false) {
                 if (!$resumable) {
-                    @unlink($this->uploaddir.'/'.$name);
+                    @unlink($this->uploadDir.'/'.$name);
                 }
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                return (new Headers)->clientReturn('500', $exit);
             } else {
                 #Get file MIME type
                 if (isset($_SERVER['CONTENT_TYPE'])) {
@@ -626,14 +627,14 @@ class Sharing
                     $filetype = 'application/octet-stream';
                 }
                 if (extension_loaded('fileinfo')) {
-                    $filetype = mime_content_type($this->uploaddir.'/'.$name);
+                    $filetype = mime_content_type($this->uploadDir.'/'.$name);
                 }
                 #Check against allowed MIME types if any was set and fileinfo is loaded
                 if (!empty($allowedMime)) {
                     #Get MIME from file (not relying on what was sent by client)
                     if (!in_array($filetype, $allowedMime)) {
-                        @unlink($this->uploaddir.'/'.$name);
-                        return (new \Simbiat\HTTP20\Headers)->clientReturn('415', $exit);
+                        @unlink($this->uploadDir.'/'.$name);
+                        return (new Headers)->clientReturn('415', $exit);
                     }
                 }
                 #Get extension of the file
@@ -642,31 +643,31 @@ class Sharing
                     $ext = 'PUT';
                 }
                 #Get hash
-                $hash = hash_file('sha3-256', $this->uploaddir.'/'.$name);
+                $hash = hash_file('sha3-256', $this->uploadDir.'/'.$name);
                 #Set new name
                 $newName = $hash.'.'.$ext;
                 #Attempt to move the file
-                if (rename($this->uploaddir.'/'.$name, $destPath.'/'.$newName) === false) {
-                    return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                if (rename($this->uploadDir.'/'.$name, $destPath.'/'.$newName) === false) {
+                    return (new Headers)->clientReturn('500', $exit);
                 }
                 #Add to array. Using array here for consistency with POST method. Field is reported as PUT to indicate the method. It's advisable not to use it for fields if you use POST method as well
                 $uploadedFiles[] = ['server_name' => $newName, 'user_name' => $name, 'size' => $client_size, 'type' => $filetype, 'hash' => $hash, 'field' => 'PUT'];
             }
         }
         if (empty($uploadedFiles)) {
-            return (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+            return (new Headers)->clientReturn('500', $exit);
         } else {
             if ($exit) {
                 #Inform client, that files were uploaded
-                return (new \Simbiat\HTTP20\Headers)->clientReturn('200', true);
+                return (new Headers)->clientReturn('200');
             } else {
                 return $uploadedFiles;
             }
         }
     }
-    
+
     #Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
-    public function streamCopy(&$input, &$output, int $totalsize = 0, int $offset = 0, int $speed = 10485760): bool|int
+    public function streamCopy($input, $output, int $totalSize = 0, int $offset = 0, int $speed = 10485760): bool|int
     {
         #Ignore user abort to attempt identify when client has aborted
         ignore_user_abort(true);
@@ -679,16 +680,16 @@ class Sharing
             return false;
         }
         #Get size if not provided
-        if ($totalsize <= 0) {
-            $totalsize = fstat($input)['size'];
+        if ($totalSize <= 0) {
+            $totalSize = fstat($input)['size'];
         }
         #Sanitize speed
         $speed = $this->speedLimit($speed);
         #Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
-        set_time_limit(intval(floor($totalsize/10240)));
+        set_time_limit(intval(floor($totalSize/10240)));
         #Set counter for amount of data sent
         $sent = 0;
-        while ($sent < $totalsize && connection_status() === CONNECTION_NORMAL) {
+        while ($sent < $totalSize && connection_status() === CONNECTION_NORMAL) {
             #Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
             $sentStat = stream_copy_to_stream($input, $output, $speed, $offset);
             if ($sentStat !== false) {
@@ -710,13 +711,13 @@ class Sharing
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
-        if (connection_status() === CONNECTION_NORMAL && $sent >= $totalsize) {
+        if (connection_status() === CONNECTION_NORMAL && $sent >= $totalSize) {
             return $sent;
         } else {
             return false;
         }
     }
-    
+
     #Function to determine speed limit based on maximum allowed memory usage
     public function speedLimit(int $speed = 0, float $percentage = 0.9): int
     {
@@ -731,13 +732,13 @@ class Sharing
         $memory = $memory - memory_get_peak_usage(true);
         #When using stream there is still a certain memory overhead, so we take only percentage of the memory
         #Percentage was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
-        $memory = intval(floor($memory * 0.9));
+        $memory = intval(floor($memory * $percentage));
         if ($speed <= 0 || $speed > $memory) {
             $speed = $memory;
         }
         return $speed;
     }
-    
+
     #Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes)
     public function phpMemoryToInt(string $memory): int
     {
@@ -753,8 +754,8 @@ class Sharing
         };
         return $memory;
     }
-    
-    #Function to validate HTTP header "Range" and return it as an array. If case of errors it will return array with one element (index 0) equallling false.
+
+    #Function to validate HTTP header "Range" and return it as an array. If case of errors it will return array with one element (index 0) equalling false.
     public function rangesValidate(int $size): array
     {
         if (isset($_SERVER['HTTP_RANGE'])) {
@@ -769,13 +770,13 @@ class Sharing
                 $ranges = explode(',', $ranges);
                 #Sanitize
                 foreach ($ranges as $key=>$range) {
-                    if (preg_match('/^-\d{1,}$/', $range) === 1) {
+                    if (preg_match('/^-\d+$/', $range) === 1) {
                         $ranges[$key] = ['start' => 0, 'end' => intval(ltrim($range, '-'))];
-                    } elseif (preg_match('/^\d{1,}-$/', $range) === 1) {
+                    } elseif (preg_match('/^\d+-$/', $range) === 1) {
                         $ranges[$key] = ['start' => intval(rtrim($range, '-')), 'end' => ($size - 1)];
-                    } elseif (preg_match('/^\d{1,}-\d{1,}$/', $range) === 1) {
-                        $temprange = explode('-', $range);
-                        $ranges[$key] = ['start' => intval($temprange[0]), 'end' => intval($temprange[1])];
+                    } elseif (preg_match('/^\d+-\d+$/', $range) === 1) {
+                        $tempRange = explode('-', $range);
+                        $ranges[$key] = ['start' => intval($tempRange[0]), 'end' => intval($tempRange[1])];
                     } else {
                         #If we get here, something went incredibly wrong, so better exit
                         return [0 => false];
@@ -814,7 +815,7 @@ class Sharing
             return [];
         }
     }
-    
+
     #Function to send a file to browser
     public function fileEcho(string $filepath, array $allowedMime = [], string $cacheStrat = 'month', bool $exit = true): int
     {
@@ -833,14 +834,14 @@ class Sharing
                     }
                     #Check if MIME is allowed
                     if (!empty($allowedMime) && !in_array($mimeType, $allowedMime)) {
-                        (new \Simbiat\HTTP20\Headers)->clientReturn('403', $exit);
+                        (new Headers)->clientReturn('403', $exit);
                         return 403;
                     }
                 }
             }
-            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus we rely on extension here, since it can provide a more approriate MIME type
+            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus we rely on extension here, since it can provide a more appropriate MIME type
             $extension = pathinfo($filepath)['extension'];
-            #Set MIME from extesnion, of available
+            #Set MIME from extension, of available
             if (!empty($extension) && !empty($this->extToMime[$extension])) {
                 $mimeTypeAlt = $this->extToMime[$extension];
             }
@@ -853,7 +854,7 @@ class Sharing
                 $mimeType = $mimeTypeAlt;
             }
             #Send Last Modified, eTag and Cache-Control headers
-            (new \Simbiat\HTTP20\Headers)->lastModified(filemtime($filepath), true)->eTag(hash_file('sha3-256', $filepath), true)->cacheControl('', $cacheStrat, true);
+            (new Headers)->lastModified(filemtime($filepath), true)->eTag(hash_file('sha3-256', $filepath), true)->cacheControl('', $cacheStrat, true);
             #Send MIME types. Add Charset to those, that are recommended to have it
             if (preg_match('/^(text\/.*)|(application\/(.*javascript|.*json|.*xml))$/i', $mimeType) === 1) {
                 header('Content-Type: '.$mimeType.'; charset=utf-8');
@@ -865,7 +866,7 @@ class Sharing
             #Open stream
             $stream = fopen($filepath, 'rb');
             if ($stream === false) {
-                (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                (new Headers)->clientReturn('500', $exit);
                 return 500;
             }
             #Some MIME types can be zipped nicely
@@ -875,10 +876,10 @@ class Sharing
                 #Close stream
                 fclose($stream);
                 if ($output === false) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                    (new Headers)->clientReturn('500', $exit);
                     return 500;
                 } else {
-                    (new \Simbiat\HTTP20\Common)->zEcho($output, $cacheStrat);
+                    (new Common)->zEcho($output, $cacheStrat);
                 }
             } else {
                 #Send size information
@@ -893,7 +894,7 @@ class Sharing
                 }
                 #Send data
                 if (fpassthru($stream) === false) {
-                    (new \Simbiat\HTTP20\Headers)->clientReturn('500', $exit);
+                    (new Headers)->clientReturn('500', $exit);
                     return 500;
                 }
                 #Close stream
@@ -905,21 +906,21 @@ class Sharing
             }
             #Either exit or return
             if ($exit) {
-               exit; 
+               exit;
             } else {
                 return 200;
             }
         } else {
-            (new \Simbiat\HTTP20\Headers)->clientReturn('404', $exit);
+            (new Headers)->clientReturn('404', $exit);
             return 404;
         }
     }
-    
+
     #Function to proxy-stream file from another server
     public function proxyFile(string $url, string $cacheStrat = ''): void
     {
         #Cache headers object
-        $headers = (new \Simbiat\HTTP20\Headers);
+        $headers = (new Headers);
         #Get headers
         $headersData = @get_headers($url, context: stream_context_create(['http' => [
             'method' => 'HEAD',
@@ -929,7 +930,7 @@ class Sharing
         #Check that we did get headers
         if (!is_array($headersData)) {
             #Failed to get headers, meaning we most likely will not be able to get the content as well
-            $headers->clientReturn('500', true);
+            $headers->clientReturn('500');
         }
         #Cache-Control flag
         $cache = false;
@@ -966,7 +967,7 @@ class Sharing
             fclose($output);
             fclose($url);
         } else {
-            $headers->clientReturn('500', true);
+            $headers->clientReturn('500');
         }
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -976,5 +977,3 @@ class Sharing
         exit;
     }
 }
-
-?>

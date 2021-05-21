@@ -9,7 +9,7 @@ Functions, that generate sets of meta-tags, that may be useful for your website.
 ```php
 twitter(array $general, array $playerApp = [], bool $pretty = false);
 ```
-Function creates a set of `<meta>` tags required for Twitter Cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards). It does some validation of the values you provide to reduce chances of botching the card.  
+Function creates a set of `<meta>` tags required for Twitter Cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards). It does some validation of the values you provide to reduce chances of botching the card.
 `$general` is an array of general settings used by cards:
 ```php
 [
@@ -33,7 +33,7 @@ Function creates a set of `<meta>` tags required for Twitter Cards (https://deve
   'image:alt' => 'Just an image',
 ]
 ```
-`$playerApp` is an array of values used for cards with types 'app' or 'player'.  
+`$playerApp` is an array of values used for cards with types 'app' or 'player'.
 For player cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card) the array will look like this:
 ```php
   #Mandatory URL to a frame of the player
@@ -72,7 +72,7 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
 ```
 #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file. Based on following specification:
 - Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
-- browserconfig.xml specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)  
+- browserconfig.xml specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
 `$general` - array of basic settings:
 ```php
 [
@@ -102,7 +102,7 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   'TileImage' => 'https://local.simbiat.ru/frontend/images/favicons/mstile-144x144.png',
 ]
 ```
-`$tasks` - array of so called "tasks", that appear as pinned links, if pinned from IE. Does not seem to be used by Edge. Not used by XML config.
+`$tasks` - array of so-called "tasks", that appear as pinned links, if pinned from IE. Does not seem to be used by Edge. Not used by XML config.
 ```php
 [
   #Array for an actual task
@@ -135,17 +135,17 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   'https://simbiat.ru/notification2.xml',
   #Optional frequency for refreshing the data. Defaults to 1440
   'frequency' => '30',
-  #Optional cycle tyoe (as per specification). Defaults to 0 or 1 based on number of links
+  #Optional cycle type (as per specification). Defaults to 0 or 1 based on number of links
   'cycle' => 1,
 ]
 ```
-`$xml` indicates whether you want to generate XML config file. `False` by default.  
+`$xml` indicates whether you want to generate XML config file. `False` by default.
 `$prettyDirect` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
 
 ## facebook
 ```php
-facebook(int $appid, array $admins = []);
+facebook(int $appId, array $admins = []);
 ```
-Simple function to prepare a string of Facebook meta tags.  
-`$appid` is mandatory application ID, that you want to link to the page.  
+Simple function to prepare a string of Facebook meta tags.
+`$appId` is mandatory application ID, that you want to link to the page.
 `$admins` is an optional list of admin IDs. All non-numeric values will be removed and numeric ones will be converted to integers.
