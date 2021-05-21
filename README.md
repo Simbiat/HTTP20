@@ -2,7 +2,7 @@
 Set of classes/functions that may be universally useful for websites (or some parts of them, at least).  
 They are provided in single library and not separately, not only because of some inter-dependencies, but also because if you are building a website from scratch, most likely, you will be interested in a bunch of them at the same time either way.
 
-- [HTTP20](#http20)
+- [HTTP20](#HTTP20)
   * [Atom](doc/Atom.md)
   * [RSS](doc/RSS.md)
   * [Sitemap](doc/Sitemap.md)

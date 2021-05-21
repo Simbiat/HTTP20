@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace Simbiat\http20;
+namespace Simbiat\HTTP20;
 
 class Common
 {
@@ -736,9 +736,9 @@ class Common
         'zir' => 'application/vnd.zul',
         'zmm' => 'application/vnd.handheld-entertainment+xml',
     ];
-    
+
     #Wrapper for date(), that handles strings and allows validation of result
-    public function valueToTime(string|int|float|null $time, string $format, string $validregex = ''): string
+    public function valueToTime(string|int|float|null $time, string $format, string $validRegex = ''): string
     {
         #If we want to use a constant, but it was sent as a string
         if (str_starts_with(strtoupper($format), 'DATE_')) {
@@ -760,14 +760,14 @@ class Common
             }
         }
         if ($format === 'c' || $format === \DATE_ATOM) {
-            $validregex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
+            $validRegex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
         }
-        if (!empty($validregex) && preg_match($validregex, $time) !== 1) {
+        if (!empty($validRegex) && preg_match($validRegex, $time) !== 1) {
             throw new \UnexpectedValueException('Date provided to `feedIDGen` failed to be validated against the provided regex');
         }
         return $time;
     }
-    
+
     #Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
     public function atomIDGen(string $link, string|int|float|null $date = NULL): string
     {
@@ -779,31 +779,27 @@ class Common
         #Remove HTML/XML reserved characters as precaution
         $link = preg_replace('/[\\\'"<>&]/im', '', $link);
         #Add 'tag:' to beginning and ',Y-m-d:' after domain name
-        $link = preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
-        return $link;
+        return preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
     }
-    
-    #Function utilizes ob functions to attempt compresing output sent to browser and also provide browser with length of the output and some caching-related headers
+
+    #Function utilizes ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
     public function zEcho(string $string, string $cacheStrat = ''): void
     {
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
-        (new \Simbiat\http20\Headers)->cacheControl($string, $cacheStrat, true);
-        #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistences with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
-        if (extension_loaded('zlib') && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false) {
+        (new Headers)->cacheControl($string, $cacheStrat, true);
+        #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
+        if (extension_loaded('zlib') && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
             #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
             #GZipping the string
             $string = gzcompress($string, 9, FORCE_GZIP);
             #Send header with format
             header('Content-Encoding: gzip');
-            #Send header with length
-            header('Content-Length: '.strlen($string));
-        } else {
-            #Send header with length
-            header('Content-Length: '.strlen($string));
         }
+        #Send header with length
+        header('Content-Length: '.strlen($string));
         #Exit if HEAD method was used (by this time all headers should have been sent
         if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
             exit;
@@ -812,27 +808,27 @@ class Common
         echo $string;
         exit;
     }
-    
+
     #Function to check if string is a mail address as per RFC 5322
     public function emailValidator(string $string): bool
     {
-        if (preg_match('/^(?:[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$/i', $string) === 1) {
+        if (preg_match('/^(?:[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)])$/i', $string) === 1) {
             return true;
         } else {
             return false;
         }
     }
-    
+
     #Function to check if string is an URI as per RFC 3986
     public function uriValidator(string $string): bool
     {
-        if (preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):(?<authority>\/\/(?<user>[^@]+@)?(?<host>[\p{L}0-9.\-_~]+)(?<port>:\d+)?)?(?<path>(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])+(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])*)*|(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])+)*)?(?<query>\?(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@]|[\/?])+)?(?<fragment>\#(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@]|[\/?])+)?$/iu', $this->htmlToRFC3986($string)) === 1) {
+        if (preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):(?<authority>\/\/(?<user>[^@]+@)?(?<host>[\p{L}0-9.\-_~]+)(?<port>:\d+)?)?(?<path>(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])+(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])*)*|(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])+)*)?(?<query>\?(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@]|[\/?])+)?(?<fragment>#(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@]|[\/?])+)?$/iu', $this->htmlToRFC3986($string)) === 1) {
             return true;
         } else {
             return false;
         }
     }
-    
+
     #Function to check if string is a valid language code
     public function LangCodeCheck(string $string): bool
     {
@@ -844,7 +840,7 @@ class Common
             return false;
         }
     }
-    
+
     #Function does the same as rawurlencode but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use htmlentities, but otherwise break HTML/XML
     #$full means that all of them will be converted (useful when text inside a tag). If `false` only < and & are converted (useful when inside attribute). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML
     public function htmlToRFC3986(string $string, bool $full = true): string
@@ -855,10 +851,10 @@ class Common
             return str_replace(['&', '<'], ['%26', '%3C'], $string);
         }
     }
-    
+
     #Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that.
     #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
-    public function reductor(string|array $files, string $type, bool $minify = false, string $tofile = '', string $cacheStrat = ''): void
+    public function reductor(string|array $files, string $type, bool $minify = false, string $toFile = '', string $cacheStrat = ''): void
     {
         #Set content to empty string as precaution
         $content = '';
@@ -887,22 +883,22 @@ class Common
             } else {
                 #Check if directory
                 if (is_dir($file)) {
-                    $filelist = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
-                    foreach ($filelist as $subfile) {
-                        if (strcasecmp($subfile->getExtension(), $type) === 0) {
+                    $fileList = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                    foreach ($fileList as $subFile) {
+                        if (strcasecmp($subFile->getExtension(), $type) === 0) {
                             #Add date to list
-                            $dates[] = $subfile->getMTime();
+                            $dates[] = $subFile->getMTime();
                             #Add contents
-                            $content .= file_get_contents($subfile->getRealPath());
+                            $content .= file_get_contents($subFile->getRealPath());
                         }
                     }
                 }
             }
         }
         #Get date if we are directly outputting the data
-        if (empty($tofile)) {
-            #Send Last Modifed header and exit, if we hit browser cache
-            (new \Simbiat\http20\Headers)->lastModified(max($dates), true);
+        if (empty($toFile)) {
+            #Send Last Modified header and exit, if we hit browser cache
+            (new Headers)->lastModified(max($dates), true);
         }
         #Minify
         if ($minify === true) {
@@ -971,9 +967,9 @@ class Common
                         $content);
                     break;
                 case 'html':
-                    $content = preg_replace_callback('#<([^\/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(\/?)>#s',
+                    $content = preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#s',
                         function($matches) {
-                            return '<' . $matches[1] . preg_replace('#([^\s=]+)(\=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]) . $matches[3] . '>';
+                            return '<' . $matches[1] . preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]) . $matches[3] . '>';
                         }, str_replace("\r", '', $content));
                     $content = preg_replace(
                         [
@@ -1010,7 +1006,7 @@ class Common
                     break;
             }
         }
-        if (empty($tofile)) {
+        if (empty($toFile)) {
             #Send appropriate header
             switch (strtolower($type)) {
                 case 'js':
@@ -1026,10 +1022,10 @@ class Common
             #Send data to browser
             $this->zEcho($content, $cacheStrat);
         } else {
-            file_put_contents($tofile, $content);
+            file_put_contents($toFile, $content);
         }
     }
-    
+
     #Function to force close HTTP connection
     public function forceClose(): void
     {
@@ -1046,4 +1042,3 @@ class Common
         exit;
     }
 }
-?>

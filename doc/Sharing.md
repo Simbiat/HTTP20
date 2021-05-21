@@ -10,7 +10,7 @@
 # Sharing
 Function that can be used in processes related to file sharing.
 ```php
-(new \Simbiat\http20\Sharing)->nameOfFunction();
+(new \Simbiat\HTTP20\Sharing)->nameOfFunction();
 ```
 
 ## download

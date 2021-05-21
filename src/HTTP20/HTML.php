@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace Simbiat\http20;
+namespace Simbiat\HTTP20;
 
 class HTML
 {
@@ -68,7 +68,7 @@ class HTML
             #Send headers, if this was requested
             if ($headers) {
                 #Create object, since we will need it twice
-                $headersObj = (new \Simbiat\http20\Headers);
+                $headersObj = (new \Simbiat\HTTP20\Headers);
                 #Send headers
                 $headersObj->links($linksArr, 'header');
                 #Replace array of links with prepared strings for future use, if requried
@@ -242,7 +242,7 @@ class HTML
             #Send headers, if this was requested
             if ($headers) {
                 #Create object, since we will need it twice
-                $headersObj = (new \Simbiat\http20\Headers);
+                $headersObj = (new \Simbiat\HTTP20\Headers);
                 #Send headers
                 $headersObj->links($linksArr, 'header');
                 #Replace array of links with prepared strings for future use, if requried
