@@ -10,7 +10,7 @@ class HTML
     public static int $paginations = 0;
 
     #Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList
-    public function breadcrumbs(array $items, string $delimiter = '>', bool $links = false, bool $headers = false): string|array
+    public function breadcrumbs(array $items, bool $links = false, bool $headers = false): string|array
     {
         #Sanitize $items
         foreach ($items as $key=>$item) {
@@ -33,8 +33,6 @@ class HTML
         }
         #Increase the count for crumbs
         self::$crumbs++;
-        #Sanitise delimiter and wrap it in a span
-        $delimiter = '<span class="delimiter_breadcrumbs_'.self::$crumbs.'">'.htmlspecialchars($delimiter).'</span>';
         #Set initial item number (position)
         $position = 1;
         #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some of the elements in the list. Adding 1 to avoid last element getting ID of 0.
@@ -59,7 +57,7 @@ class HTML
             }
         }
         #Implode items and add them to output
-        $output .= implode($delimiter, $items);
+        $output .= implode('', $items);
         #Close data
         $output .= '</ol></nav>';
         if ($links) {

@@ -6,11 +6,10 @@ Functions, that generate useful HTML code.
 
 ## breadcrumbs
 ```php
-breadcrumbs(array $items, string $delimiter = '>', bool $links = false, bool $headers = false);
+breadcrumbs(array $items, bool $links = false, bool $headers = false);
 ```
 Generates breadcrumbs for your website in Microdata format (as per https://schema.org/BreadcrumbList) wrapping it in proper `<nav>` tag with `id` attributes for `<li>`, `<a>`, `<span>` tags, as well as useful `aria` attributes, where applicable. `id` values are structures in a way, that allows you to style items depending on their "level" (for example always hide first element, since it's supposed to be your home page): first item will always have an `id` ending with `0` and the last one - with `1`.
 `$items` is an array of the items (arrays) you plan to present as breadcrumbs. Each array needs to have `href` and `name` elements, otherwise it will be skipped.
-`$delimiter` is an optional delimiter, that you want to use between elements in breadcrumb. Usually this is a `>` symbol, which is set by default, but you can replace it with whatever you want (for example `<i class="bread-delimiter"></i>` to have some unique icon).
 `$links` - if set to `false`, you will get just a string of the requested breadcrumbs, but if set to `true`, this will also generate values for `rel="home index top begin prefetch"` and `rel="up prefetch"` required for `Links()` [function](Headers.md#links), and thus function will return an array like this:
 ```php
 [
