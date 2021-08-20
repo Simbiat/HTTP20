@@ -1,8 +1,55 @@
+- [timeline](#timeline)
 - [breadcrumbs](#breadcrumbs)
 - [pagination](#pagination)
 
 # HTML
 Functions, that generate useful HTML code.
+
+##timeline
+```php
+timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0);
+```
+Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.css)) can be seen on [video](https://youtu.be/_cSezN3JxUs).
+`items` is an array of items you want to show on timeline. Here is sample of what it can look like:
+```php
+[
+    #Start and end time of the event. Either or both need to be present and be convertable to date (float, int, valid datetime string)
+    'startTime' => '2009-06-04',
+    'endTime' => '2011-05-20',
+    #Name of the event. In this example timeline is used for resume to show job experience, thus it's a name of the company.
+    'name' => 'IBS Datafort',
+    #Position if even is expected to be a job. Either or both name and position need to be present. If event is not a job, I recommend using 'name'.
+    'position' => 'Engineer',
+    #Path to optional icon that will be shown for the event near the timeline center. Needs to be a valid path from perspective of the web page.
+    'icon' => '/img/icons/IBS.svg',
+    #Optional link to wrap the 'name' in.
+    'href' => 'https://www.datafort.ru/',
+    #Optional free format description of the event
+    'description' => 'Outsourced job for Citi Russia as evening operator.',
+    #Optional list of responsibilities, that can be used for job events. Can be either a string or an array of strings.
+    'responsibilities' => [
+        'Initiate operations related to End of Day processing',
+        'Monitor continuous night processes',
+        'Level 1 support of subset of regional applications',
+        'Level 1 or level 2 support of local applications'
+    ],
+    #Optional list of achievements, that can be used for job or education or similar events. Can be either a string or an array of strings.
+    'achievements' => [
+        'Promoted to day-time operator after approximately 1 year',
+        'Transferred a paper-based checklist used by operators to Excel featuring several automated functions to improve traceability of work',
+    ],
+],
+```
+`format` - how to format time of each event, which is shown near the center delimiter. Needs to be a valid string, that can be parsed by `date()`.
+`asc` - whether to sort the elements in ascending (`true`) or descending (`false`, default) order.
+`lang` - if [SandClock](https://github.com/Simbiat/sand-clock) library is available this can be used to set language to `Elapsed time` field in respective events.
+`brLimit` - option to allow up to the number of `<br>` elements between events. 1 `<br>` equals 1 month. Can be used to spread out the elements along the line to provide visual representation of time between events. `0` disables the feature.
+Some clarifications about logic:
+1. Elements with just `startTime` are considered "ongoing". Such elements will have extra class `timeline_current`, so that you can give them some extra style. If there are any "finished" events in the timeline, the "ongoing" ones will have shortcuts in beginning of the timeline.
+2. Elements with just `endTime` or with identical `startTime` and `endTime` can be considered as "onetime" and will appear only on the right side with `timeline_right` class.
+3. Elements with both `startTime` and `endTime` will be split into starting event shown on left of the timeline with `timeline_left` class and on ending event on the right.
+4. Description, responsibilities, achievements and elapsed time elements will be shown either on ending events or on starting events, if an event is "ongoing".
+5. Elapsed time will be calculated only if SandClock library is available.
 
 ## breadcrumbs
 ```php

@@ -34,6 +34,7 @@ They are provided in single library and not separately, not only because of some
     + [msTile](doc/Meta.md#mstile)
     + [facebook](doc/Meta.md#facebook)
   * [HTML](doc/HTML.md)
+    + [timeline](doc/HTML.md#timeline)
     + [breadcrumbs](doc/HTML.md#breadcrumbs)
     + [pagination](doc/HTML.md#pagination)
   * [Common](doc/Common.md)

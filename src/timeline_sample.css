@@ -1,0 +1,177 @@
+/*Extra styling not directly related to the timeline, just for the sample*/
+body {
+    background-color: hsl(256, 20%, 20%);
+    color: hsl(0, 20%, 95%);
+}
+a {
+    color: hsl(196, 65%, 76%);
+}
+time {
+    font-style: italic;
+}
+audio, canvas, iframe, img, svg, video {
+    vertical-align: middle;
+}
+.linkIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+    /*Negative margin to align with text*/
+    margin: 0 0.25rem 0.25rem 0.25rem;
+}
+
+/* The actual timeline (the vertical ruler) */
+.timeline {
+    position: relative;
+    margin: 1rem auto;
+}
+
+/* The actual timeline (the vertical ruler) */
+.timeline::after {
+    content: '';
+    position: absolute;
+    width: 0.5rem;
+    background-color: hsl(256, 20%, 10%);
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    margin-left: -0.25rem;
+    border-radius: 0.75rem;
+}
+
+/* Container around content */
+.timeline_block {
+    position: relative;
+    background-color: hsl(256, 20%, 15%);
+    width: calc(50% - 2rem);
+    border-radius: 0.75rem;
+    margin: 1rem 0 1rem 0;
+}
+
+/* The circles on the timeline */
+.timeline_block::after {
+    content: '';
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    right: -2.75rem;
+    background-color: hsl(256, 20%, 15%);
+    border-width: 0.25rem;
+    border-style: solid;
+    border-color: hsl(192, 50%, 30%);
+    top: 1rem;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Place the container to the left */
+.timeline_start {
+    left: 0;
+}
+.timeline_start .timeline_time {
+    text-align: right;
+    width: 100%;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Place the container to the right */
+.timeline_end {
+    left: calc(50% + 2rem);
+}
+.timeline_end .timeline_time {
+    text-align: left;
+    width: 100%;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.timeline_start::before,
+.timeline_end::before {
+    content: ' ';
+    height: 0;
+    position: absolute;
+    top: 1rem;
+    width: 0;
+    z-index: 1;
+}
+
+/* Add arrows to the left container (pointing right) */
+.timeline_start::before {
+    right: -0.9rem;
+    border-style: solid;
+    border-width: .75rem 0 .75rem .75rem;
+    border-color: transparent transparent transparent hsl(0, 20%, 95%);
+}
+
+/* Add arrows to the right container (pointing left) */
+.timeline_end::before {
+    left: -0.9rem;
+    border-style: solid;
+    border-width: .75rem .75rem .75rem 0;
+    border-color: transparent hsl(0, 20%, 95%) transparent transparent;
+}
+
+/* Fix the circle for containers on the right side */
+.timeline_end::after {
+    left: -2.75rem;
+}
+
+/* The actual content */
+.timeline_content {
+    padding: 0.5rem;
+    position: relative;
+}
+/*Flash on target*/
+.timeline_block:target {
+    animation: timeline-flash 1.5s ease-in-out 0s;
+}
+
+.timeline_header {
+    margin: 0 0 1rem 0;
+    color: hsl(0, 20%, 95%);
+}
+
+.timeline_icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    /*Negative margin to align with text*/
+    margin: 0 0.25rem 0.25rem 0.25rem;
+}
+.timeline_icon_current {
+    width: 1.25rem;
+    height: 1.25rem;
+    /*Negative margin to align with text*/
+    margin: 0 0.25rem 0.25rem 0.25rem;
+}
+
+.timeline_responsibilitiesList {
+    list-style: '\2692';
+    margin-top: 0;
+}
+
+.timeline_achievementsList {
+    list-style: '\1F3C6';
+    margin-top: 0;
+}
+.timeline_shortcut {
+    text-align: center;
+}
+
+.timeline_current {
+    border-width: 0.1rem;
+    border-style: dashed;
+    border-color: hsl(132, 64%, 72%);
+}
+
+.timeline_elapsed {
+    margin-bottom: 1rem;
+}
+
+@keyframes timeline-flash {
+    from {
+        background: hsl(196, 65%, 76%);
+    }
+    to {
+        background: hsl(256, 20%, 15%);
+    }
+}

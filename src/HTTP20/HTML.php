@@ -8,6 +8,215 @@ class HTML
     public static int $crumbs = 0;
     #Static to count paginations in case multiple ones are created
     public static int $paginations = 0;
+    #Static to count timelines in case multiple ones are created
+    public static int $timelines = 0;
+
+    #Function to generate timeline
+    public function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0): string {
+        if (method_exists('\Simbiat\SandClock','seconds')) {
+            /** @noinspection PhpFullyQualifiedNameUsageInspection */
+            $sandClock = new \Simbiat\SandClock;
+        } else {
+            $sandClock = null;
+        }
+        $time = time();
+        #Sanitize $items and add them to array, that will be ordered
+        $toOrder = [];
+        $current = [];
+        foreach ($items as $item) {
+            #Check that at least startTime or endTime and name or position tags are present
+            if ((empty($item['startTime']) && empty($item['endTime'])) || (empty($item['name']) && empty($item['position']))) {
+               continue;
+            }
+            if (!empty($item['endTime'])) {
+                #Ensure we have an integer time or something, that can be converted to one
+                if (is_string($item['endTime'])) {
+                    #Convert string
+                    $item['endTime'] = strtotime($item['endTime']);
+                    if ($item['endTime'] === false) {
+                        #Failed to convert, skipping item
+                        continue;
+                    }
+                } else if (!is_int($item['endTime']) && !is_float($item['endTime'])) {
+                    #If not int or float - skip item
+                    continue;
+                } else if (is_float($item['endTime'])) {
+                    #Convert float to integer
+                    $item['endTime'] = intval($item['endTime']);
+                }
+            }
+            if (!empty($item['startTime'])) {
+                #Ensure we have an integer time or something, that can be converted to one
+                if (is_string($item['startTime'])) {
+                    #Convert string
+                    $item['startTime'] = strtotime($item['startTime']);
+                    if ($item['startTime'] === false) {
+                        #Failed to convert, skipping item
+                        continue;
+                    }
+                } else if (!is_int($item['endTime']) && !is_float($item['startTime'])) {
+                    #If not int or float - skip item
+                    continue;
+                } else if (is_float($item['startTime'])) {
+                    #Convert float to integer
+                    $item['startTime'] = intval($item['startTime']);
+                }
+            }
+            #Check if endTime is set
+            if (!empty($item['endTime'])) {
+                #Add columns for sorting
+                $item['time'] = $item['endTime'];
+                $item['start'] = 0;
+                #Add to order as "end" item
+                $toOrder[] = $item;
+            }
+            #Check if startTime is set
+            if (!empty($item['startTime'])) {
+                #If endTime is present and its formatted version is same as formatted version of startTime - continue to next element
+                if (!empty($item['endTime']) && date($format, $item['endTime']) === date($format, $item['startTime'])) {
+                    continue;
+                }
+                #Add columns for sorting
+                $item['time'] = $item['startTime'];
+                $item['start'] = 1;
+                #Add to array of current items if endTime is empty
+                if (empty($item['endTime'])) {
+                    $item['ended'] = false;
+                    $current[] = $item;
+                } else {
+                    $item['ended'] = true;
+                }
+                #Add to order as "start" item
+                $toOrder[] = $item;
+            }
+        }
+        #Order timeline
+        if ($asc) {
+            usort($toOrder, function($a, $b) {
+                return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
+            });
+        } else {
+            usort($toOrder, function($a, $b) {
+                return [$b['time'], $b['start']] <=> [$a['time'], $a['start']];
+            });
+        }
+        #Order current events if any
+        if (!empty($current)) {
+            usort($current, function($a, $b) {
+                return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
+            });
+        }
+        #Increase the count for crumbs
+        self::$timelines++;
+        #Open timeline
+        $output = '<section id="timeline_"'.self::$timelines.' class="timeline" aria-label="timeline '.self::$timelines.'">';
+        #Cache PrettyURL
+        $pretty = (new PrettyURL);
+        #Add elements
+        foreach ($toOrder as $key=>$item) {
+            #Generate id
+            $id = $pretty->pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['startTime'] : $item['endTime']));
+            $output .= '<div class="timeline_block timeline_'.($item['start'] === 1 ? 'start'.($item['ended'] === false ? ' timeline_current' : '') : 'end').'" id="'.$id.'"><div class="timeline_content"><div class="timeline_time">';
+            if (!empty($item['icon']) && $item['start'] === 0) {
+                $output .= '<img class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
+            }
+            $output .= '<time datetime="'.($item['start'] === 1 ? date('Y-m-d H:i:s.v', $item['startTime']) : date('Y-m-d H:i:s.v', $item['endTime'])).'">'.($item['start'] === 1 ? date($format, $item['startTime']) : date($format, $item['endTime'])).'</time>';
+            if (!empty($item['icon']) && $item['start'] === 1) {
+                $output .= '<img class="timeline_icon" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">';
+            }
+            $output .= '</div>';
+            #Generate content
+            $output .= '<h3 class="timeline_header">';
+            if (!empty($item['name']) && !empty($item['position'])) {
+                $output .= '<i>'.$item['position'].'</i> at '.(empty($item['href']) ? '' : '<a href="'.$item['href'].'" target="_blank">').$item['name'].(empty($item['href']) ? '' : '</a>');
+            } elseif (empty($item['name']) && !empty($item['position'])) {
+                $output .= (empty($item['href']) ? '' : '<a href="'.$item['href'].'" target="_blank">').'<i>'.$item['position'].'</i>'.(empty($item['href']) ? '' : '</a>');
+            } elseif (!empty($item['name']) && empty($item['position'])) {
+                $output .= (empty($item['href']) ? '' : '<a href="'.$item['href'].'" target="_blank">').$item['name'].(empty($item['href']) ? '' : '</a>');
+            }
+            $output .= '</h3>';
+            #Add time elapsed
+            if (!is_null($sandClock)) {
+                $elapsed = 0;
+                if ($item['start'] === 0) {
+                    if (!empty($item['startTime'])) {
+                        $elapsed = $item['endTime'] - $item['startTime'];
+                    }
+                } else {
+                    if ($item['ended'] === false) {
+                        $elapsed = $time - $item['startTime'];
+                    }
+                }
+                if ($elapsed > 0) {
+                    $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="' . $sandClock->seconds($elapsed, iso: true) . '">' . $sandClock->seconds($elapsed, lang: $lang) . '</time></div>';
+                }
+            }
+            if (($asc === false && ($item['start'] === 0 || ($item['start'] === 1 && $item['ended'] === false))) || ($asc === true && $item['start'] === 1)) {
+                #Add description
+                if (!empty($item['description'])) {
+                    $output .= '<div class="timeline_description">' . $item['description'] . '</div>';
+                }
+                #List responsibilities
+                if (!empty($item['responsibilities'])) {
+                    if (is_string($item['responsibilities'])) {
+                        $output .= '<div class="timeline_responsibilities"><b>Responsibilities: </b>' . $item['responsibilities'] . '</div>';
+                    } else if (is_array($item['responsibilities'])) {
+                        $output .= '<div class="timeline_responsibilities"><b>Responsibilities:</b></div><ul class="timeline_responsibilitiesList">';
+                        foreach ($item['responsibilities'] as $responsibility) {
+                            $output .= '<li>' . $responsibility . '</li>';
+                        }
+                        $output .= '</ul>';
+                    }
+                }
+                #List achievements
+                if (!empty($item['achievements'])) {
+                    if (is_string($item['achievements'])) {
+                        $output .= '<div class="timeline_achievements"><b>Achievements: </b>' . $item['achievements'] . '</div>';
+                    } else if (is_array($item['achievements'])) {
+                        $output .= '<div class="timeline_achievements"><b>Achievements:</b></div><ul class="timeline_achievementsList">';
+                        foreach ($item['achievements'] as $achievement) {
+                            $output .= '<li>' . $achievement . '</li>';
+                        }
+                        $output .= '</ul>';
+                    }
+                }
+            }
+            $output .= '</div></div>';
+            #Check if there is a following item
+            if (!empty($toOrder[$key + 1])) {
+                #Calculate time difference
+                if ($asc) {
+                    $brs = $toOrder[$key + 1]['time'] - $item['time'];
+                } else {
+                    $brs = $item['time'] - $toOrder[$key + 1]['time'];
+                }
+                #Convert difference to number of months
+                $brs = intval(floor($brs / 60 / 60 / 24 / 30));
+                #Limit it to 12
+                if ($brs > $brLimit) {
+                    $brs = $brLimit;
+                }
+                $output .= str_repeat('<br>', $brs);
+            }
+        }
+        #Close timeline
+        $output .= '</section>';
+        #Process current events. Doing this here, because it's less important.
+        if (!empty($current)) {
+            #Check if there are finished events in timeline. If there are none - do not create links to "current" ones
+            if (array_search(0, array_column($toOrder, 'start')) !== false) {
+                $currentList = '<div class="timeline_shortcut"><b>Ongoing: </b>';
+                foreach ($current as $item) {
+                    #Generate id
+                    $id = $pretty->pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
+                    $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
+                }
+                $currentList .= '</div>';
+                $output = $currentList.$output;
+            }
+        }
+        return $output;
+    }
 
     #Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList
     public function breadcrumbs(array $items, bool $links = false, bool $headers = false): string|array
@@ -35,7 +244,7 @@ class HTML
         self::$crumbs++;
         #Set initial item number (position)
         $position = 1;
-        #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some of the elements in the list. Adding 1 to avoid last element getting ID of 0.
+        #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some elements in the list. Adding 1 to avoid last element getting ID of 0.
         $itemDepth = count($items);
         #Open data
         $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$itemDepth.'" itemListOrder="ItemListUnordered">';
