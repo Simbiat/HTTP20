@@ -652,10 +652,10 @@ class Headers
                 ((!isset($link['rel']) && !isset($link['itemprop'])) || (isset($link['rel']) && isset($link['itemprop'])) || ($type === 'header' && !isset($link['rel']))) ||
                 #Validate rel values
                 (isset($link['rel']) &&
-                    #If strictRel is true, only support types from https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats (types, that NEED to be supported by clients)
+                    #If strictRel is true, only support types from https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats (types, that NEED to be supported by clients). Also includes webmention (https://www.w3.org/TR/2017/REC-webmention-20170112/)
                     ($strictRel === true && (
                         #Check that rel is valid
-                        (preg_match('/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation|up|first|last|index|home|top)( |$))*/i', $link['rel']) !== 1) ||
+                        (preg_match('/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation|up|first|last|index|home|top|webmention)( |$))*/i', $link['rel']) !== 1) ||
                         #If crossorigin or referrerpolicy is set, check that rel type is an external resource
                         ((isset($link['crossorigin']) || isset($link['referrerpolicy'])) && preg_match('/^(alternate )?((dns-prefetch|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet)( |$))*/i', $link['rel']) !== 1)
                     )) ||
