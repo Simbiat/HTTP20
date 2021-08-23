@@ -381,7 +381,7 @@ class HTML
         $output .= '<ol name="pagination_'.self::$paginations.'" id="ol_pagination_'.self::$paginations.'">';
         #Add link to first page
         if (!empty($nonNumerics['first'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_first" aria-label="'.$nonNumerics['first_text'].'" title="'.$nonNumerics['first_text'].'"'.($current > (1 + $sideNumerics) ? '' : ' aria-disabled="true"').'>';
+            $output .= '<li id="li_pagination_'.self::$paginations.'_first" aria-label="'.$nonNumerics['first_text'].'"'.($current > (1 + $sideNumerics) ? '' : ' aria-disabled="true"').'>';
             if ($current > (1 + $sideNumerics) && $total !== $maxNumerics) {
                 $output .= '<a id="a_pagination_'.self::$paginations.'_first" href="'.$prefix.'1">'.$nonNumerics['first'].'</a>';
             } else {
@@ -391,7 +391,7 @@ class HTML
         }
         #Add link to previous page
         if (!empty($nonNumerics['prev'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_prev" aria-label="'.$nonNumerics['prev_text'].'" title="'.$nonNumerics['prev_text'].'"'.($current !== 1 ? '' : ' aria-disabled="true"').'>';
+            $output .= '<li id="li_pagination_'.self::$paginations.'_prev" aria-label="'.$nonNumerics['prev_text'].'"'.($current !== 1 ? '' : ' aria-disabled="true"').'>';
             if ($current !== 1 && $total !== $maxNumerics) {
                 $output .= '<a id="a_pagination_'.self::$paginations.'_prev" href="'.$prefix.($current -1).'">'.$nonNumerics['prev'].'</a>';
             } else {
@@ -401,7 +401,7 @@ class HTML
         }
         #Generate numeric links
         for ($i = $startPage; $i <= $endPage; $i++) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_'.$i.'" aria-label="'.$nonNumerics['page_text'].$i.'" title="'.$nonNumerics['page_text'].$i.'"'.($i === $current ? ' class="pagination_currentpage" aria-current="page"' : '').'>';
+            $output .= '<li id="li_pagination_'.self::$paginations.'_'.$i.'" aria-label="'.$nonNumerics['page_text'].$i.'"'.($i === $current ? ' class="pagination_currentpage" aria-current="page"' : '').'>';
             if ($i === $current) {
                 $output .= '<span id="a_pagination_'.self::$paginations.'_'.$i.'">'.$i.'</span>';
             } else {
@@ -411,7 +411,7 @@ class HTML
         }
         #Add link to next page
         if (!empty($nonNumerics['next'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_next" aria-label="'.$nonNumerics['next_text'].'" title="'.$nonNumerics['next_text'].'"'.($current !== $total ? '' : ' aria-disabled="true"').'>';
+            $output .= '<li id="li_pagination_'.self::$paginations.'_next" aria-label="'.$nonNumerics['next_text'].'"'.($current !== $total ? '' : ' aria-disabled="true"').'>';
             if ($current !== $total && $total !== $maxNumerics) {
                 $output .= '<a id="a_pagination_'.self::$paginations.'_next" href="'.$prefix.($current + 1).'">'.$nonNumerics['next'].'</a>';
             } else {
@@ -421,7 +421,7 @@ class HTML
         }
         #Add link to last page
         if (!empty($nonNumerics['last'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_last" aria-label="'.$nonNumerics['last_text'].'" title="'.$nonNumerics['last_text'].'"'.($current < ($total - $sideNumerics) ? '' : ' aria-disabled="true"').'>';
+            $output .= '<li id="li_pagination_'.self::$paginations.'_last" aria-label="'.$nonNumerics['last_text'].'"'.($current < ($total - $sideNumerics) ? '' : ' aria-disabled="true"').'>';
             if ($current < ($total - $sideNumerics) && $total !== $maxNumerics) {
                 $output .= '<a id="a_pagination_'.self::$paginations.'_last" href="'.$prefix.$total.'">'.$nonNumerics['last'].'</a>';
             } else {
