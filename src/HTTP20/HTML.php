@@ -118,11 +118,11 @@ class HTML
             $id = $pretty->pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['startTime'] : $item['endTime']));
             $output .= '<div class="timeline_block timeline_'.($item['start'] === 1 ? 'start'.($item['ended'] === false ? ' timeline_current' : '') : 'end').'" id="'.$id.'"><div class="timeline_content"><div class="timeline_time">';
             if (!empty($item['icon']) && $item['start'] === 0) {
-                $output .= '<img class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
+                $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
             }
             $output .= '<time datetime="'.($item['start'] === 1 ? date('Y-m-d H:i:s.v', $item['startTime']) : date('Y-m-d H:i:s.v', $item['endTime'])).'">'.($item['start'] === 1 ? date($format, $item['startTime']) : date($format, $item['endTime'])).'</time>';
             if (!empty($item['icon']) && $item['start'] === 1) {
-                $output .= '<img class="timeline_icon" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">';
+                $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">';
             }
             $output .= '</div>';
             #Generate content
@@ -209,7 +209,7 @@ class HTML
                 foreach ($current as $item) {
                     #Generate id
                     $id = $pretty->pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
-                    $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
+                    $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
                 }
                 $currentList .= '</div>';
                 $output = $currentList.$output;
