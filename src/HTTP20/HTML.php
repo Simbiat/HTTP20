@@ -204,7 +204,7 @@ class HTML
         #Process current events. Doing this here, because it's less important.
         if (!empty($current)) {
             #Check if there are finished events in timeline. If there are none - do not create links to "current" ones
-            if (array_search(0, array_column($toOrder, 'start')) !== false) {
+            if (in_array(0, array_column($toOrder, 'start'))) {
                 $currentList = '<div class="timeline_shortcut"><b>Ongoing: </b>';
                 foreach ($current as $item) {
                     #Generate id

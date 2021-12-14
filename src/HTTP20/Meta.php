@@ -28,7 +28,7 @@ class Meta
         $output .= '<meta name="twitter:title" content="'.mb_substr(htmlspecialchars($general['title']), 0, 70, 'UTF-8').'" />';
         #Add site if not empty and valid
         if (!empty($general['site']) && preg_match('/^@?(\w){4,15}$/', $general['site']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['site']) === 0) {
-            $output .= '<meta name="twitter:site" content="'.(substr($general['site'], 0, 1) === '@' ? '' : '@').$general['site'].'" />';
+            $output .= '<meta name="twitter:site" content="'.(str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
         }
         #Add site:id if not empty and valid
         if (!empty($general['site:id']) && preg_match('/^\d+$/', $general['site:id']) === 1) {
@@ -36,7 +36,7 @@ class Meta
         }
         #Add creator if not empty and valid
         if (!empty($general['creator']) && preg_match('/^@?(\w){4,15}$/', $general['creator']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['creator']) === 0) {
-            $output .= '<meta name="twitter:creator" content="'.(substr($general['creator'], 0, 1) === '@' ? '' : '@').$general['creator'].'" />';
+            $output .= '<meta name="twitter:creator" content="'.(str_starts_with($general['creator'], '@') ? '' : '@').$general['creator'].'" />';
         }
         #Add creator:id if not empty and valid
         if (!empty($general['creator:id']) && preg_match('/^\d+$/', $general['creator:id']) === 1) {

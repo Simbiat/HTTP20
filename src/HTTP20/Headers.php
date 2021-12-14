@@ -10,7 +10,7 @@ class Headers
     public const safeMethods = ['GET', 'HEAD', 'POST'];
     #Full list of HTTP methods
     public const allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
-    #List of headers we allow to expose by default
+    #List of headers we allow exposing by default
     public const exposedHeaders = [
         #CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
         'Cache-Control', 'Content-Language', 'Content-Type', 'Last-Modified',
@@ -76,6 +76,37 @@ class Headers
         #Disabling APIs for modification of spatial navigation and scrolling, since you need them only for specific cases
         'navigation-override' => '\'none\'', 'vertical-scroll' => '\'none\'',
     ];
+    #Default values for Permissions-Policy, essentially disabling most of them. It is different from secureFeatures, because of slightly different values and different list of policies
+    public const permissionsDefault = [
+        #Disable access to sensors
+        'accelerometer' => '', 'ambient-light-sensor' => '', 'gyroscope' => '', 'magnetometer' => '',
+        #Disable access to devices
+        'battery' => '', 'camera' => '', 'keyboard-map' => '', 'microphone' => '', 'midi' => '', 'usb' => '', 'gamepad' => '', 'speaker-selection' => '', 'hid' => '', 'serial' => '', 'window-placement' => '',
+        #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
+        'document-domain' => '',
+        #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+        'encrypted-media' => 'self', 'publickey-credentials-get' => 'self', 'trust-token-redemption' => 'self',
+        #Disable geolocation, XR tracking, payment and screen capture APIs
+        'geolocation' => '', 'xr-spatial-tracking' => '', 'payment' => '', 'display-capture' => '',
+        #Disable wake-locks
+        'screen-wake-lock' => '', 'idle-detection' => '',
+        #Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
+        'web-share' => '',
+        #Disable synchronous XMLHttpRequests (that were technically deprecated)
+        'sync-xhr' => '',
+        #Disable synchronous parsing blocking scripts (inline without defer/async attribute)
+        'sync-script' => '',
+        #Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+        'autoplay' => '', 'fullscreen' => '', 'picture-in-picture' => '',
+        #Disable execution of scripts/task in elements, that are not rendered or visible
+        'execution-while-not-rendered' => '', 'execution-while-out-of-viewport' => '',
+        #Disabling APIs for modification of spatial navigation and scrolling, since you need them only for specific cases
+        'navigation-override' => '', 'vertical-scroll' => '', 'focus-without-user-activation' => '',
+        #Clipboard access. Enable only if you are going to manipulate clipboard on client side
+        'clipboard-read' => '', 'clipboard-write' => '',
+        #User tracking stuff
+        'cross-origin-isolated' => '', 'conversion-measurement' => '', 'interest-cohort' => '',
+    ];
     #Values supported by Sandbox in CSP
     public const sandboxValues = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
     #Supported values for Sec-Fetch-* headers
@@ -127,8 +158,8 @@ class Headers
                 #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
                 header('Vary: Origin', false);
                 #Send actual headers
-                header('Access-Control-Allow-Origin: '.$allowOrigins);
-                header('Timing-Allow-Origin: '.$allowOrigins);
+                header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+                header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
             } else {
                 #Send proper header denying access and stop processing
                 $this->clientReturn('403');
@@ -181,7 +212,7 @@ class Headers
     }
 
     #Function to process CSP header
-    public function contentPolicy(array $cspDirectives = [], bool $reportOnly = false): self
+    public function contentPolicy(array $cspDirectives = [], bool $reportOnly = false, bool $reportUri = false): self
     {
         #Set defaults directives for CSP
         $defaultDirectives = self::secureDirectives;
@@ -221,7 +252,10 @@ class Headers
                         break;
                     case 'report-to':
                         $defaultDirectives['report-to'] = $value;
-                        $defaultDirectives['report-uri'] = $value;
+                        #This is only for legacy purposes, since report-uri is deprecated
+                        if ($reportUri) {
+                            $defaultDirectives['report-uri'] = $value;
+                        }
                         break;
                     case 'report-uri':
                         #Ensure that we do not use report-uri, unless there is a report-to, since report-uri is deprecated
@@ -278,7 +312,7 @@ class Headers
     }
 
     #Function to process Sec-Fetch headers. Arrays are set to empty ones by default for ease of use (sending empty array is a bit easier than copying values).
-    #$strict allows to enforce compliance with supported values only. Current W3C allows ignoring headers, if not sent or have unsupported values, but we may want to be stricter by setting this option to true
+    #$strict allows enforcing compliance with supported values only. Current W3C allows ignoring headers, if not sent or have unsupported values, but we may want to be stricter by setting this option to true
     #Below materials were used in preparation
     #https://www.w3.org/TR/fetch-metadata/
     #https://fetch.spec.whatwg.org/
@@ -349,7 +383,7 @@ class Headers
                     $badRequest = true;
                 } else {
                     #There is also a recommendation to check whether a script-like is requesting certain MIME types
-                    #Normally this should be done by browser, but we can do that as well and be independent from their logic
+                    #Normally this should be done by browser, but we can do that as well and be independent of their logic
                     if (!empty($_SERVER['HTTP_SEC_FETCH_DEST']) && in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::scriptLike)) {
                         #Attempt to get content-type headers
                         $contentType = '';
@@ -358,7 +392,7 @@ class Headers
                             $contentType = $_SERVER['HTTP_CONTENT_TYPE'];
                         } else {
                             #This is a standard header that should be present in PHP. Usually in case of POST method
-                            if (isset($_SERVER['CONTENT_TYPE']) || isset($_SERVER['HTTP_CONTENT_TYPE'])) {
+                            if (isset($_SERVER['CONTENT_TYPE'])) {
                                 $contentType = $_SERVER['CONTENT_TYPE'];
                             }
                         }
@@ -366,13 +400,13 @@ class Headers
                         $mimeRegex = (new Common)::mimeRegex;
                         #Check if we have already sent our own content-type header
                         foreach (headers_list() as $header) {
-                            if (preg_match('/^Content-type:/', $header) === 1) {
+                            if (str_starts_with($header, 'Content-type:') === true) {
                                 #Get MIME
                                 $contentType = preg_replace('/^(Content-type:\s*)('.$mimeRegex.')$/', '$2', $header);
                                 break;
                             }
                         }
-                        #If MIME is found and it matches CSV, audio, image or video - reject
+                        #If MIME is found, and it matches CSV, audio, image or video - reject
                         if (!empty($contentType) && preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $contentType) === 1) {
                             $badRequest = true;
                         }
@@ -404,7 +438,7 @@ class Headers
         header('X-Content-Type-Options: nosniff');
         #Allow DNS prefetch for some performance improvement on client side
         header('X-DNS-Prefetch-Control: on');
-        #Keep-alive connection if not using HTTP2.0 (which prohibits it). Setting maximum number of connection as timeout power 1000. If a human is opening the pages, it's unlike he will be opening more than 1 page per second and it's unlikely that any page will have more than 1000 files linked to same server. If it does - some optimization may be required.
+        #Keep-alive connection if not using HTTP2.0 (which prohibits it). Setting maximum number of connection as timeout power 1000. If a human is opening the pages, it's unlike he will be opening more than 1 page per second, and it's unlikely that any page will have more than 1000 files linked to same server. If it does - some optimization may be required.
         if ($keepalive > 0 && $_SERVER['SERVER_PROTOCOL'] !== 'HTTP/2.0') {
             header('Connection: Keep-Alive');
             header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive*1000));
@@ -415,19 +449,30 @@ class Headers
             #Notify, that we support Client Hints: https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
             #Logic for processing them should be done outside this function, though
             header('Accept-CH: '.$clientHints);
-            #Instruct to vary cache depending on client hints
+            #Instruct cache to vary depending on client hints
             header('Vary: '.$clientHints, false);
         }
         return $this;
     }
 
-    #Function to manage Feature-Policy to control different features. By default most features are disabled for security and performance
+    #A wrapper for `features` with `permissions = true` just for convenience of access
+    #https://www.w3.org/TR/permissions-policy-1/ is replacement for Feature-Policy
+    public function permissions(array $features = [], bool $forceCheck = true): self
+    {
+        return $this->features($features, $forceCheck, true);
+    }
+
+    #Function to manage Feature-Policy to control different features. By default, most features are disabled for security and performance
     #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
     #https://feature-policy-demos.appspot.com/
     #https://featurepolicy.info/
-    public function features(array $features = [], bool $forceCheck = true):self
+    public function features(array $features = [], bool $forceCheck = true, bool $permissions = false):self
     {
-        $defaults = self::secureFeatures;
+        if ($permissions) {
+            $defaults = self::permissionsDefault;
+        } else {
+            $defaults = self::secureFeatures;
+        }
         foreach ($features as $feature=>$allowList) {
             #Sanitize
             $feature = strtolower(trim($feature));
@@ -441,9 +486,17 @@ class Headers
         #Generate line for header
         $headerLine = '';
         foreach ($defaults as $feature=>$allowList) {
-            $headerLine .= $feature.' '.$allowList.'; ';
+            if ($permissions) {
+                $headerLine .= $feature.'=('.$allowList.'), ';
+            } else {
+                $headerLine .= $feature.' '.$allowList.'; ';
+            }
         }
-        header('Feature-Policy: '.trim($headerLine));
+        if ($permissions) {
+            header('Permissions-Policy: ' . rtrim(trim($headerLine), ','));
+        } else {
+            header('Feature-Policy: ' . trim($headerLine));
+        }
         return $this;
     }
 
@@ -457,8 +510,8 @@ class Headers
             $modTime = intval($modTime);
         }
         if ($modTime <= 0) {
-            #Get freshest modification time of all PHP files used ot PHP's getlastmod time
-            $modTime = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file'))), getlastmod());
+            #Get the freshest modification time of all PHP files used ot PHP's getlastmod time
+            $modTime = max(array_map('filemtime', array_filter(get_included_files(), 'is_file')), getlastmod());
         }
         #Send header
         header('Last-Modified: '.gmdate(\DATE_RFC7231, $modTime));
@@ -477,7 +530,7 @@ class Headers
     public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false): self
     {
         #Send headers related to cache based on strategy selected
-        #Some of the strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
+        #Some strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
         switch (strtolower($cacheStrat)) {
             case 'aggressive':
                 header('Cache-Control: max-age=31536000, immutable, no-transform');
@@ -525,7 +578,7 @@ class Headers
                 $this->clientReturn('304', $exit);
             }
         }
-        #Return error if If-Match was sent and it's different from our etag
+        #Return error if If-Match was sent, and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
                 $this->clientReturn('412', $exit);
@@ -542,13 +595,13 @@ class Headers
             if (isset(self::HTTPCodes[$code])) {
                 $response = $code.' '.self::HTTPCodes[$code];
             } else {
-                #Non standard code without text, not compliant with the standard
+                #Non-standard code without text, not compliant with the standard
                 $response = '500 Internal Server Error';
             }
         } else {
             $response = $code;
         }
-        #If response doe snot comply with HTTP standard - replace it with 500
+        #If response does not comply with HTTP standard - replace it with 500
         if (preg_match('/^([12345]\d{2})( .+)$/', $response) !== 1) {
             $response = '500 Internal Server Error';
         }
@@ -848,7 +901,7 @@ class Headers
     #Function to handle Accept request header
     public function notAccept(array $supported = ['text/html'], bool $exit = true): bool|string
     {
-        #Check if header is set and we do have a limit on supported MIME types
+        #Check if header is set, and we do have a limit on supported MIME types
         if (isset($_SERVER['HTTP_ACCEPT']) && !empty($supported)) {
             #text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
             #Generate list of acceptable values
@@ -877,7 +930,7 @@ class Headers
                     return $this->clientReturn('406', $exit);
                 }
             } else {
-                #Get the one with highest priority and return its value
+                #Get the one with the highest priority and return its value
                 return array_keys($acceptable, max($acceptable))[0];
             }
         } else {

@@ -4,7 +4,7 @@ namespace Simbiat\HTTP20;
 
 class PrettyURL
 {
-    private string $urlUnsafe = '\+\*\'\(\);\/\?:@=&"<>#%{}\|\\\\\^~\[\]`';
+    private string $urlUnsafe = '\+\*\'\(\);/\?:@=&"<>#%{}\|\\\\\^~\[]`';
     private array $needles;
     private array $replaces = [
         'ꭕ'=>'x',

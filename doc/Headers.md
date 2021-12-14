@@ -73,7 +73,7 @@ performance(int $keepalive = 0, array $clientHints = []);
 ```
 Sends some headers that may improve performance on client side.
 `$keepalive` is used for `Keep-Alive` header governing how long the connection should stay up. Header will be sent only if server is using HTTP version other than 2.0.
-`$clientHints` instructs clients, that your server supports Client Hints (https://developer.mozilla.org/en-US/docs/Glossary/Client_hints) like DPR, Width, Viewport-Width, Downlink, .etc and client should cache the output accordingly, in order to increase allow cache hitting and thus improve performance.
+`$clientHints` instructs clients, that your server supports Client Hints (https://developer.mozilla.org/en-US/docs/Glossary/Client_hints) like DPR, Width, Viewport-Width, Downlink, etc. and client should cache the output accordingly, in order to increase allow cache hitting and thus improve performance.
 
 ## security
 ```php
@@ -113,19 +113,21 @@ default:
 
 ## contentPolicy
 ```php
-contentPolicy(array $cspDirectives = [], bool $reportOnly = false);
+contentPolicy(array $cspDirectives = [], bool $reportOnly = false, bool $reportUri = false);
 ```
 Sends Content-Security-Policy header, that improves your page security. It's done separately from other security stuff, because unlike the rest of the headers this is usable only for HTML.
 `$cspDirectives` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) allows you to provide a list of directives and their settings (with validation) to control CSP headers. By default, essentially everything is either disabled or allowed only from `self`, which give you a solid base in terms of restricting access.
 `$reportOnly` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
+`$reportUri` will add `report-uri` in the headers as well. It is deprecated, thus defaults to `false`, but if you want to support still - you can.
 
 ## features
 ```php
-features(array $features = [], bool $forceCheck = true);
+features(array $features = [], bool $forceCheck = true, bool $permissions = false);
 ```
-Allows controlling different features through Feature-Policy header. It should only be used, when sending HTML.
+Allows controlling different features through `Feature-Policy` header. It should only be used, when sending HTML.
 `$features` expects associative array, where each key is name of the policy in lower case and value - expected `allow list`. If an empty array is sent, default values will be applied (most features are disabled).
 `$forceCheck` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
+`$permissions` is a flag to toggle `Permissions-Policy`, which is replacement for `Feature-Policy` header. Alternatively you can use `features(array $features = [], bool $forceCheck = true)` signature, which will call `features` internally.
 
 ## secFetch
 ```php

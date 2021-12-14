@@ -11,7 +11,7 @@ class Sitemap
         if (!in_array($format, ['xml', 'index', 'html', 'text', 'txt'])) {
             $format = 'xml';
         }
-        #Validate links, if list is not empty. I did not find any recommendations for empty sitemaps and I do not see a technical reason to break here, because if sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
+        #Validate links, if list is not empty. I did not find any recommendations for empty sitemaps, and I do not see a technical reason to break here, because if sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
         $this->linksValidator($links);
         #Allow only 50000 links
         $links = array_slice($links, 0, 50000, true);
@@ -42,7 +42,7 @@ class Sitemap
                 };
                 #Get its length
                 $lenToAdd = strlen($toAdd);
-                #Check, that we are not exceeding the limit of 50MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather then from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
+                #Check, that we are not exceeding the limit of 50 MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather than from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
                 if (($strLen + $lenToAdd) < 52428800) {
                     $output .= $toAdd;
                     $strLen += $lenToAdd;

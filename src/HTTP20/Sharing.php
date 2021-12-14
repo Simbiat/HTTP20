@@ -74,12 +74,7 @@ class Sharing
         #Check if it's empty again (or was from the start)
         if (empty($mime)) {
             #If not, attempt to check if in the constant list based on extension
-            if (isset($this->extToMime[$fileinfo['extension']])) {
-                $mime = $this->extToMime[$fileinfo['extension']];
-            } else {
-                #Replace MIME
-                $mime = 'application/octet-stream';
-            }
+            $mime = $this->extToMime[$fileinfo['extension']] ?? 'application/octet-stream';
         }
         #Get file name
         if (empty($filename)) {
@@ -112,7 +107,7 @@ class Sharing
         if ($output === false) {
             return (new Headers)->clientReturn('500', $exit);
         }
-        #Disable buffering. This should help limiting the memory usage. At least, in some cases.
+        #Disable buffering. This should help limit the memory usage. At least, in some cases.
         stream_set_read_buffer($stream, 0);
         stream_set_write_buffer($output, 0);
         if (!empty($ranges)) {
@@ -416,10 +411,9 @@ class Sharing
                                 } else {
                                     #Remove the file from list
                                     unset($_FILES[$field][$key]);
-                                    continue;
                                 }
                             } else {
-                                #Set new name for the file. By default we will be using hash of the file. Using sha3-256 since it has lower probability of collisions than md5, although we do lose some speed
+                                #Set new name for the file. By default, we will be using hash of the file. Using sha3-256 since it has lower probability of collisions than md5, although we do lose some speed
                                 #Hash is saved regardless, though, since it may be very useful
                                 $_FILES[$field][$key]['hash'] = hash_file('sha3-256', $file['tmp_name']);
                                 if ($preserveNames) {
@@ -450,7 +444,6 @@ class Sharing
                                             } else {
                                                 #Remove the file from list
                                                 unset($_FILES[$field][$key]);
-                                                continue;
                                             }
                                         }
                                     } else {
@@ -460,7 +453,6 @@ class Sharing
                                         }
                                         #Remove the file from global list
                                         unset($_FILES[$field][$key]);
-                                        continue;
                                     }
                                 }
                             }
@@ -499,7 +491,7 @@ class Sharing
                 }
             }
         #Process PUT requests
-        } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+        } else {
             if (!isset($_SERVER['CONTENT_LENGTH']) || intval($_SERVER['CONTENT_LENGTH']) === 0) {
                 return (new Headers)->clientReturn('411', $exit);
             }
@@ -589,10 +581,10 @@ class Sharing
                         fclose($stream);
                         return (new Headers)->clientReturn('500', $exit);
                     }
-                    #Disable buffering. This should help limiting the memory usage. At least, in some cases.
+                    #Disable buffering. This should help limit the memory usage. At least, in some cases.
                     stream_set_read_buffer($stream, 0);
                     stream_set_write_buffer($output, 0);
-                    #Ignore user abort to attempt identify when client has aborted
+                    #Ignore user abort to attempt to identify when client has aborted
                     #ignore_user_abort(true);
                     #Save file
                     $result = stream_copy_to_stream($stream, $output, $client_size - $offset);
@@ -621,11 +613,7 @@ class Sharing
                 return (new Headers)->clientReturn('500', $exit);
             } else {
                 #Get file MIME type
-                if (isset($_SERVER['CONTENT_TYPE'])) {
-                    $filetype = $_SERVER['CONTENT_TYPE'];
-                } else {
-                    $filetype = 'application/octet-stream';
-                }
+                $filetype = $_SERVER['CONTENT_TYPE'] ?? 'application/octet-stream';
                 if (extension_loaded('fileinfo')) {
                     $filetype = mime_content_type($this->uploadDir.'/'.$name);
                 }
@@ -669,7 +657,7 @@ class Sharing
     #Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
     public function streamCopy($input, $output, int $totalSize = 0, int $offset = 0, int $speed = 10485760): bool|int
     {
-        #Ignore user abort to attempt identify when client has aborted
+        #Ignore user abort to attempt to identify when client has aborted
         ignore_user_abort(true);
         #Check that we have resources, since PHP does not have type hinting for resources
         if (!is_resource($input) || !is_resource($output)) {
@@ -804,7 +792,7 @@ class Sharing
                         }
                     }
                 }
-                #If something went wrong and we got an empty range here - return as false
+                #If something went wrong, and we got an empty range here - return as false
                 if (empty($ranges)) {
                     return [0 => false];
                 } else {
@@ -839,7 +827,7 @@ class Sharing
                     }
                 }
             }
-            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus we rely on extension here, since it can provide a more appropriate MIME type
+            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
             $extension = pathinfo($filepath)['extension'];
             #Set MIME from extension, of available
             if (!empty($extension) && !empty($this->extToMime[$extension])) {
@@ -893,7 +881,7 @@ class Sharing
                     exit;
                 }
                 #Send data
-                if (fpassthru($stream) === false) {
+                if (fpassthru($stream) === 0) {
                     (new Headers)->clientReturn('500', $exit);
                     return 500;
                 }
@@ -954,7 +942,7 @@ class Sharing
             }
         }
         #Open streams
-        #Supress warning for $url, since connection can be refused for some reason and it still may be "normal"
+        #Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
         $url = @fopen($url, 'rb', context: stream_context_create(['http' => [
             'method' => 'GET',
             'follow_location' => 1,

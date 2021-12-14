@@ -1,6 +1,8 @@
 # HTTP20
 Set of classes/functions that may be universally useful for websites (or some parts of them, at least).
-They are provided in single library and not separately, not only because of some inter-dependencies, but also because if you are building a website from scratch, most likely, you will be interested in a bunch of them at the same time either way.
+They are provided in single library and not separately, not only because of some interdependencies, but also because if you are building a website from scratch, most likely, you will be interested in a bunch of them at the same time either way.
+
+_Notice:_ While some functions (like `zEcho` or different `Headers`) can replace respective logic in server software (like Apache, nginx and such), it's not recommended using them for that because of performance downside. Only use them only if you do not have access to server settings, want to pre-generate the headers to then use in server settings, or you want to customize some of them for specific pages, that you can't target by the server software.
 
 - [HTTP20](#HTTP20)
   * [Atom](doc/Atom.md)
