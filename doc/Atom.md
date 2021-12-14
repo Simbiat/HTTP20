@@ -26,7 +26,7 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
     ]
   ],
   'icon' => '/frontend/images/favicons/simbiat.png',
-  'logo' => '/frontend/images/ogimage.png',
+  'logo' => '/frontend/images/favicons/ogimage.png',
   'categories' => [
     [
       'term' => 'BICs',
