@@ -904,7 +904,6 @@ class Headers
     {
         #Check if header is set, and we do have a limit on supported MIME types
         if (isset($_SERVER['HTTP_ACCEPT']) && !empty($supported)) {
-            #text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
             #Generate list of acceptable values
             $acceptable = [];
             foreach ($supported as $mime) {
