@@ -66,7 +66,7 @@ class Sitemap
                     header('Content-Type: text/plain; charset=utf-8');
                     break;
                 default:
-                    header('Content-Type: text/xml; charset=utf-8');
+                    header('Content-Type: application/xml; charset=utf-8');
                     break;
             }
             (new Common)->zEcho($output);
