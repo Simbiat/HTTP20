@@ -511,7 +511,8 @@ class Headers
         }
         if ($modTime <= 0) {
             #Get the freshest modification time of all PHP files used ot PHP's getlastmod time
-            $modTime = max(array_map('filemtime', array_filter(get_included_files(), 'is_file')), getlastmod());
+            /** @noinspection PhpNestedMinMaxCallInspection */
+            $modTime = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file')), getlastmod()));
         }
         #Send header
         header('Last-Modified: '.gmdate(\DATE_RFC7231, $modTime));
