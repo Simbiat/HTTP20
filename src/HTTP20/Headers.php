@@ -339,8 +339,8 @@ class Headers
                 #Setting defaults
                 $site = array_intersect($site, self::fetchSite);
                 if (empty($site)) {
-                    #Allows only same-origin (site and subdomain) or top-navigation
-                    $site = ['same-origin', 'none'];
+                    #Allow everything, but stick to same port for "same" (same-origin, but not same-site)
+                    $site = ['cross-site', 'same-origin', 'none'];
                 }
                 $mode = array_intersect($mode, self::fetchMode);
                 if (empty($mode)) {
