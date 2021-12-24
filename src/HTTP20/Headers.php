@@ -752,7 +752,7 @@ class Headers
             if (isset($link['title'])) {
                 $link['title'] = urldecode(htmlspecialchars($link['title']));
             } else {
-                $link['title'] = urldecode(htmlspecialchars(basename($link['href'])));
+                $link['title'] = '';
             }
             #Validate title*, which is valid only for HTTP header
             if (isset($link['title*']) && ($type !== 'header' || preg_match('/'.$langEncRegex.'.*/i', $link['title*']) !== 1)) {
