@@ -783,7 +783,7 @@ class Common
     }
 
     #Function utilizes ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
-    public function zEcho(string $string, string $cacheStrat = ''): void
+    public function zEcho(string $string, string $cacheStrat = '', bool $exit = true): void
     {
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -806,7 +806,9 @@ class Common
         }
         #Send the output
         echo $string;
-        exit;
+        if ($exit) {
+            exit;
+        }
     }
 
     #Function to check if string is a mail address as per RFC 5322
@@ -1036,9 +1038,9 @@ class Common
         #Send header to notify, that connection was closed
         @header('Connection: close');
         #Clean output buffer and close it
-        ob_end_clean();
+        @ob_end_clean();
         #Clean system buffer
-        flush();
+        @flush();
         exit;
     }
 }

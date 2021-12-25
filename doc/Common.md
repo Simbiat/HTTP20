@@ -28,10 +28,11 @@ Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/
 
 ## zEcho
 ```php
-zEcho(string $string, string $cacheStrat = '');
+zEcho(string $string, string $cacheStrat = '', bool $exit = true);
 ```
 A function for outputting data to web-browser while attempting to use compression, if available, and providing `Content-Length` header. In terms of compression, it will check whether `zlib` extension is loaded, then check if `zlib.output_compression` is `'On'`. If `zlib` is enabled, but compression is not enabled globally, it will use `ob_gzhandler` and add header, if not - just use the buffer and send the data. If `zlib` is not loaded, will not use compression, but will use buffer to provide proper header. The goal of the function is more standardization of the output, in case you have different settings on different environments for some reason.
 `$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](doc/Headers.md#cachecontrol))
+`$exit` allows to cancel automatic exit of the script (default), in case you want to do some more processing even after the page is pushed to client.
 
 ## emailValidator
 ```php
