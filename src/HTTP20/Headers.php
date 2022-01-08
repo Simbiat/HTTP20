@@ -326,7 +326,10 @@ class Headers
             #Check if support values are sent in headers
             if (
                 in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::fetchSite) &&
-                in_array($_SERVER['HTTP_SEC_FETCH_MODE'], self::fetchMode) &&
+                (
+                    empty($_SERVER['HTTP_SEC_FETCH_MODE']) ||
+                    in_array($_SERVER['HTTP_SEC_FETCH_MODE'], self::fetchMode)
+                ) &&
                 (
                     empty($_SERVER['HTTP_SEC_FETCH_USER']) ||
                     in_array($_SERVER['HTTP_SEC_FETCH_USER'], self::fetchUser)
@@ -370,7 +373,10 @@ class Headers
                 #Actual validation
                 if (
                     !in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site) ||
-                    !in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode) ||
+                    (
+                        !empty($_SERVER['HTTP_SEC_FETCH_MODE']) &&
+                        !in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode)
+                    ) ||
                     (
                         !empty($_SERVER['HTTP_SEC_FETCH_USER']) &&
                         !in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user)
