@@ -229,7 +229,7 @@ class RSS
         }
         $feed->normalizeDocument();
         #Output
-        header('Content-type: application/rss+xml;charset=utf-8');
+        @header('Content-type: application/rss+xml;charset=utf-8');
         $this->HTTP20->zEcho($feed->saveXML(), 'hour');
     }
 

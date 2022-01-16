@@ -332,7 +332,7 @@ class Meta
             $output .= '</msapplication></browserconfig>';
             #Output directly to client if parameter is true
             if ($prettyDirect) {
-                header('Content-Type: text/xml; charset=utf-8');
+                @header('Content-Type: text/xml; charset=utf-8');
                 (new Common)->zEcho($output);
             }
         } else {

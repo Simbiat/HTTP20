@@ -141,7 +141,7 @@ class Headers
             $allowMethods = $defaultMethods;
         }
         #Send the header. More on methods - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
-        header('Access-Control-Allow-Methods: '.implode(', ', $allowMethods));
+        @header('Access-Control-Allow-Methods: '.implode(', ', $allowMethods));
         #Handle wrong type of method from client
         if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allowMethods)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allowMethods))) {
             $this->clientReturn('405');
@@ -156,56 +156,56 @@ class Headers
         if (!empty($allowOrigins)) {
             if (isset($_SERVER['HTTP_ORIGIN']) && preg_match('/'.self::originRegex.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allowOrigins)) {
                 #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
-                header('Vary: Origin', false);
+                @header('Vary: Origin', false);
                 #Send actual headers
-                header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
-                header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+                @header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+                @header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
             } else {
                 #Send proper header denying access and stop processing
                 $this->clientReturn('403');
             }
         } else {
             #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
-            header('Vary: Origin', false);
+            @header('Vary: Origin', false);
             #Send actual headers
-            header('Access-Control-Allow-Origin: *');
-            header('Timing-Allow-Origin: '.(isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].':'.$_SERVER['SERVER_PORT']);
+            @header('Access-Control-Allow-Origin: *');
+            @header('Timing-Allow-Origin: '.(isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].':'.$_SERVER['SERVER_PORT']);
         }
         #HSTS and force HTTPS
-        header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+        @header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
         #Set caching value for CORS
-        header('Access-Control-Max-Age: 86400');
+        @header('Access-Control-Max-Age: 86400');
         #Allows credentials to be shared to front-end JS. By itself this should not be a security issue, but it may ease of use for 3rd-party parser in some cases if you are using cookies.
-        header('Access-Control-Allow-Credentials: true');
+        @header('Access-Control-Allow-Credentials: true');
         #Allow headers sent from server, normally restricted by CORS
         #Keep a default list, that includes those originally allowed by CORS and those present in this class as self::exposedHeaders
         #Send list
-        header('Access-Control-Expose-Headers: '.implode(', ', array_merge(self::exposedHeaders, $exposeHeaders)));
+        @header('Access-Control-Expose-Headers: '.implode(', ', array_merge(self::exposedHeaders, $exposeHeaders)));
         #Allow headers, that can change server state, but are normally restricted by CORS
         if (!empty($allowHeaders)) {
-            header('Access-Control-Allow-Headers: '.implode(', ', array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allowHeaders)));
+            @header('Access-Control-Allow-Headers: '.implode(', ', array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allowHeaders)));
         }
         #Set CORS strategy
         switch (strtolower($strat)) {
             case 'mild':
-                header('Cross-Origin-Embedder-Policy: unsafe-none');
-                header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
-                header('Cross-Origin-Resource-Policy: same-site');
-                header('Referrer-Policy: strict-origin');
+                @header('Cross-Origin-Embedder-Policy: unsafe-none');
+                @header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
+                @header('Cross-Origin-Resource-Policy: same-site');
+                @header('Referrer-Policy: strict-origin');
                 break;
             case 'loose':
-                header('Cross-Origin-Embedder-Policy: unsafe-none');
-                header('Cross-Origin-Opener-Policy: unsafe-none');
-                header('Cross-Origin-Resource-Policy: cross-origin');
-                header('Referrer-Policy: strict-origin-when-cross-origin');
+                @header('Cross-Origin-Embedder-Policy: unsafe-none');
+                @header('Cross-Origin-Opener-Policy: unsafe-none');
+                @header('Cross-Origin-Resource-Policy: cross-origin');
+                @header('Referrer-Policy: strict-origin-when-cross-origin');
                 break;
             #Make 'strict' default value, but also allow explicit specification
             case 'strict':
             default:
-                header('Cross-Origin-Embedder-Policy: require-corp');
-                header('Cross-Origin-Opener-Policy: same-origin');
-                header('Cross-Origin-Resource-Policy: same-origin');
-                header('Referrer-Policy: no-referrer');
+                @header('Cross-Origin-Embedder-Policy: require-corp');
+                @header('Cross-Origin-Opener-Policy: same-origin');
+                @header('Cross-Origin-Resource-Policy: same-origin');
+                @header('Referrer-Policy: no-referrer');
                 break;
         }
         return $this;
@@ -302,10 +302,10 @@ class Headers
         }
         #If report is set also send Content-Security-Policy-Report-Only header
         if ($reportOnly === false) {
-            header('Content-Security-Policy: upgrade-insecure-requests; '.trim($cspLine));
+            @header('Content-Security-Policy: upgrade-insecure-requests; '.trim($cspLine));
         } else {
             if (!empty($defaultDirectives['report-to'])) {
-                header('Content-Security-Policy-Report-Only: '.trim($cspLine));
+                @header('Content-Security-Policy-Report-Only: '.trim($cspLine));
             }
         }
         return $this;
@@ -441,22 +441,22 @@ class Headers
     public function performance(int $keepalive = 0, array $clientHints = []): self
     {
         #Prevent content type sniffing (determining file type by content, not by extension or header)
-        header('X-Content-Type-Options: nosniff');
+        @header('X-Content-Type-Options: nosniff');
         #Allow DNS prefetch for some performance improvement on client side
-        header('X-DNS-Prefetch-Control: on');
+        @header('X-DNS-Prefetch-Control: on');
         #Keep-alive connection if not using HTTP2.0 (which prohibits it). Setting maximum number of connection as timeout power 1000. If a human is opening the pages, it's unlike he will be opening more than 1 page per second, and it's unlikely that any page will have more than 1000 files linked to same server. If it does - some optimization may be required.
         if ($keepalive > 0 && $_SERVER['SERVER_PROTOCOL'] !== 'HTTP/2.0') {
-            header('Connection: Keep-Alive');
-            header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive*1000));
+            @header('Connection: Keep-Alive');
+            @header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive*1000));
         }
         if (!empty($clientHints)) {
             #Implode client hints
             $clientHints = implode(', ', $clientHints);
             #Notify, that we support Client Hints: https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
             #Logic for processing them should be done outside this function, though
-            header('Accept-CH: '.$clientHints);
+            @header('Accept-CH: '.$clientHints);
             #Instruct cache to vary depending on client hints
-            header('Vary: '.$clientHints, false);
+            @header('Vary: '.$clientHints, false);
         }
         return $this;
     }

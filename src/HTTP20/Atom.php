@@ -144,7 +144,7 @@ class Atom
         }
         $feed->normalizeDocument();
         #Output
-        header('Content-type: application/atom+xml;charset=utf-8');
+        @header('Content-type: application/atom+xml;charset=utf-8');
         $this->HTTP20->zEcho($feed->saveXML(), 'hour');
     }
 

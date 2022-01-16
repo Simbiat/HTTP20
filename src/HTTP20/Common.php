@@ -796,10 +796,10 @@ class Common
             #GZipping the string
             $string = gzcompress($string, 9, FORCE_GZIP);
             #Send header with format
-            header('Content-Encoding: gzip');
+            @header('Content-Encoding: gzip');
         }
         #Send header with length
-        header('Content-Length: '.strlen($string));
+        @header('Content-Length: '.strlen($string));
         #Exit if HEAD method was used (by this time all headers should have been sent
         if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
             exit;
@@ -1012,13 +1012,13 @@ class Common
             #Send appropriate header
             switch (strtolower($type)) {
                 case 'js':
-                    header('Content-Type: application/javascript; charset=utf-8');
+                    @header('Content-Type: application/javascript; charset=utf-8');
                     break;
                 case 'css':
-                    header('Content-Type: text/css; charset=utf-8');
+                    @header('Content-Type: text/css; charset=utf-8');
                     break;
                 default:
-                    header('Content-Type: text/html; charset=utf-8');
+                    @header('Content-Type: text/html; charset=utf-8');
                     break;
             }
             #Send data to browser
