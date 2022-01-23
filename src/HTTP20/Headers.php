@@ -499,9 +499,9 @@ class Headers
             }
         }
         if ($permissions) {
-            header('Permissions-Policy: ' . rtrim(trim($headerLine), ','));
+            @header('Permissions-Policy: ' . rtrim(trim($headerLine), ','));
         } else {
-            header('Feature-Policy: ' . trim($headerLine));
+            @header('Feature-Policy: ' . trim($headerLine));
         }
         return $this;
     }
@@ -521,7 +521,7 @@ class Headers
             $modTime = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file')), getlastmod()));
         }
         #Send header
-        header('Last-Modified: '.gmdate(\DATE_RFC7231, $modTime));
+        @header('Last-Modified: '.gmdate(\DATE_RFC7231, $modTime));
         #Set the flag to false for now
         if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
            $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
@@ -540,32 +540,32 @@ class Headers
         #Some strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
         switch (strtolower($cacheStrat)) {
             case 'aggressive':
-                header('Cache-Control: max-age=31536000, immutable, no-transform');
+                @header('Cache-Control: max-age=31536000, immutable, no-transform');
                 break;
             case 'private':
-                header('Cache-Control: private, no-cache, no-store, no-transform');
+                @header('Cache-Control: private, no-cache, no-store, no-transform');
                 break;
             case 'live':
-                header('Cache-Control: no-cache, no-transform');
+                @header('Cache-Control: no-cache, no-transform');
                 break;
             case 'month':
                 #28 days to be more precise
-                header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+                @header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
                 break;
             case 'week':
-                header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+                @header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
                 break;
             case 'day':
-                header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
+                @header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
                 break;
             #Make 'hour' default value, but also allow explicit specification
             case 'hour':
             default:
-                header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
+                @header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
                 break;
         }
         #Ensure that caching works properly in case client did not support compression, but now does or vice-versa and in case data-saving mode was requested by client at any point.
-        header('Vary: Save-Data, Accept-Encoding', false);
+        @header('Vary: Save-Data, Accept-Encoding', false);
         #Set ETag
         if (!empty($string)) {
             $this->eTag(hash('sha3-256', $string), $exit);
@@ -577,7 +577,7 @@ class Headers
     public function eTag(string $etag, bool $exit = false): self
     {
         #Send ETag for caching purposes
-        header('ETag: '.$etag);
+        @header('ETag: '.$etag);
         #Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since ideally you will have some text to output first, but it can still save some time on client side
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
@@ -651,7 +651,7 @@ class Headers
         #Validate URI
         if ((new Common)->uriValidator($newURI) === true) {
             #Send Location header, indicating new URL to be used
-            header('Location: '.$newURI);
+            @header('Location: '.$newURI);
         } else {
             #Update code to 500, since something must have gone wrong
             $code = '500 Internal Server Error';
@@ -897,7 +897,7 @@ class Headers
             }
         } else {
             if ($type === 'header') {
-                header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $linksToSend)), false);
+                @header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $linksToSend)), false);
                 return $this;
             } else {
                 return implode("\r\n", $linksToSend);
