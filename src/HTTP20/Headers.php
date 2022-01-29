@@ -142,6 +142,7 @@ class Headers
         }
         #Send the header. More on methods - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
         @header('Access-Control-Allow-Methods: '.implode(', ', $allowMethods));
+        @header('Allow: '.implode(', ', $allowMethods));
         #Handle wrong type of method from client
         if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allowMethods)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allowMethods))) {
             $this->clientReturn('405');
