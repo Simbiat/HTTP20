@@ -800,12 +800,12 @@ class Common
         }
         #Send header with length
         @header('Content-Length: '.strlen($string));
-        #Exit if HEAD method was used (by this time all headers should have been sent
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
-            exit;
+        #Some HTTP methods do not support body, thus we need to ensure it's not sent.
+        $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
+        if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])) {
+            #Send the output
+            echo $string;
         }
-        #Send the output
-        echo $string;
         if ($exit) {
             exit;
         }
