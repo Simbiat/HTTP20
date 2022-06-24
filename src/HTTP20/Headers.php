@@ -4,6 +4,10 @@ namespace Simbiat\HTTP20;
 
 class Headers
 {
+    public static array $_PUT = [];
+    public static array $_DELETE = [];
+    public static array $_PATCH = [];
+
     #Regex to validate Origins (essentially, an URI in https://examplecom:443 format)
     public const originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
     #Safe HTTP methods which can, generally, be allowed for processing
@@ -944,5 +948,39 @@ class Headers
             #Consider as no limitation
             return true;
         }
+    }
+
+    #Function to parse multipart/form-data for PUT/DELETE/PATCH methods
+    public function multiPartFormParse(): void
+    {
+        #Get method
+        $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
+        #Get Content-Type
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        #Exit if not one of the supported methods or wrong content-type
+        if (!in_array($method, ['PUT', 'DELETE', 'PATCH']) || preg_match('/^multipart\/form-data; boundary=.*$/ui', $contentType) !== 1) {
+            return;
+        }
+        #Get boundary value
+        $boundary = preg_replace('/(^multipart\/form-data; boundary=)(.*$)/ui', '$2', $contentType);
+        #Get input stream
+        $formData = file_get_contents('php://input');
+        #Exit if failed to get the input or if it's not compliant with the RFC2046
+        if ($formData === false || preg_match('/^\s*--'.$boundary.'.*\s*--'.$boundary.'--\s*$/muis', $formData) !== 1) {
+            return;
+        }
+        #Strip ending boundary
+        $formData = preg_replace('/(^\s*--'.$boundary.'.*)(\s*--'.$boundary.'--\s*$)/muis', '$1', $formData);
+        #Split data into array of fields
+        $formData = preg_split('/\s*--'.$boundary.'\s*Content-Disposition: form-data;\s*/muis', $formData, 0, PREG_SPLIT_NO_EMPTY);
+        #Convert to associative array
+        $parsedData = [];
+        foreach ($formData as $field) {
+            $name =  preg_replace('/(name=")(?<name>[^"]+)("\s*)(?<value>.*$)/mui', '$2', $field);
+            $value =  preg_replace('/(name=")(?<name>[^"]+)("\s*)(?<value>.*$)/mui', '$4', $field);
+            $parsedData[trim($name)] = trim($value);
+        }
+        #Update static variable based on method value
+        self::${'_'.strtoupper($method)} = $parsedData;
     }
 }

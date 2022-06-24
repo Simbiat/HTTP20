@@ -10,6 +10,7 @@
 - [links](#links)
 - [redirect](#redirect)
 - [notAccept](#notaccept)
+- [multiPartFormParse](#multiPartFormParse)
 
 # Headers
 Functions that send/handle different HTTP headers.
@@ -171,3 +172,11 @@ Client will send standard `Accept` HTTP header with list of acceptable MIME type
 If none of your supported MIME types match `Accept` header, `406` header will be returned to client. If header is not provided by client, function will return `true`. It will also return `true`, if client provides `*/*` MIME type. This is why it will be niche: most browsers are sending it in their `Accept` headers. If you are using some custom API - this may be useful, still.
 `$supported` - array of MIME types you support.
 `$exit` if set to `true` will exit the script right after HTTP 406 is sent, otherwise will return `false`.
+
+## multiPartFormParse
+```php
+multiPartFormParse()
+```
+This function parses `multipart/form-data` data for PUT, DELETE and PATCH methods and dumps the result as associative array to respective static variables `$_PUT`, `$_DELETE` and `$_PATCH` (accessed as `\Simbiat\HTTP20\Headers::$_PUT`).
+The same logic can technically be used for POST as well, but PHP already parses it into native `$_POST`, so need to cover it.
+Other HTTP verbs are not supposed to be accompanied by form data like this.
