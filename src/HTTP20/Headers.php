@@ -347,8 +347,8 @@ class Headers
                 #Setting defaults
                 $site = array_intersect($site, self::fetchSite);
                 if (empty($site)) {
-                    #Allow everything, but stick to same port for "same" (same-origin, but not same-site)
-                    $site = ['cross-site', 'same-origin', 'none'];
+                    #Allow everything
+                    $site = ['cross-site', 'same-origin', 'same-site', 'none'];
                 }
                 $mode = array_intersect($mode, self::fetchMode);
                 if (empty($mode)) {
