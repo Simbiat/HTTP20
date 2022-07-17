@@ -776,8 +776,9 @@ class Common
         $link = preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', $this->htmlToRFC3986($link));
         #Replace any # with /
         $link = preg_replace('/#/im', '/', $link);
-        #Remove HTML/XML reserved characters as precaution
-        $link = preg_replace('/[\\\'"<>&]/im', '', $link);
+        #Remove HTML/XML reserved characters as precaution.
+        #Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
+        $link = preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
         #Add 'tag:' to beginning and ',Y-m-d:' after domain name
         return preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
     }
@@ -790,13 +791,23 @@ class Common
             session_write_close();
         }
         (new Headers)->cacheControl($string, $cacheStrat, true);
-        #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
-        if (extension_loaded('zlib') && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
-            #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
-            #GZipping the string
-            $string = gzcompress($string, 9, FORCE_GZIP);
-            #Send header with format
-            @header('Content-Encoding: gzip');
+        if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
+            #Attempt brotli compression, if available and client supports it
+            if (extension_loaded('brotli') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
+                #Compress string. Suppressing PHPStorm inspection, since it does not know the extension (at the time of writing)
+                /** @noinspection PhpUndefinedFunctionInspection */
+                /** @noinspection PhpUndefinedConstantInspection */
+                $string = brotli_compress($string, 11, BROTLI_TEXT);
+                #Send header with format
+                @header('Content-Encoding: br');
+            #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
+            } else if (extension_loaded('zlib') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
+                #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
+                #GZipping the string
+                $string = gzcompress($string, 9, FORCE_GZIP);
+                #Send header with format
+                @header('Content-Encoding: gzip');
+            }
         }
         #Send header with length
         @header('Content-Length: '.strlen($string));
