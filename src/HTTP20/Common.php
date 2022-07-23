@@ -790,7 +790,7 @@ class Common
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
-        (new Headers)->cacheControl($string, $cacheStrat, true);
+        $postfix = '';
         if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
             #Attempt brotli compression, if available and client supports it
             if (extension_loaded('brotli') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
@@ -800,6 +800,7 @@ class Common
                 $string = brotli_compress($string, 11, BROTLI_TEXT);
                 #Send header with format
                 @header('Content-Encoding: br');
+                $postfix = '-br';
             #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
             } else if (extension_loaded('zlib') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
                 #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
@@ -807,8 +808,10 @@ class Common
                 $string = gzcompress($string, 9, FORCE_GZIP);
                 #Send header with format
                 @header('Content-Encoding: gzip');
+                $postfix = '-gzip';
             }
         }
+        (new Headers)->cacheControl($string, $cacheStrat, true, $postfix);
         #Send header with length
         @header('Content-Length: '.strlen($string));
         #Some HTTP methods do not support body, thus we need to ensure it's not sent.

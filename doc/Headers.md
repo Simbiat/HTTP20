@@ -22,7 +22,7 @@ I hope that at some point this will become popular. While some frameworks do see
 
 ## cacheControl
 ```php
-cacheControl(string $string, string $cacheStrat = '', bool $exit = false);
+cacheControl(string $string, string $cacheStrat = '', bool $exit = false, string $postfix ='');
 ```
 Allows you to send appropriate `Cache-Control` headers (refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control for explanation on parameters):
 ```php
@@ -53,6 +53,7 @@ switch (strtolower($cacheStrat)) {
 ```
 ETag processing using `eTag()` will happen regardless (unless string is empty: then it will simply make no sense).
 `$exit` if set to `true` will exit the script right after HTTP 304 is sent (that is we hit the cache).
+`$postfix` is an optional string to add to `eTag` string and used mainly for [zEcho](doc/Common.md#zEcho), to comply with recommendations when using compression.
 
 ## eTag
 ```php

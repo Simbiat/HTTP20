@@ -539,7 +539,7 @@ class Headers
     }
 
     #Function to prepare and send cache-related headers
-    public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false): self
+    public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false, string $postfix = ''): self
     {
         #Send headers related to cache based on strategy selected
         #Some strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
@@ -573,7 +573,7 @@ class Headers
         @header('Vary: Save-Data, Accept-Encoding', false);
         #Set ETag
         if (!empty($string)) {
-            $this->eTag(hash('sha3-256', $string), $exit);
+            $this->eTag(hash('sha3-256', $string).$postfix, $exit);
         }
         return $this;
     }
