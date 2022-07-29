@@ -978,7 +978,28 @@ class Headers
         foreach ($formData as $field) {
             $name =  preg_replace('/(name=")(?<name>[^"]+)("\s*)(?<value>.*$)/mui', '$2', $field);
             $value =  preg_replace('/(name=")(?<name>[^"]+)("\s*)(?<value>.*$)/mui', '$4', $field);
-            $parsedData[trim($name)] = trim($value);
+            #Check if we have multiple keys
+            if (str_contains($name, '[')) {
+                #Explode keys into array
+                $keys = explode('[', trim($name));
+                $name = '';
+                #Build JSON array string from keys
+                foreach ($keys as $key) {
+                    $name .= '{"' . rtrim($key, ']') . '":';
+                }
+                #Add the value itself (as string, since in this case it will always be a string) and closing brackets
+                $name .= '"' . trim($value) . '"' . str_repeat('}', count($keys));
+                #Convert into actual PHP array
+                $array = json_decode($name, true);
+                #Check if we actually got an array and did not fail
+                if (!is_null($array)) {
+                    #"Merge" the array into existing data. Doing recursive replace, so that new fields will be added, and in case of duplicates, only the latest will be used
+                    $parsedData = array_replace_recursive($parsedData, $array);
+                }
+            } else {
+                #Single key - simple processing
+                $parsedData[trim($name)] = trim($value);
+            }
         }
         #Update static variable based on method value
         self::${'_'.strtoupper($method)} = $parsedData;
