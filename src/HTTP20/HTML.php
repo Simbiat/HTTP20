@@ -14,10 +14,9 @@ class HTML
     #Function to generate timeline
     public function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0): string {
         if (method_exists('\Simbiat\SandClock','seconds')) {
-            /** @noinspection PhpFullyQualifiedNameUsageInspection */
-            $sandClock = new \Simbiat\SandClock;
+            $sandClock = true;
         } else {
-            $sandClock = null;
+            $sandClock = false;
         }
         $time = time();
         #Sanitize $items and add them to array, that will be ordered
@@ -136,7 +135,7 @@ class HTML
             }
             $output .= '</h3>';
             #Add time elapsed
-            if (!is_null($sandClock)) {
+            if ($sandClock) {
                 $elapsed = 0;
                 if ($item['start'] === 0) {
                     if (!empty($item['startTime'])) {
@@ -148,7 +147,7 @@ class HTML
                     }
                 }
                 if ($elapsed > 0) {
-                    $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="' . $sandClock->seconds($elapsed, iso: true) . '">' . $sandClock->seconds($elapsed, lang: $lang) . '</time></div>';
+                    $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="' .\Simbiat\SandClock::seconds($elapsed, iso: true). '">' .\Simbiat\SandClock::seconds($elapsed, lang: $lang). '</time></div>';
                 }
             }
             if (($asc === false && ($item['start'] === 0 || ($item['start'] === 1 && $item['ended'] === false))) || ($asc === true && $item['start'] === 1)) {
@@ -229,7 +228,7 @@ class HTML
         }
         #Register error, by do not stop further processing
         if (empty($items)) {
-            trigger_error('No valid items found for breadcrumbs', E_USER_NOTICE);
+            trigger_error('No valid items found for breadcrumbs');
             if ($links) {
                 if ($headers) {
                     return ['breadcrumbs' => '', 'links' => ''];
