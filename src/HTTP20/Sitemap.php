@@ -5,14 +5,14 @@ namespace Simbiat\HTTP20;
 class Sitemap
 {
     #Function to generate sitemap in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html
-    public function sitemap(array $links, string $format = 'xml', bool $directOutput = false): string
+    public static function sitemap(array $links, string $format = 'xml', bool $directOutput = false): string
     {
         #Sanitize format
         if (!in_array($format, ['xml', 'index', 'html', 'text', 'txt'])) {
             $format = 'xml';
         }
         #Validate links, if list is not empty. I did not find any recommendations for empty sitemaps, and I do not see a technical reason to break here, because if sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
-        $this->linksValidator($links);
+        self::linksValidator($links);
         #Allow only 50000 links
         $links = array_slice($links, 0, 50000, true);
         #Generate the output string
@@ -69,13 +69,13 @@ class Sitemap
                     @header('Content-Type: application/xml; charset=utf-8');
                     break;
             }
-            (new Common)->zEcho($output);
+            Common::zEcho($output);
         }
         return $output;
     }
 
     #Function to validate the links provided
-    private function linksValidator(array &$links): void
+    private static function linksValidator(array &$links): void
     {
         #Get first element of the array to use it as base for next. Need to use array_key_first, because we may get an associative array
         $first = @$links[array_key_first($links)];
@@ -101,9 +101,7 @@ class Sitemap
             $maxDate = 0;
         }
         #Send Last-Modified header and stop further processing if client already has a fresh enough copy
-        (new Headers)->lastModified($maxDate, true);
-        #Cache Common HTTP20 functions
-        $HTTP20 = (new Common);
+        Headers::lastModified($maxDate, true);
         #Check that all links start from
         foreach ($links as $key=>$link) {
             #Check if 'loc' is set
@@ -122,7 +120,7 @@ class Sitemap
                 $valueCounts[$link['loc']]--;
             }
             #Sanitize values
-            $links[$key]['loc'] = $HTTP20->htmlToRFC3986($link['loc']);
+            $links[$key]['loc'] = Common::htmlToRFC3986($link['loc']);
             #Sanitize name (used only for HTML format
             if (isset($link['name'])) {
                 $links[$key]['name'] = htmlspecialchars($link['name']);
@@ -131,7 +129,7 @@ class Sitemap
             }
             #Convert lastmod
             if (isset($link['lastmod'])) {
-                $links[$key]['lastmod'] = $HTTP20->valueToTime($link['lastmod'], \DATE_ATOM);
+                $links[$key]['lastmod'] = Common::valueToTime($link['lastmod'], \DATE_ATOM);
             }
             #Unset invalid changefreq
             if (isset($link['changefreq']) && preg_match('/^(always|hourly|daily|weekly|monthly|yearly|never)$/i', $link['changefreq']) !== 1) {

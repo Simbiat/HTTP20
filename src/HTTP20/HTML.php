@@ -12,7 +12,7 @@ class HTML
     public static int $timelines = 0;
 
     #Function to generate timeline
-    public function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0): string {
+    public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0): string {
         if (method_exists('\Simbiat\SandClock','seconds')) {
             $sandClock = true;
         } else {
@@ -109,12 +109,10 @@ class HTML
         self::$timelines++;
         #Open timeline
         $output = '<section id="timeline_"'.self::$timelines.' class="timeline" aria-label="timeline '.self::$timelines.'">';
-        #Cache PrettyURL
-        $pretty = (new PrettyURL);
         #Add elements
         foreach ($toOrder as $key=>$item) {
             #Generate id
-            $id = $pretty->pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['startTime'] : $item['endTime']));
+            $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['startTime'] : $item['endTime']));
             $output .= '<div class="timeline_block timeline_'.($item['start'] === 1 ? 'start'.($item['ended'] === false ? ' timeline_current' : '') : 'end').'" id="'.$id.'"><div class="timeline_content"><div class="timeline_time">';
             if (!empty($item['icon']) && $item['start'] === 0) {
                 $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
@@ -147,6 +145,7 @@ class HTML
                     }
                 }
                 if ($elapsed > 0) {
+                    /** @noinspection PhpFullyQualifiedNameUsageInspection */
                     $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="' .\Simbiat\SandClock::seconds($elapsed, iso: true). '">' .\Simbiat\SandClock::seconds($elapsed, lang: $lang). '</time></div>';
                 }
             }
@@ -207,7 +206,7 @@ class HTML
                 $currentList = '<div class="timeline_shortcut"><b>Ongoing: </b>';
                 foreach ($current as $item) {
                     #Generate id
-                    $id = $pretty->pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
+                    $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
                     $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
                 }
                 $currentList .= '</div>';
@@ -218,7 +217,7 @@ class HTML
     }
 
     #Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList
-    public function breadcrumbs(array $items, bool $links = false, bool $headers = false): string|array
+    public static function breadcrumbs(array $items, bool $links = false, bool $headers = false): string|array
     {
         #Sanitize $items
         foreach ($items as $key=>$item) {
@@ -271,12 +270,10 @@ class HTML
         if ($links) {
             #Send headers, if this was requested
             if ($headers) {
-                #Create object, since we will need it twice
-                $headersObj = (new Headers);
                 #Send headers
-                $headersObj->links($linksArr);
+                Headers::links($linksArr);
                 #Replace array of links with prepared strings for future use, if required
-                $linksArr = $headersObj->links($linksArr, 'head');
+                $linksArr = Headers::links($linksArr, 'head');
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
             return ['breadcrumbs' => $output, 'links' => $linksArr];
@@ -286,7 +283,7 @@ class HTML
     }
 
     #Function to generate pagination navigation
-    public function pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page', 'next_text' => 'Next page', 'last_text' => 'Last page', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false): string|array
+    public static function pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page', 'next_text' => 'Next page', 'last_text' => 'Last page', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false): string|array
     {
         #Sanitize numbers
         if ($current < 1) {
@@ -445,12 +442,10 @@ class HTML
             }
             #Send headers, if this was requested
             if ($headers) {
-                #Create object, since we will need it twice
-                $headersObj = (new Headers);
                 #Send headers
-                $headersObj->links($linksArr);
+                Headers::links($linksArr);
                 #Replace array of links with prepared strings for future use, if required
-                $linksArr = $headersObj->links($linksArr, 'head');
+                $linksArr = Headers::links($linksArr, 'head');
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
             return ['pagination' => $output, 'links' => $linksArr];
@@ -458,4 +453,6 @@ class HTML
             return $output;
         }
     }
+
+
 }

@@ -10,6 +10,7 @@ Functions, that generate sets of meta-tags, that may be useful for your website.
 twitter(array $general, array $playerApp = [], bool $pretty = false);
 ```
 Function creates a set of `<meta>` tags required for Twitter Cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards). It does some validation of the values you provide to reduce chances of botching the card.
+
 `$general` is an array of general settings used by cards:
 ```php
 [
@@ -34,6 +35,7 @@ Function creates a set of `<meta>` tags required for Twitter Cards (https://deve
 ]
 ```
 `$playerApp` is an array of values used for cards with types 'app' or 'player'.
+
 For player cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card) the array will look like this:
 ```php
   #Mandatory URL to a frame of the player
@@ -140,6 +142,7 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
 ]
 ```
 `$xml` indicates whether you want to generate XML config file. `False` by default.
+
 `$prettyDirect` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
 
 ## facebook
@@ -147,5 +150,7 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
 facebook(int $appId, array $admins = []);
 ```
 Simple function to prepare a string of Facebook meta tags.
+
 `$appId` is mandatory application ID, that you want to link to the page.
+
 `$admins` is an optional list of admin IDs. All non-numeric values will be removed and numeric ones will be converted to integers.

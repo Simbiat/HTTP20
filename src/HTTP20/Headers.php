@@ -130,7 +130,7 @@ class Headers
     ];
 
     #Function sends headers, related to security
-    public function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = []): self
+    public static function security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = []): void
     {
         #Default list of allowed methods, limited to only "simple" ones
         $defaultMethods = self::safeMethods;
@@ -149,7 +149,7 @@ class Headers
         @header('Allow: '.implode(', ', $allowMethods));
         #Handle wrong type of method from client
         if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allowMethods)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allowMethods))) {
-            $this->clientReturn('405');
+            self::clientReturn('405');
         }
         #Sanitize Origins list
         foreach ($allowOrigins as $key=>$origin) {
@@ -167,7 +167,7 @@ class Headers
                 @header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
             } else {
                 #Send proper header denying access and stop processing
-                $this->clientReturn('403');
+                self::clientReturn('403');
             }
         } else {
             #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
@@ -213,11 +213,10 @@ class Headers
                 @header('Referrer-Policy: no-referrer');
                 break;
         }
-        return $this;
     }
 
     #Function to process CSP header
-    public function contentPolicy(array $cspDirectives = [], bool $reportOnly = false, bool $reportUri = false): self
+    public static function contentPolicy(array $cspDirectives = [], bool $reportOnly = false, bool $reportUri = false): void
     {
         #Set defaults directives for CSP
         $defaultDirectives = self::secureDirectives;
@@ -313,7 +312,6 @@ class Headers
                 @header('Content-Security-Policy-Report-Only: '.trim($cspLine));
             }
         }
-        return $this;
     }
 
     #Function to process Sec-Fetch headers. Arrays are set to empty ones by default for ease of use (sending empty array is a bit easier than copying values).
@@ -322,7 +320,7 @@ class Headers
     #https://www.w3.org/TR/fetch-metadata/
     #https://fetch.spec.whatwg.org/
     #https://web.dev/fetch-metadata/
-    public function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false): self
+    public static function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false): void
     {
         #Set flag for processing
         $badRequest = false;
@@ -437,13 +435,12 @@ class Headers
         }
         if ($badRequest) {
             #Send proper header denying access and stop processing
-            $this->clientReturn('403');
+            self::clientReturn('403');
         }
-        return $this;
     }
 
     #Function to send headers, that may improve performance on client side
-    public function performance(int $keepalive = 0, array $clientHints = []): self
+    public static function performance(int $keepalive = 0, array $clientHints = []): void
     {
         #Prevent content type sniffing (determining file type by content, not by extension or header)
         @header('X-Content-Type-Options: nosniff');
@@ -463,21 +460,20 @@ class Headers
             #Instruct cache to vary depending on client hints
             @header('Vary: '.$clientHints, false);
         }
-        return $this;
     }
 
     #A wrapper for `features` with `permissions = true` just for convenience of access
     #https://www.w3.org/TR/permissions-policy-1/ is replacement for Feature-Policy
-    public function permissions(array $features = [], bool $forceCheck = true): self
+    public static function permissions(array $features = [], bool $forceCheck = true): void
     {
-        return $this->features($features, $forceCheck, true);
+        self::features($features, $forceCheck, true);
     }
 
     #Function to manage Feature-Policy to control different features. By default, most features are disabled for security and performance
     #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
     #https://feature-policy-demos.appspot.com/
     #https://featurepolicy.info/
-    public function features(array $features = [], bool $forceCheck = true, bool $permissions = false):self
+    public static function features(array $features = [], bool $forceCheck = true, bool $permissions = false): void
     {
         if ($permissions) {
             $defaults = self::permissionsDefault;
@@ -508,11 +504,10 @@ class Headers
         } else {
             @header('Feature-Policy: ' . trim($headerLine));
         }
-        return $this;
     }
 
     #Function to set Last-Modified header. This header is generally not required if you already have Cache-Control and ETag, but still may be useful in case of conditional requests. At least if you will provide it with proper modification time.
-    public function lastModified(int|string $modTime = 0, bool $exit = false): self
+    public static function lastModified(int|string $modTime = 0, bool $exit = false): void
     {
         #In case it's not numeric, replace with 0
         if (!is_numeric($modTime)) {
@@ -522,7 +517,6 @@ class Headers
         }
         if ($modTime <= 0) {
             #Get the freshest modification time of all PHP files used ot PHP's getlastmod time
-            /** @noinspection PhpNestedMinMaxCallInspection */
             $modTime = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file')), getlastmod()));
         }
         #Send header
@@ -532,14 +526,13 @@ class Headers
            $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
            if ($IfModifiedSince >= $modTime) {
                 #If content has not been modified - return 304
-                $this->clientReturn('304', $exit);
+               self::clientReturn('304', $exit);
             }
         }
-        return $this;
     }
 
     #Function to prepare and send cache-related headers
-    public function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false, string $postfix = ''): self
+    public static function cacheControl(string $string = '', string $cacheStrat = '', bool $exit = false, string $postfix = ''): void
     {
         #Send headers related to cache based on strategy selected
         #Some strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
@@ -573,13 +566,12 @@ class Headers
         @header('Vary: Save-Data, Accept-Encoding', false);
         #Set ETag
         if (!empty($string)) {
-            $this->eTag(hash('sha3-256', $string).$postfix, $exit);
+            self::eTag(hash('sha3-256', $string).$postfix, $exit);
         }
-        return $this;
     }
 
     #Handle Etag header and its validation depending on request headers
-    public function eTag(string $etag, bool $exit = false): self
+    public static function eTag(string $etag, bool $exit = false): void
     {
         #Send ETag for caching purposes
         @header('ETag: '.$etag);
@@ -587,20 +579,19 @@ class Headers
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not been modified - return 304
-                $this->clientReturn('304', $exit);
+                self::clientReturn('304', $exit);
             }
         }
         #Return error if If-Match was sent, and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
-                $this->clientReturn('412', $exit);
+                self::clientReturn('412', $exit);
             }
         }
-        return $this;
     }
 
     #Function to return to client and optionally force-close connection
-    public function clientReturn(string $code = '500 Internal Server Error', bool $exit = true): bool
+    public static function clientReturn(string $code = '500 Internal Server Error', bool $exit = true): bool
     {
         #Generate response
         if (is_numeric($code)) {
@@ -625,13 +616,13 @@ class Headers
         #Send response header
         @header($_SERVER['SERVER_PROTOCOL'].' '.$response);
         if ($exit) {
-            (new Common)->forceClose();
+            Common::forceClose();
         }
         return $positive;
     }
 
     #Function to handle redirects
-    public function redirect(string $newURI, bool $permanent = true, bool $preserveMethod = true, bool $forceGET = false): void
+    public static function redirect(string $newURI, bool $permanent = true, bool $preserveMethod = true, bool $forceGET = false): void
     {
         #Set default as precaution
         $code = '500 Internal Server Error';
@@ -654,7 +645,7 @@ class Headers
             }
         }
         #Validate URI
-        if ((new Common)->uriValidator($newURI) === true) {
+        if (filter_var($newURI, FILTER_VALIDATE_URL)) {
             #Send Location header, indicating new URL to be used
             @header('Location: '.$newURI);
         } else {
@@ -662,11 +653,11 @@ class Headers
             $code = '500 Internal Server Error';
         }
         #Send code and enforce connection closure
-        $this->clientReturn($code);
+        self::clientReturn($code);
     }
 
     #Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
-    public function links(array $links = [], string $type = 'header', bool $strictRel = true): self|string
+    public static function links(array $links = [], string $type = 'header', bool $strictRel = true): string
     {
         #Validate type
         if (!in_array($type, ['header', 'head', 'body'])) {
@@ -807,7 +798,7 @@ class Headers
                                             #Assume error or malicious intent and skip
                                             continue;
                                         } else {
-                                            #Set 'as' attribute if rel is preload
+                                            #Set 'as' attribute if rel is "preload"
                                             if (isset($link['rel']) && preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
                                                 $link['as'] = 'image';
                                             }
@@ -895,15 +886,11 @@ class Headers
             }
         }
         if (empty($linksToSend)) {
-            if ($type === 'header') {
-                return $this;
-            } else {
-                return '';
-            }
+            return '';
         } else {
             if ($type === 'header') {
                 @header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $linksToSend)), false);
-                return $this;
+                return '';
             } else {
                 return implode("\r\n", $linksToSend);
             }
@@ -911,7 +898,7 @@ class Headers
     }
 
     #Function to handle Accept request header
-    public function notAccept(array $supported = ['text/html'], bool $exit = true): bool|string
+    public static function notAccept(array $supported = ['text/html'], bool $exit = true): bool|string
     {
         #Check if header is set, and we do have a limit on supported MIME types
         if (isset($_SERVER['HTTP_ACCEPT']) && !empty($supported)) {
@@ -938,7 +925,7 @@ class Headers
                     return true;
                 } else {
                     #Send 406 Not Acceptable
-                    return $this->clientReturn('406', $exit);
+                    return self::clientReturn('406', $exit);
                 }
             } else {
                 #Get the one with the highest priority and return its value
@@ -951,7 +938,7 @@ class Headers
     }
 
     #Function to parse multipart/form-data for PUT/DELETE/PATCH methods
-    public function multiPartFormParse(): void
+    public static function multiPartFormParse(): void
     {
         #Get method
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;

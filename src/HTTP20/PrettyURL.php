@@ -4,9 +4,8 @@ namespace Simbiat\HTTP20;
 
 class PrettyURL
 {
-    private string $urlUnsafe = '\+\*\'\(\);/\?:@=&"<>#%{}\|\\\\\^~\[]`';
-    private array $needles;
-    private array $replaces = [
+    private static string $urlUnsafe = '\+\*\'\(\);/\?:@=&"<>#%{}\|\\\\\^~\[]`';
+    private static array $replaces = [
         'ꭕ'=>'x',
         'ꞕ'=>'h',
         'ꬰ'=>'a',
@@ -5417,20 +5416,14 @@ class PrettyURL
         '🇿'=>'Z',
     ];
 
-    public function __construct()
+    public static function pretty(string $string, string $whitespace = '-', bool $urlSafe = true): string
     {
-        #Setting needles (characters to search for) in order not to duplicate the values
-        $this->needles = array_keys($this->replaces);
-    }
-
-    public function pretty(string $string, string $whitespace = '-', bool $urlSafe = true): string
-    {
-        $string = str_replace($this->needles, $this->replaces, $string);
+        $string = str_replace(array_keys(self::$replaces), self::$replaces, $string);
         $string = preg_replace('/\s+/', $whitespace, $string);
         if ($urlSafe) {
             $string = preg_replace('[^a-zA-Z\d'.$whitespace.']', '', $string);
         } else {
-            $string = preg_replace('[^a-zA-Z\d'.$this->urlUnsafe.$whitespace.']', '', $string);
+            $string = preg_replace('[^a-zA-Z\d'.self::$urlUnsafe.$whitespace.']', '', $string);
         }
         return $string;
     }

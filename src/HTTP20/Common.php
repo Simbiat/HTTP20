@@ -738,7 +738,7 @@ class Common
     ];
 
     #Wrapper for date(), that handles strings and allows validation of result
-    public function valueToTime(string|int|float|null $time, string $format, string $validRegex = ''): string
+    public static function valueToTime(string|int|float|null $time, string $format, string $validRegex = ''): string
     {
         #If we want to use a constant, but it was sent as a string
         if (str_starts_with(strtoupper($format), 'DATE_')) {
@@ -768,23 +768,8 @@ class Common
         return $time;
     }
 
-    #Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
-    public function atomIDGen(string $link, string|int|float|null $date = NULL): string
-    {
-        $date = $this->valueToTime($date, 'Y-m-d', '/^\d{4}-\d{2}-\d{2}$/i');
-        #Remove URI protocol (if any)
-        $link = preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', $this->htmlToRFC3986($link));
-        #Replace any # with /
-        $link = preg_replace('/#/im', '/', $link);
-        #Remove HTML/XML reserved characters as precaution.
-        #Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
-        $link = preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
-        #Add 'tag:' to beginning and ',Y-m-d:' after domain name
-        return preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
-    }
-
     #Function utilizes ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
-    public function zEcho(string $string, string $cacheStrat = '', bool $exit = true): void
+    public static function zEcho(string $string, string $cacheStrat = '', bool $exit = true): void
     {
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -811,7 +796,7 @@ class Common
                 $postfix = '-gzip';
             }
         }
-        (new Headers)->cacheControl($string, $cacheStrat, true, $postfix);
+        Headers::cacheControl($string, $cacheStrat, true, $postfix);
         #Send header with length
         @header('Content-Length: '.strlen($string));
         #Some HTTP methods do not support body, thus we need to ensure it's not sent.
@@ -825,28 +810,8 @@ class Common
         }
     }
 
-    #Function to check if string is a mail address as per RFC 5322
-    public function emailValidator(string $string): bool
-    {
-        if (preg_match('/^(?:[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+\/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)])$/i', $string) === 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    #Function to check if string is a URI as per RFC 3986
-    public function uriValidator(string $string): bool
-    {
-        if (preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):(?<authority>\/\/(?<user>[^@]+@)?(?<host>[\p{L}0-9.\-_~]+)(?<port>:\d+)?)?(?<path>(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])+(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])*)*|(?:\/(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@])+)*)?(?<query>\?(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@]|[\/?])+)?(?<fragment>#(?:[\p{L}0-9-._~]|%[a-f0-9]{2}|[!$&\'()*+,;=:@]|[\/?])+)?$/iu', $this->htmlToRFC3986($string)) === 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     #Function to check if string is a valid language code
-    public function LangCodeCheck(string $string): bool
+    public static function LangCodeCheck(string $string): bool
     {
         if (in_array(strtolower($string),
             ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk']
@@ -859,7 +824,7 @@ class Common
 
     #Function does the same as rawurlencode but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use htmlentities, but otherwise break HTML/XML
     #$full means that all of them will be converted (useful when text inside a tag). If `false` only < and & are converted (useful when inside attribute). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML
-    public function htmlToRFC3986(string $string, bool $full = true): string
+    public static function htmlToRFC3986(string $string, bool $full = true): string
     {
         if ($full) {
             return str_replace(['\'', '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
@@ -870,7 +835,7 @@ class Common
 
     #Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that.
     #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
-    public function reductor(string|array $files, string $type, bool $minify = false, string $toFile = '', string $cacheStrat = ''): void
+    public static function reductor(string|array $files, string $type, bool $minify = false, string $toFile = '', string $cacheStrat = ''): void
     {
         #Set content to empty string as precaution
         $content = '';
@@ -914,7 +879,7 @@ class Common
         #Get date if we are directly outputting the data
         if (empty($toFile)) {
             #Send Last Modified header and exit, if we hit browser cache
-            (new Headers)->lastModified(max($dates), true);
+            Headers::lastModified(max($dates), true);
         }
         #Minify
         if ($minify === true) {
@@ -929,7 +894,7 @@ class Common
                             // Remove the last semicolon
                             '#;+}#',
                             // Minify object attribute(s) except JSON attribute(s). From `{'foo':'bar'}` to `{foo:'bar'}`
-                            '#([{,])([\'])(\d+|[a-z_][a-z0-9_]*)\2(?=:)#i',
+                            '#([{,])(\')(\d+|[a-z_][a-z0-9_]*)\2(?=:)#i',
                             // --ibid. From `foo['bar']` to `foo.bar`
                             '#([a-z0-9_)\]])\[([\'"])([a-z_][a-z0-9_]*)\2]#i'
                         ],
@@ -950,16 +915,16 @@ class Common
                             // Remove unused white-space(s)
                             '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|/\*(?>.*?\*/))|\s*+;\s*+(})\s*+|\s*+([*$~^|]?+=|[{};,>~]|\s(?![0-9.])|!important\b)\s*+|([[(:])\s++|\s++([])])|\s++(:)\s*+(?!(?>[^{}"\']++|"(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')*+{)|^\s++|\s++\z|(\s)\s+#si',
                             // Replace `0(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)` with `0`
-                            '#(?<=[\s:])(0)(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)#si',
+                            '#(?<=[\s:])(0)(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)#i',
                             // Replace `:0 0 0 0` with `:0`
                             '#:(0\s+0|0\s+0\s+0\s+0)(?=[;}]|!important)#i',
                             // Replace `background-position:0` with `background-position:0 0`
-                            '#(background-position):0(?=[;}])#si',
+                            '#(background-position):0(?=[;}])#i',
                             // Replace `0.6` with `.6`, but only when preceded by `:`, `,`, `-` or a white-space
-                            '#(?<=[\s:,\-])0+\.(\d+)#s',
+                            '#(?<=[\s:,\-])0+\.(\d+)#',
                             // Minify string value
                             '#(/\*(?>.*?\*/))|(?<!content:)([\'"])([a-z_][a-z0-9\-_]*?)\2(?=[\s{}\];,])#si',
-                            '#(/\*(?>.*?\*/))|(\burl\()([\'"])([^\s]+?)\3(\))#si',
+                            '#(/\*(?>.*?\*/))|(\burl\()([\'"])(\S+?)\3(\))#si',
                             // Minify HEX color code
                             '#(?<=[\s:,\-]\#)([a-f0-6]+)\1([a-f0-6]+)\2([a-f0-6]+)\3#i',
                             // Replace `(border|outline):none` with `(border|outline):0`
@@ -983,7 +948,7 @@ class Common
                         $content);
                     break;
                 case 'html':
-                    $content = preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#s',
+                    $content = preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
                         function($matches) {
                             return '<' . $matches[1] . preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]) . $matches[3] . '>';
                         }, str_replace("\r", '', $content));
@@ -1036,14 +1001,14 @@ class Common
                     break;
             }
             #Send data to browser
-            $this->zEcho($content, $cacheStrat);
+            self::zEcho($content, $cacheStrat);
         } else {
             file_put_contents($toFile, $content);
         }
     }
 
     #Function to force close HTTP connection
-    public function forceClose(): void
+    public static function forceClose(): void
     {
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {

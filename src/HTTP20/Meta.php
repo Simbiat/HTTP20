@@ -5,16 +5,16 @@ namespace Simbiat\HTTP20;
 class Meta
 {
     #Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards
-    public function twitter(array $general, array $playerApp = [], bool $pretty = false): string
+    public static function twitter(array $general, array $playerApp = [], bool $pretty = false): string
     {
         #Check that settings are not an empty array
         if (empty($general)) {
-            trigger_error('Empty array of general settings was provided for Twitter card', E_USER_NOTICE);
+            trigger_error('Empty array of general settings was provided for Twitter card');
             return '';
         }
         #Title is mandatory
         if (empty($general['title'])) {
-            trigger_error('Empty title was provided for Twitter card', E_USER_NOTICE);
+            trigger_error('Empty title was provided for Twitter card');
             return '';
         }
 
@@ -50,7 +50,7 @@ class Meta
         if ($general['card'] !== 'app') {
             if (!empty($general['image'])) {
                 #Add only if URL looks like a valid URL for a supported image
-                if ($this->isHTTPS($general['image']) === true && preg_match('/.*\.(jpg|png|webp|gif)(\?.*)?$/i', $general['image']) === 1) {
+                if (preg_match('/.*\.(jpg|png|webp|gif)(\?.*)?$/i', $general['image']) === 1) {
                     $output .= '<meta name="twitter:image" content="'.$general['image'].'" />';
                 }
             }
@@ -62,9 +62,9 @@ class Meta
         #Process player tags
         if ($general['card'] === 'player') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
-            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || preg_match('/.*twitter:image".*/i', $output) !== 1 || empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || $this->isHTTPS($playerApp['player']) === false || preg_match('/^\d+$/', $playerApp['width']) !== 1 || preg_match('/^\d+$/', $playerApp['height']) !== 1) {
+            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || preg_match('/.*twitter:image".*/i', $output) !== 1 || empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || preg_match('/^\d+$/', $playerApp['width']) !== 1 || preg_match('/^\d+$/', $playerApp['height']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
-                trigger_error('One or more Twitter player card parameter is missing or incorrect', E_USER_NOTICE);
+                trigger_error('One or more Twitter player card parameter is missing or incorrect');
                 return '';
             }
             #Add player URL
@@ -73,14 +73,14 @@ class Meta
             $output .= '<meta name="twitter:player:width" content="'.$playerApp['width'].'" />';
             $output .= '<meta name="twitter:player:height" content="'.$playerApp['height'].'" />';
             #Add stream
-            if (!empty($playerApp['stream']) && $this->isHTTPS($playerApp['stream']) === true) {
+            if (!empty($playerApp['stream'])) {
                 $output .= '<meta name="twitter:player:stream" content="'.$playerApp['stream'].'" />';
             }
         } elseif ($general['card'] === 'app') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card
             if (preg_match('/.*twitter:site.*/i', $output) !== 1 || empty($playerApp['id:iphone']) || empty($playerApp['id:ipad']) || empty($playerApp['id:googleplay']) || preg_match('/^\d+$/', $playerApp['id:iphone']) !== 1 || preg_match('/^\d+$/', $playerApp['id:ipad']) !== 1 || preg_match('/^\d+$/', $playerApp['id:googleplay']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
-                trigger_error('One or more Twitter app card parameter is missing or incorrect', E_USER_NOTICE);
+                trigger_error('One or more Twitter app card parameter is missing or incorrect');
                 return '';
             }
             #Add IDs
@@ -109,39 +109,28 @@ class Meta
         return $output;
     }
 
-    #Helper function to check whether a string is a recognizable URL (not URI!) with HTTPS scheme
-    private function isHTTPS(string $url): bool
-    {
-        $url = parse_url($url);
-        if (empty($url['scheme']) || empty($url['host']) || empty($url['path']) || $url['scheme'] !== 'https') {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
     #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file
     #Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
     #browserconfig specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
-    public function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true): string
+    public static function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true): string
     {
         #Check that settings are not an empty array
         if (empty($general)) {
-            trigger_error('Empty array of general settings was provided for Microsoft Tile', E_USER_NOTICE);
+            trigger_error('Empty array of general settings was provided for Microsoft Tile');
             return '';
         }
         #Check name
         if (empty($general['name']) && $xml === false) {
             #While name (application-name) is replaced by page title by default, this may not be a good idea, if some "random" page is pinned by user. You do want to have at least some control of how your website is presented on user's system.
-            trigger_error('Empty name was provided for Microsoft Tile', E_USER_NOTICE);
+            trigger_error('Empty name was provided for Microsoft Tile');
             return '';
         }
         #If tooltip is not provided, use the name
         if (empty($general['tooltip'])) {
             $general['tooltip'] = $general['name'];
         }
-        #If starturl is not provided set it to current host. Same if it's a bad URL, which is not an HTTPS - return empty string. Technically the standard does support HTTP, but since pure HTTP is currently discouraged, we can safely disregard it
-        if (empty($general['starturl']) || $this->isHTTPS($general['starturl']) === false) {
+        #If starturl is not provided set it to current host.
+        if (empty($general['starturl'])) {
             $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
         }
         #If window is not provided set or incorrect
@@ -180,33 +169,23 @@ class Meta
             unset($general['TileColor']);
         }
         #Validate images
-        if (empty($general['square150x150logo']) || $this->isHTTPS($general['square150x150logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square150x150logo']) !== 1) {
+        if (empty($general['square150x150logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square150x150logo']) !== 1) {
             unset($general['square150x150logo']);
         }
-        if (empty($general['square310x310logo']) || $this->isHTTPS($general['square310x310logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square310x310logo']) !== 1) {
+        if (empty($general['square310x310logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square310x310logo']) !== 1) {
             unset($general['square310x310logo']);
         }
-        if (empty($general['square70x70logo']) || $this->isHTTPS($general['square70x70logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square70x70logo']) !== 1) {
+        if (empty($general['square70x70logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square70x70logo']) !== 1) {
             unset($general['square70x70logo']);
         }
-        if (empty($general['wide310x150logo']) || $this->isHTTPS($general['wide310x150logo']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['wide310x150logo']) !== 1) {
+        if (empty($general['wide310x150logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['wide310x150logo']) !== 1) {
             unset($general['wide310x150logo']);
         }
-        if (empty($general['TileImage']) || $this->isHTTPS($general['TileImage']) === false || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['TileImage']) !== 1) {
+        if (empty($general['TileImage']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['TileImage']) !== 1) {
             unset($general['TileImage']);
         }
         #Prepare notification value (should lead to XML formatted like https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root)
         if (!empty($notifications)) {
-            #Check links
-            foreach ($notifications as $key=>$value) {
-                #Skip frequency and cycle
-                if (!in_array($key, ['frequency', 'cycle'])) {
-                    #If not a valid HTTPS - remove from list
-                    if ($this->isHTTPS($value) === false) {
-                        unset($notifications[$key]);
-                    }
-                }
-            }
             #Count elements (links)
             $links = count($notifications);
             #Exclude frequency
@@ -259,8 +238,8 @@ class Meta
                     if (is_array($task)) {
                         #Validate settings
                         if (!empty($task['name']) && is_string($task['name']) &&
-                            !empty($task['action-uri']) && is_string($task['action-uri']) && $this->isHTTPS($task['action-uri']) === true &&
-                            !empty($task['icon-uri']) && is_string($task['icon-uri']) && $this->isHTTPS($task['icon-uri']) === true && preg_match('/.*\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
+                            !empty($task['action-uri']) && is_string($task['action-uri']) &&
+                            !empty($task['icon-uri']) && is_string($task['icon-uri']) && preg_match('/.*\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
                         ) {
                             $tasksCount++;
                             if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
@@ -333,7 +312,7 @@ class Meta
             #Output directly to client if parameter is true
             if ($prettyDirect) {
                 @header('Content-Type: text/xml; charset=utf-8');
-                (new Common)->zEcho($output);
+                Common::zEcho($output);
             }
         } else {
             $output = '';
@@ -378,7 +357,7 @@ class Meta
     }
 
     #Function to generate Facebook special meta tags
-    public function facebook(int $appId, array $admins = []): string
+    public static function facebook(int $appId, array $admins = []): string
     {
         #Add appId tag
         $output = '<meta property="fb:app_id" content="'.$appId.'"/>';
