@@ -2,8 +2,6 @@
 declare(strict_types=1);
 namespace Simbiat\HTTP20;
 
-use Simbiat\SafeFileName;
-
 class Sharing
 {
     private array $extToMime;
@@ -233,12 +231,12 @@ class Sharing
         }
         #Cache filename sanitizer
         if (method_exists('\Simbiat\SafeFileName','sanitize')) {
-            $SafeFileName = (new SafeFileName);
+            $SafeFileName = true;
         } else {
             $SafeFileName = false;
         }
         #Check if file upload is enabled on server
-        if (ini_get('file_uploads') == false) {
+        if (!ini_get('file_uploads')) {
             return (new Headers)->clientReturn('501', $exit);
         }
         #Check that we do have some space allocated for file uploads
@@ -403,7 +401,7 @@ class Sharing
                     #Sanitize name
                     if (isset($_FILES[$field][$key])) {
                         if ($SafeFileName !== false) {
-                            $_FILES[$field][$key]['name'] = basename($SafeFileName->sanitize($file['name']));
+                            $_FILES[$field][$key]['name'] = basename(\Simbiat\SafeFileName::sanitize($file['name']));
                             #If name is empty or name is too long, do not process it
                             if (empty($_FILES[$field][$key]['name']) || mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
                                 if ($intolerant) {
@@ -528,7 +526,7 @@ class Sharing
             }
             #Sanitize the name
             if (!empty($name) && $SafeFileName !== false) {
-                $name = basename($SafeFileName->sanitize($name));
+                $name = basename(\Simbiat\SafeFileName::sanitize($name));
             }
             if (empty($name)) {
                 #Generate random name. Using 64 to be consistent with sha3-256 hash
