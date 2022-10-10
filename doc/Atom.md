@@ -19,14 +19,14 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
     [
       'name' => 'Dmitry Kustov',
       'email' => 'simbiat@outlook.com',
-      'uri' => 'https://simbiat.ru/',
+      'uri' => 'https://www.simbiat.dev/',
     ]
   ],
   'contributors' => [
     [
       'name' => 'Dmitry Kustov',
       'email' => 'simbiat@outlook.com',
-      'uri' => 'https://simbiat.ru/',
+      'uri' => 'https://www.simbiat.dev/',
     ]
   ],
   'icon' => '/frontend/images/favicons/simbiat.png',
@@ -61,10 +61,10 @@ For details on elements above (what they mean, recommendations, etc.), please, r
   'link' => 'https://google.com',
   'author_name' => 'Dmitry Kustov',
   'author_email' => 'simbiat@outlook.com',
-  'author_uri' => 'https://simbiat.ru/',
+  'author_uri' => 'https://www.simbiat.dev/',
   'contributor_name' => 'Dmitry Kustov',
   'contributor_email' => 'simbiat@outlook.com',
-  'contributor_uri' => 'https://simbiat.ru/',
+  'contributor_uri' => 'https://www.simbiat.dev/',
   'content' => 'Just google it',
   'summary' => 'Search',
   'category' => 'Example',
