@@ -566,7 +566,7 @@ class Headers
         @header('Vary: Save-Data, Accept-Encoding', false);
         #Set ETag
         if (!empty($string)) {
-            self::eTag(hash('sha3-256', $string).$postfix, $exit);
+            self::eTag(hash('sha3-512', $string).$postfix, $exit);
         }
     }
 

@@ -77,7 +77,7 @@ In case a file has been uploaded, you will get an array like below. It is useful
     'size' => 945001,
     #File MIME type
     'type' => 'image/jpeg',
-    #sha3-256 hash of the file
+    #sha3-512 hash of the file
     'hash' => 'bb345ba5253d677fe6bac0d553040ca62faa02347d316f30bc436009543c5d92',
     #Name of the field to which file was uploaded. For PUT will always be 'PUT'
     'field' => 'userfile',

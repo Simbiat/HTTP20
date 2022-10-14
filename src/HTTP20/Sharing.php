@@ -244,7 +244,7 @@ class Sharing
         #Process files based on method used
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             #Check that something was sent to us at all
-            if ((isset($_SERVER['CONTENT_LENGTH']) && intval($_SERVER['CONTENT_LENGTH']) === 0) || empty($_FILES) || empty($_POST)) {
+            if ((isset($_SERVER['CONTENT_LENGTH']) && intval($_SERVER['CONTENT_LENGTH']) === 0) || empty($_FILES)) {
                 return Headers::clientReturn('400', $exit);
             }
             #Standardize $_FILES and also count them
@@ -255,6 +255,7 @@ class Sharing
                     $totalFiles += count($files['name']);
                     foreach ($files['name'] as $key=>$file) {
                         $_FILES[$field][$key]['name'] = $file;
+                        $_FILES[$field][$key]['full_path'] = $files['full_path'][$key];
                         $_FILES[$field][$key]['type'] = $files['type'][$key];
                         $_FILES[$field][$key]['size'] = $files['size'][$key];
                         $_FILES[$field][$key]['tmp_name'] = $files['tmp_name'][$key];
@@ -263,12 +264,14 @@ class Sharing
                 } else {
                     $totalFiles += 1;
                     $_FILES[$field][0]['name'] = $files['name'];
+                    $_FILES[$field][0]['full_path'] = $files['full_path'];
                     $_FILES[$field][0]['type'] = $files['type'];
                     $_FILES[$field][0]['size'] = $files['size'];
                     $_FILES[$field][0]['tmp_name'] = $files['tmp_name'];
                     $_FILES[$field][0]['error'] = $files['error'];
+                    
                 }
-                unset($_FILES[$field]['name'], $_FILES[$field]['type'], $_FILES[$field]['size'], $_FILES[$field]['tmp_name'], $_FILES[$field]['error']);
+                unset($_FILES[$field]['name'], $_FILES[$field]['type'], $_FILES[$field]['size'], $_FILES[$field]['tmp_name'], $_FILES[$field]['error'], $_FILES[$field]['full_path']);
             }
             #Check number of files
             if ($totalFiles > $maxFiles) {
@@ -394,9 +397,9 @@ class Sharing
                                     unset($_FILES[$field][$key]);
                                 }
                             } else {
-                                #Set new name for the file. By default, we will be using hash of the file. Using sha3-256 since it has lower probability of collisions than md5, although we do lose some speed
+                                #Set new name for the file. By default, we will be using hash of the file. Using sha3-512 since it has lower probability of collisions than md5, although we do lose some speed
                                 #Hash is saved regardless, though, since it may be very useful
-                                $_FILES[$field][$key]['hash'] = hash_file('sha3-256', $file['tmp_name']);
+                                $_FILES[$field][$key]['hash'] = hash_file('sha3-512', $file['tmp_name']);
                                 if ($preserveNames) {
                                     $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                                 } else {
@@ -513,9 +516,9 @@ class Sharing
                 $name = basename(\Simbiat\SafeFileName::sanitize($name));
             }
             if (empty($name)) {
-                #Generate random name. Using 64 to be consistent with sha3-256 hash
+                #Generate random name. Using 64 to be consistent with sha3-512 hash
                 try {
-                    $name = hash('sha3-256', random_bytes(64)).'.put';
+                    $name = hash('sha3-512', random_bytes(64)).'.put';
                 } catch (\Throwable) {
                     #Use microseconds, if we somehow failed to get random value, since it''s unlikely we get more than 1 file upload at the same microsecond
                     $name = microtime().'.put';
@@ -618,7 +621,7 @@ class Sharing
                     $ext = 'PUT';
                 }
                 #Get hash
-                $hash = hash_file('sha3-256', $uploadDir.'/'.$name);
+                $hash = hash_file('sha3-512', $uploadDir.'/'.$name);
                 #Set new name
                 $newName = $hash.'.'.$ext;
                 #Attempt to move the file
@@ -830,7 +833,7 @@ class Sharing
             }
             #Send Last Modified, eTag and Cache-Control headers
             Headers::lastModified(filemtime($filepath), true);
-            Headers::eTag(hash_file('sha3-256', $filepath), true);
+            Headers::eTag(hash_file('sha3-512', $filepath), true);
             Headers::cacheControl('', $cacheStrat, true);
             #Send MIME types. Add Charset to those, that are recommended to have it
             if (preg_match('/^(text\/.*)|(image\/svg\+xml)|(application\/(.*javascript|.*json|.*xml))$/i', $mimeType) === 1) {
