@@ -433,7 +433,7 @@ class Sharing
                                     } else {
                                         #Add it to the list of successfully uploaded files if we are not preserving names, since that implies relative uniqueness of them, thus we are most likely seeing the same file
                                         if ($preserveNames === false) {
-                                            $uploadedFiles[] = ['server_name' => $_FILES[$field][$key]['new_name'], 'user_name' => $_FILES[$field][$key]['name'], 'size' => $file['size'], 'type' => $_FILES[$field][$key]['type'], 'hash' => $_FILES[$field][$key]['hash'], 'field' => $field];
+                                            $uploadedFiles[] = ['server_name' => $_FILES[$field][$key]['new_name'], 'server_path' => $finalPath, 'user_name' => $_FILES[$field][$key]['name'], 'size' => $file['size'], 'type' => $_FILES[$field][$key]['type'], 'hash' => $_FILES[$field][$key]['hash'], 'field' => $field];
                                         }
                                         #Remove the file from global list
                                         unset($_FILES[$field][$key]);
@@ -465,7 +465,7 @@ class Sharing
                     foreach ($files as $file) {
                         #Move file, but only if it's not already present in destination
                         if (!is_file($finalPath.'/'.$file['new_name']) && move_uploaded_file($file['tmp_name'], $finalPath.'/'.$file['new_name']) === true) {
-                            $uploadedFiles[] = ['server_name' => $file['new_name'], 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
+                            $uploadedFiles[] = ['server_name' => $file['new_name'], 'server_path' => $finalPath, 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
                         } else {
                             if ($intolerant) {
                                 return $uploadedFiles;
@@ -629,7 +629,7 @@ class Sharing
                     return Headers::clientReturn('500', $exit);
                 }
                 #Add to array. Using array here for consistency with POST method. Field is reported as PUT to indicate the method. It's advisable not to use it for fields if you use POST method as well
-                $uploadedFiles[] = ['server_name' => $newName, 'user_name' => $name, 'size' => $client_size, 'type' => $filetype, 'hash' => $hash, 'field' => 'PUT'];
+                $uploadedFiles[] = ['server_name' => $newName, 'server_path' => $destPath, 'user_name' => $name, 'size' => $client_size, 'type' => $filetype, 'hash' => $hash, 'field' => 'PUT'];
             }
         }
         if (empty($uploadedFiles)) {
