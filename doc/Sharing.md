@@ -81,6 +81,8 @@ In case a file has been uploaded, you will get an array like below. It is useful
     'hash' => 'bb345ba5253d677fe6bac0d553040ca62faa02347d316f30bc436009543c5d92',
     #Name of the field to which file was uploaded. For PUT will always be 'PUT'
     'field' => 'userfile',
+    #Full path on server
+    'server_path' => '/path/to/file/bb345ba5253d677fe6bac0d553040ca62faa02347d316f30bc436009543c5d92.jpg'
   ],
 ]
 ```

@@ -9,14 +9,14 @@ class Atom
     {
         #Validate title
         if (empty($title)) {
-            Headers::clientReturn('500', false);
+            Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         } else {
             $feed_settings['title'] = $title;
         }
         #validate text type
         if (!in_array(strtolower($textType), ['text', 'html', 'xhtml'])) {
-            Headers::clientReturn('500', false);
+            Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
         #Validate content
@@ -30,7 +30,7 @@ class Atom
             if (filter_var($id, FILTER_VALIDATE_URL)) {
                 $feed_settings['id'] = Common::htmlToRFC3986($id);
             } else {
-                Headers::clientReturn('500', false);
+                Headers::clientReturn(500, false);
                 throw new \UnexpectedValueException('$id provided is not a valid URI');
             }
         }
@@ -195,7 +195,7 @@ class Atom
     private static function atomAddAttributes(\DOMElement $element, array $topTag, array $attributes): void
     {
         if (empty($attributes)) {
-            Headers::clientReturn('500', false);
+            Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Empty list of attributes provided for `atomAddAttributes` function');
         }
         foreach ($attributes as $attribute) {

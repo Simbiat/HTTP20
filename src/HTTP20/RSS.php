@@ -9,7 +9,7 @@ class RSS
     {
         #Validate title
         if (empty($title)) {
-            Headers::clientReturn('500', false);
+            Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         } else {
             $feed_settings['title'] = $title;
@@ -21,7 +21,7 @@ class RSS
             if (filter_var($feedLink, FILTER_VALIDATE_URL)) {
                 $feed_settings['link'] = Common::htmlToRFC3986($feedLink);
             } else {
-                Headers::clientReturn('500', false);
+                Headers::clientReturn(500, false);
                 throw new \UnexpectedValueException('$feedLink provided is not a valid URI');
             }
         }
@@ -69,38 +69,38 @@ class RSS
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
-                Headers::clientReturn('500', false);
+                Headers::clientReturn(500, false);
                 throw new \UnexpectedValueException('One or more attributes required for `cloud` tag are missing in settings for the feed');
             }
         }
         #Check TTL
         if (!empty($feed_settings['ttl']) && !is_numeric($feed_settings['ttl'])) {
-            Headers::clientReturn('500', false);
+            Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('`ttl` provided in settings for the feed is not numeric');
         }
         #Check image
         if (!empty($feed_settings['image'])) {
             if (empty($feed_settings['image']['url'])) {
-                Headers::clientReturn('500', false);
+                Headers::clientReturn(500, false);
                 throw new \UnexpectedValueException('`url` property for `image` tag is missing in settings for the feed');
             }
             if (!empty($feed_settings['image']['width'])) {
                 if (!is_numeric($feed_settings['image']['width'])) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
                 if (intval($feed_settings['image']['width']) > 144) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is more than 144 in settings for the feed');
                 }
             }
             if (!empty($feed_settings['image']['height'])) {
                 if (!is_numeric($feed_settings['image']['height'])) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
                 if (intval($feed_settings['image']['height']) > 400) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is more than 400 in settings for the feed');
                 }
             }
@@ -109,11 +109,11 @@ class RSS
         if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
             foreach ($feed_settings['skipHours'] as $hour) {
                 if (!is_numeric($hour)) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
                 if (intval($hour) < 0 || intval($hour) > 23) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour property for `skipHours` tag is outside of 0-23 range in settings for the feed');
                 }
             }
@@ -122,7 +122,7 @@ class RSS
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
                 if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
-                    Headers::clientReturn('500', false);
+                    Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
                 }
             }

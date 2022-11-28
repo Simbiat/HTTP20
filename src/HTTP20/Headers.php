@@ -118,7 +118,7 @@ class Headers
     public const fetchMode = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
     public const fetchUser = ['?0', '?1'];
     public const fetchDest = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
-    #List of Set-Fetch-Destinations that are considered "script-like", that is they are, most likely, triggered by a script (<script> or similar object)
+    #List of Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (<script> or similar object)
     public const scriptLike = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
     #List of standard HTTP status codes
     public const HTTPCodes = [
@@ -149,7 +149,7 @@ class Headers
         @header('Allow: '.implode(', ', $allowMethods));
         #Handle wrong type of method from client
         if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allowMethods)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allowMethods))) {
-            self::clientReturn('405');
+            self::clientReturn(405);
         }
         #Sanitize Origins list
         foreach ($allowOrigins as $key=>$origin) {
@@ -167,7 +167,7 @@ class Headers
                 @header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
             } else {
                 #Send proper header denying access and stop processing
-                self::clientReturn('403');
+                self::clientReturn(403);
             }
         } else {
             #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
@@ -435,7 +435,7 @@ class Headers
         }
         if ($badRequest) {
             #Send proper header denying access and stop processing
-            self::clientReturn('403');
+            self::clientReturn(403);
         }
     }
 
@@ -526,7 +526,7 @@ class Headers
            $IfModifiedSince = strtotime(substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5));
            if ($IfModifiedSince >= $modTime) {
                 #If content has not been modified - return 304
-               self::clientReturn('304', $exit);
+               self::clientReturn(304, $exit);
             }
         }
     }
@@ -579,22 +579,24 @@ class Headers
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
                 #If content has not been modified - return 304
-                self::clientReturn('304', $exit);
+                self::clientReturn(304, $exit);
             }
         }
         #Return error if If-Match was sent, and it's different from our etag
         if (isset($_SERVER['HTTP_IF_MATCH'])) {
             if (trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
-                self::clientReturn('412', $exit);
+                self::clientReturn(412, $exit);
             }
         }
     }
 
     #Function to return to client and optionally force-close connection
-    public static function clientReturn(string $code = '500 Internal Server Error', bool $exit = true): bool
+    public static function clientReturn(string|int $code = 500, bool $exit = true): int
     {
         #Generate response
         if (is_numeric($code)) {
+            #Enforce string for convenience
+            $code = strval($code);
             if (isset(self::HTTPCodes[$code])) {
                 $response = $code.' '.self::HTTPCodes[$code];
             } else {
@@ -608,40 +610,36 @@ class Headers
         if (preg_match('/^([12345]\d{2})( .+)$/', $response) !== 1) {
             $response = '500 Internal Server Error';
         }
-        if (preg_match('/^([123]\d{2})( .+)$/', $response) === 0) {
-            $positive = true;
-        } else {
-            $positive = false;
-        }
+        $numericCode = intval(preg_replace('/^([123]\d{2})( .+)$/', '$1', $response));
         #Send response header
         @header($_SERVER['SERVER_PROTOCOL'].' '.$response);
         if ($exit) {
             Common::forceClose();
         }
-        return $positive;
+        return $numericCode;
     }
 
     #Function to handle redirects
     public static function redirect(string $newURI, bool $permanent = true, bool $preserveMethod = true, bool $forceGET = false): void
     {
         #Set default as precaution
-        $code = '500 Internal Server Error';
+        $code = 500;
         #If we want to enforce GET method, we can use 303: it tells client to retrieve a different page using GET method, even if original was not GET
         if ($forceGET) {
-            $code = '303 See Other';
+            $code = 303;
         } else {
             #Permanent redirect without change of method
             if ($permanent && $preserveMethod) {
-                $code = '308 Permanent Redirect';
+                $code = 308;
             #Temporary redirect without change of method
             } elseif (!$permanent && $preserveMethod) {
-                $code = '307 Temporary Redirect';
+                $code = 307;
             #Permanent redirect allowing change of method
             } elseif ($permanent && !$preserveMethod) {
-                $code = '301 Moved Permanently';
+                $code = 301;
             #Temporary redirect allowing change of method
             } elseif (!$permanent && !$preserveMethod) {
-                $code = '302 Found';
+                $code = 302;
             }
         }
         #Validate URI
@@ -650,7 +648,7 @@ class Headers
             @header('Location: '.$newURI);
         } else {
             #Update code to 500, since something must have gone wrong
-            $code = '500 Internal Server Error';
+            $code = 500;
         }
         #Send code and enforce connection closure
         self::clientReturn($code);
@@ -925,7 +923,8 @@ class Headers
                     return true;
                 } else {
                     #Send 406 Not Acceptable
-                    return self::clientReturn('406', $exit);
+                    self::clientReturn(406, $exit);
+                    return false;
                 }
             } else {
                 #Get the one with the highest priority and return its value
