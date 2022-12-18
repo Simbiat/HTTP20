@@ -145,12 +145,12 @@ audio, canvas, iframe, img, svg, video {
 }
 
 .timeline_responsibilitiesList {
-    list-style: '\2692';
+    list-style: '⚒';
     margin-top: 0;
 }
 
 .timeline_achievementsList {
-    list-style: '\1F3C6';
+    list-style: '🏆';
     margin-top: 0;
 }
 .timeline_shortcut {
