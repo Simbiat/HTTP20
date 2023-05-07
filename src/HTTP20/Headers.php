@@ -35,7 +35,7 @@ class Headers
         #Blocking images, because images can be used to inject scripts:
         #https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
         #https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
-        'img-src' => '\'none\'', 'manifest-src' => '\'self\'', 'media-src' => '\'self\'', 'object-src' => '\'none\'', 'prefetch-src' => '\'self\'', 'script-src' => '\'none\'', 'script-src-elem' => '\'none\'', 'script-src-attr' => '\'none\'', 'style-src' => '\'none\'', 'style-src-elem' => '\'none\'', 'style-src-attr' => '\'none\'', 'worker-src' => '\'self\'',
+        'img-src' => '\'none\'', 'manifest-src' => '\'self\'', 'media-src' => '\'self\'', 'object-src' => '\'none\'', 'script-src' => '\'none\'', 'script-src-elem' => '\'none\'', 'script-src-attr' => '\'none\'', 'style-src' => '\'none\'', 'style-src-elem' => '\'none\'', 'style-src-attr' => '\'none\'', 'worker-src' => '\'self\'',
         #Document directives
         'base-uri' => '\'self\'', 'plugin-types' => '', 'sandbox' => '',
         #Navigate directives
