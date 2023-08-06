@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Simbiat\HTTP20;
 
+use Simbiat\HomePage;
+
 class Headers
 {
     public static array $_PUT = [];
@@ -320,7 +322,7 @@ class Headers
     #https://www.w3.org/TR/fetch-metadata/
     #https://fetch.spec.whatwg.org/
     #https://web.dev/fetch-metadata/
-    public static function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false): void
+    public static function secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = true): void
     {
         #Set flag for processing
         $badRequest = false;
@@ -346,7 +348,7 @@ class Headers
                 $site = array_intersect($site, self::fetchSite);
                 if (empty($site)) {
                     #Allow everything
-                    $site = ['cross-site', 'same-origin', 'same-site', 'none'];
+                    $site = self::fetchSite;
                 }
                 $mode = array_intersect($mode, self::fetchMode);
                 if (empty($mode)) {

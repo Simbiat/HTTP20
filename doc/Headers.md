@@ -152,11 +152,11 @@ Allows controlling different features through `Feature-Policy` header. It should
 
 ## secFetch
 ```php
-secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = false);
+secFetch(array $site = [], array $mode = [], array $user = [], array $dest = [], bool $strict = true);
 ```
 Allows validation of Sec-Fetch-* headers from client against the provided list of allowed values. Each of the 4 `array` values represent a list of values of respective Sec-Fetch-* header, which you allow to be processed. For more information refer https://www.w3.org/TR/fetch-metadata/
 
-`$strict` allows enforcing compliance with supported values only. Current W3C allows ignoring headers, if not sent or have unsupported values, but we may want to be stricter by setting this option to `true`.
+`$strict` allows enforcing compliance with supported values only. Current W3C allows ignoring headers, but we want to be stricter so setting this to `true` by default. You may want to set to `false` to in situations, when your site is parsed by certain bots (including those from search engines), since they usually do not set this value.
 
 **Be mindful**: unlike `security`, which, essentially, attempts to be as secure as possible by default, this may be too lax for some use-cases. It is recommended, that you call it with different parameters depending on what is calling what on your server. For example, you may want to restrict certain code getting called with `Sec-Fetch-Destination: image`, especially, if it's a `POST` request, let alone `DELETE`. Thus, the best way to use this is in some `switch` or `if-elseif-else` scenario, rather than universally.
 
