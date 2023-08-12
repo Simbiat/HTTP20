@@ -326,107 +326,88 @@ class Headers
     {
         #Set flag for processing
         $badRequest = false;
-        #Check if Sec-Fetch was passed at all (older browsers will not use it). Process it only if it's present.
-        if (isset($_SERVER['HTTP_SEC_FETCH_SITE'])) {
-            #Check if support values are sent in headers
+        #Check if Sec-Fetch was passed at all (older browsers or bots may not use it). Process it only if it's present.
+        if (isset($_SERVER['HTTP_SEC_FETCH_SITE']) && in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::fetchSite)) {
+            #Setting defaults
+            $site = array_intersect($site, self::fetchSite);
+            if (empty($site)) {
+                #Allow everything
+                $site = self::fetchSite;
+            }
+            $mode = array_intersect($mode, self::fetchMode);
+            if (empty($mode)) {
+                #Allow all modes
+                $mode = self::fetchMode;
+            }
+            $user = array_intersect($user, self::fetchUser);
+            if (empty($user)) {
+                #Allow only actions triggered by user activation
+                $user = ['?1'];
+            }
+            $dest = array_intersect($dest, self::fetchDest);
+            if (empty($dest)) {
+                $dest = [
+                    #Allow navigation (including from frames)
+                    'document', 'embed', 'frame', 'iframe',
+                    #Allow common elements
+                    'audio', 'font', 'image', 'style', 'video', 'track', 'manifest',
+                    #Allow empty
+                    'empty',
+                ];
+                #If we have only 'same-origin' and/or 'none', allow script as well, because otherwise default settings will prevent access to JS files hosted on same domain
+                if (in_array($site, [['same-origin', 'none'], ['same-origin'], ['none']])) {
+                    $dest[] = 'script';
+                }
+            }
+            #Actual validation
             if (
-                in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::fetchSite) &&
+                !in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site) ||
                 (
-                    empty($_SERVER['HTTP_SEC_FETCH_MODE']) ||
-                    in_array($_SERVER['HTTP_SEC_FETCH_MODE'], self::fetchMode)
-                ) &&
+                    #Mode should be ignored by default if it's any value outside the spec, which implies it can be empty
+                    !empty($_SERVER['HTTP_SEC_FETCH_MODE']) && $strict &&
+                    !in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode)
+                ) ||
                 (
-                    empty($_SERVER['HTTP_SEC_FETCH_USER']) ||
-                    in_array($_SERVER['HTTP_SEC_FETCH_USER'], self::fetchUser)
-                ) &&
+                    #User is allowed to be missing by the spec
+                    !empty($_SERVER['HTTP_SEC_FETCH_USER']) && $strict &&
+                    !in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user)
+                ) ||
                 (
-                    empty($_SERVER['HTTP_SEC_FETCH_DEST']) ||
-                    in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::fetchDest)
+                    #Dest should be ignored by default if it's any value outside the spec, which implies it can be empty
+                    !empty($_SERVER['HTTP_SEC_FETCH_DEST']) && $strict &&
+                    !in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest)
                 )
             ) {
-                #Setting defaults
-                $site = array_intersect($site, self::fetchSite);
-                if (empty($site)) {
-                    #Allow everything
-                    $site = self::fetchSite;
-                }
-                $mode = array_intersect($mode, self::fetchMode);
-                if (empty($mode)) {
-                    #Allow all modes
-                    $mode = self::fetchMode;
-                }
-                $user = array_intersect($user, self::fetchUser);
-                if (empty($user)) {
-                    #Allow only actions triggered by user activation
-                    $user = ['?1'];
-                }
-                $dest = array_intersect($dest, self::fetchDest);
-                if (empty($dest)) {
-                    $dest = [
-                        #Allow navigation (including from frames)
-                        'document', 'embed', 'frame', 'iframe',
-                        #Allow common elements
-                        'audio', 'font', 'image', 'style', 'video', 'track', 'manifest',
-                        #Allow empty
-                        'empty',
-                    ];
-                    #If we have only 'same-origin' and/or 'none', allow script as well, because otherwise default settings will prevent access to JS files hosted on same domain
-                    if (in_array($site, [['same-origin', 'none'], ['same-origin'], ['none']])) {
-                        $dest[] = 'script';
-                    }
-                }
-                #Actual validation
-                if (
-                    !in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site) ||
-                    (
-                        !empty($_SERVER['HTTP_SEC_FETCH_MODE']) &&
-                        !in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode)
-                    ) ||
-                    (
-                        !empty($_SERVER['HTTP_SEC_FETCH_USER']) &&
-                        !in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user)
-                    ) ||
-                    (
-                        !empty($_SERVER['HTTP_SEC_FETCH_DEST']) &&
-                        !in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest)
-                    )
-                ) {
-                    $badRequest = true;
-                } else {
-                    #There is also a recommendation to check whether a script-like is requesting certain MIME types
-                    #Normally this should be done by browser, but we can do that as well and be independent of their logic
-                    if (!empty($_SERVER['HTTP_SEC_FETCH_DEST']) && in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::scriptLike)) {
-                        #Attempt to get content-type headers
-                        $contentType = '';
-                        #This header may be present in some cases
-                        if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
-                            $contentType = $_SERVER['HTTP_CONTENT_TYPE'];
-                        } else {
-                            #This is a standard header that should be present in PHP. Usually in case of POST method
-                            if (isset($_SERVER['CONTENT_TYPE'])) {
-                                $contentType = $_SERVER['CONTENT_TYPE'];
-                            }
-                        }
-                        #Cache mimeRegex
-                        $mimeRegex = (new Common)::mimeRegex;
-                        #Check if we have already sent our own content-type header
-                        foreach (headers_list() as $header) {
-                            if (str_starts_with($header, 'Content-type:') === true) {
-                                #Get MIME
-                                $contentType = preg_replace('/^(Content-type:\s*)('.$mimeRegex.')$/', '$2', $header);
-                                break;
-                            }
-                        }
-                        #If MIME is found, and it matches CSV, audio, image or video - reject
-                        if (!empty($contentType) && preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $contentType) === 1) {
-                            $badRequest = true;
-                        }
-                    }
-                }
+                $badRequest = true;
             } else {
-                #Reject if we want to be stricter than W3C
-                if ($strict) {
-                    $badRequest = true;
+                #There is also a recommendation to check whether a script-like is requesting certain MIME types
+                #Normally this should be done by browser, but we can do that as well and be independent of their logic
+                if (!empty($_SERVER['HTTP_SEC_FETCH_DEST']) && in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::scriptLike)) {
+                    #Attempt to get content-type headers
+                    $contentType = '';
+                    #This header may be present in some cases
+                    if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
+                        $contentType = $_SERVER['HTTP_CONTENT_TYPE'];
+                    } else {
+                        #This is a standard header that should be present in PHP. Usually in case of POST method
+                        if (isset($_SERVER['CONTENT_TYPE'])) {
+                            $contentType = $_SERVER['CONTENT_TYPE'];
+                        }
+                    }
+                    #Cache mimeRegex
+                    $mimeRegex = (new Common)::mimeRegex;
+                    #Check if we have already sent our own content-type header
+                    foreach (headers_list() as $header) {
+                        if (str_starts_with($header, 'Content-type:') === true) {
+                            #Get MIME
+                            $contentType = preg_replace('/^(Content-type:\s*)('.$mimeRegex.')$/', '$2', $header);
+                            break;
+                        }
+                    }
+                    #If MIME is found, and it matches CSV, audio, image or video - reject
+                    if (!empty($contentType) && preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $contentType) === 1) {
+                        $badRequest = true;
+                    }
                 }
             }
         } else {
