@@ -5,13 +5,13 @@ namespace Simbiat\HTTP20;
 class Common
 {
     #Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47
-    public const langEncRegex = '(UTF-8|ISO-8859-1|[!#$%&+\-\^_`{}~a-zA-Z0-9]{1,})\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?:(?<language>(?:[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*)(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
+    public const string langEncRegex = '(UTF-8|ISO-8859-1|[!#$%&+\-\^_`{}~a-zA-Z0-9]{1,})\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?:(?<language>(?:[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*)(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
     #Langeauge values as per https://www.ietf.org/rfc/bcp/bcp47.txt (essentially just part of the above value)
-    public const langTagRegex = '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?:(?<language>(?:[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*)(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
+    public const string langTagRegex = '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?:(?<language>(?:[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?)|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*)(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
     #Regex for MIME type
-    public const mimeRegex = '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
+    public const string mimeRegex = '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
     #Linkage of extensions to MIME types
-    public const extToMime = [
+    public const array extToMime = [
         'aw' => 'application/applixware',
         'atom' => 'application/atom+xml',
         'atomcat' => 'application/atomcat+xml',
@@ -741,23 +741,19 @@ class Common
     public static function valueToTime(string|int|float|null $time, string $format, string $validRegex = ''): string
     {
         #If we want to use a constant, but it was sent as a string
-        if (str_starts_with(strtoupper($format), 'DATE_')) {
+        if (str_starts_with(mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
             $format = constant($format);
         }
         if (empty($time)) {
-            $time = date($format, time());
+            $time = date($format);
+        } elseif (is_numeric($time)) {
+            #Ensure we use int
+            $time = date($format, (int)$time);
+        } elseif (is_string($time)) {
+            #Attempt to convert string to time
+            $time = date($format, strtotime($time));
         } else {
-            if (is_numeric($time)) {
-                #Ensure we use int
-                $time = date($format, intval($time));
-            } else {
-                if (is_string($time)) {
-                    #Attempt to convert string to time
-                    $time = date($format, strtotime($time));
-                } else {
-                    throw new \UnexpectedValueException('Time provided to `valueToTime` is neither numeric or string');
-                }
-            }
+            throw new \UnexpectedValueException('Time provided to `valueToTime` is neither numeric or string');
         }
         if ($format === 'c' || $format === \DATE_ATOM) {
             $validRegex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
@@ -779,9 +775,7 @@ class Common
         if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
             #Attempt brotli compression, if available and client supports it
             if (extension_loaded('brotli') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
-                #Compress string. Suppressing PHPStorm inspection, since it does not know the extension (at the time of writing)
-                /** @noinspection PhpUndefinedFunctionInspection */
-                /** @noinspection PhpUndefinedConstantInspection */
+                #Compress string
                 $string = brotli_compress($string, 11, BROTLI_TEXT);
                 #Send header with format
                 @header('Content-Encoding: br');
@@ -798,7 +792,7 @@ class Common
         }
         Headers::cacheControl($string, $cacheStrat, true, $postfix);
         #Send header with length
-        @header('Content-Length: '.strlen($string));
+        @header('Content-Length: '.mb_strlen($string, 'UTF-8'));
         #Some HTTP methods do not support body, thus we need to ensure it's not sent.
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
         if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])) {
@@ -813,13 +807,12 @@ class Common
     #Function to check if string is a valid language code
     public static function LangCodeCheck(string $string): bool
     {
-        if (in_array(strtolower($string),
+        if (in_array(mb_strtolower($string, 'UTF-8'),
             ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk']
             )) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     #Function does the same as rawurlencode but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use htmlentities, but otherwise break HTML/XML
@@ -828,9 +821,8 @@ class Common
     {
         if ($full) {
             return str_replace(['\'', '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
-        } else {
-            return str_replace(['&', '<'], ['%26', '%3C'], $string);
         }
+        return str_replace(['&', '<'], ['%26', '%3C'], $string);
     }
 
     #Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that.
@@ -861,17 +853,14 @@ class Common
                     #Add contents
                     $content .= file_get_contents($file);
                 }
-            } else {
-                #Check if directory
-                if (is_dir($file)) {
-                    $fileList = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
-                    foreach ($fileList as $subFile) {
-                        if (strcasecmp($subFile->getExtension(), $type) === 0) {
-                            #Add date to list
-                            $dates[] = $subFile->getMTime();
-                            #Add contents
-                            $content .= file_get_contents($subFile->getRealPath());
-                        }
+            } elseif (is_dir($file)) {
+                $fileList = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                foreach ($fileList as $subFile) {
+                    if (strcasecmp($subFile->getExtension(), $type) === 0) {
+                        #Add date to list
+                        $dates[] = $subFile->getMTime();
+                        #Add contents
+                        $content .= file_get_contents($subFile->getRealPath());
                     }
                 }
             }
@@ -883,7 +872,7 @@ class Common
         }
         #Minify
         if ($minify === true) {
-            switch (strtolower($type)) {
+            switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     $content = preg_replace(
                         [
@@ -930,7 +919,7 @@ class Common
                             // Replace `(border|outline):none` with `(border|outline):0`
                             '#(?<=[{;])(border|outline):none(?=[;}!])#',
                             // Remove empty selector(s)
-                            '#(/\*(?>.*?\*/))|(^|[{}])(?:[^\s{}]+){}#s'
+                            '#(/\*(?>.*?\*/))|(^|[{}])[^\s{}]+{}#s'
                         ],
                         [
                             '$1',
@@ -949,7 +938,7 @@ class Common
                     break;
                 case 'html':
                     $content = preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
-                        function($matches) {
+                        static function($matches) {
                             return '<' . $matches[1] . preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]) . $matches[3] . '>';
                         }, str_replace("\r", '', $content));
                     $content = preg_replace(
@@ -989,7 +978,7 @@ class Common
         }
         if (empty($toFile)) {
             #Send appropriate header
-            switch (strtolower($type)) {
+            switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     @header('Content-Type: application/javascript; charset=utf-8');
                     break;

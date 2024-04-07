@@ -27,7 +27,7 @@ cacheControl(string $string, string $cacheStrat = '', bool $exit = false, string
 ```
 Allows you to send appropriate `Cache-Control` headers (refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control for explanation on parameters):
 ```php
-switch (strtolower($cacheStrat)) {
+switch (mb_strtolower($cacheStrat, 'UTF-8')) {
 	case 'aggressive':
 	    header('Cache-Control: max-age=31536000, immutable, no-transform');
 	    break;

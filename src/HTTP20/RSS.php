@@ -5,25 +5,25 @@ namespace Simbiat\HTTP20;
 class RSS
 {
     #Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
+    /**
+     * @throws \DOMException
+     */
     public static function RSS(string $title, array $entries, string $feedLink = '', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
-        } else {
-            $feed_settings['title'] = $title;
         }
+        $feed_settings['title'] = $title;
         #Check feed link
         if (empty($feedLink)) {
             $feed_settings['link'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+        } elseif (filter_var($feedLink, FILTER_VALIDATE_URL)) {
+            $feed_settings['link'] = Common::htmlToRFC3986($feedLink);
         } else {
-            if (filter_var($feedLink, FILTER_VALIDATE_URL)) {
-                $feed_settings['link'] = Common::htmlToRFC3986($feedLink);
-            } else {
-                Headers::clientReturn(500, false);
-                throw new \UnexpectedValueException('$feedLink provided is not a valid URI');
-            }
+            Headers::clientReturn(500, false);
+            throw new \UnexpectedValueException('$feedLink provided is not a valid URI');
         }
         #Validate content
         if (!empty($entries)) {
@@ -34,10 +34,9 @@ class RSS
                 if (!empty($entry['enclosure_url'])) {
                     if (empty($entry['enclosure_length']) || empty($entry['enclosure_type'])) {
                         unset($entries[$key]);continue;
-                    } else {
-                        if (is_numeric($entry['enclosure_length'])) {
-                            unset($entries[$key]);continue;
-                        }
+                    }
+                    if (is_numeric($entry['enclosure_length'])) {
+                        unset($entries[$key]);continue;
                     }
                 }
                 #Add <source> data
@@ -89,7 +88,7 @@ class RSS
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
-                if (intval($feed_settings['image']['width']) > 144) {
+                if ((int)$feed_settings['image']['width'] > 144) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is more than 144 in settings for the feed');
                 }
@@ -99,7 +98,7 @@ class RSS
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
-                if (intval($feed_settings['image']['height']) > 400) {
+                if ((int)$feed_settings['image']['height'] > 400) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is more than 400 in settings for the feed');
                 }
@@ -112,7 +111,7 @@ class RSS
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
-                if (intval($hour) < 0 || intval($hour) > 23) {
+                if ((int)$hour < 0 || (int)$hour > 23) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour property for `skipHours` tag is outside of 0-23 range in settings for the feed');
                 }
@@ -140,10 +139,11 @@ class RSS
         #Create root element
         $root = $version->appendChild($feed->createElement('channel'));
         #Add atom:link
-        $atom = $root->appendChild($feed->createElement('atom:link'));
+        $atom = $feed->createElement('atom:link');
         $atom->setAttribute('href', Common::htmlToRFC3986($feed_settings['link']));
         $atom->setAttribute('rel', 'self');
         $atom->setAttribute('type', 'application/rss+xml');
+        $root->appendChild($atom);
         #Add global mandatory feed tags
         $root->appendChild($feed->createElement('title', $feed_settings['title']));
         $root->appendChild($feed->createElement('link', Common::htmlToRFC3986($feed_settings['link'])));
@@ -152,7 +152,7 @@ class RSS
         $root->appendChild($feed->createElement('pubDate', $feed_settings['pubDate']));
         $root->appendChild($feed->createElement('lastBuildDate', $feed_settings['lastBuildDate']));
         if (!empty($feed_settings['language']) && Common::LangCodeCheck($feed_settings['language'])) {
-            $root->appendChild($feed->createElement('language', strtolower($feed_settings['language'])));
+            $root->appendChild($feed->createElement('language', mb_strtolower($feed_settings['language'], 'UTF-8')));
         }
         if (!empty($feed_settings['copyright'])) {
             $root->appendChild($feed->createElement('copyright', $feed_settings['copyright']));
@@ -165,15 +165,16 @@ class RSS
         }
         #Add cloud details (rssCloud)
         if (!empty($feed_settings['cloud'])) {
-            $cloud = $root->appendChild($feed->createElement('cloud'));
+            $cloud = $feed->createElement('cloud');
             $cloud->setAttribute('domain', $feed_settings['cloud']['domain']);
             $cloud->setAttribute('port', $feed_settings['cloud']['port']);
             $cloud->setAttribute('path', $feed_settings['cloud']['path']);
             $cloud->setAttribute('registerProcedure', $feed_settings['cloud']['registerProcedure']);
             $cloud->setAttribute('protocol', $feed_settings['cloud']['protocol']);
+            $root->appendChild($cloud);
         }
         if (!empty($feed_settings['ttl'])) {
-            $root->appendChild($feed->createElement('ttl', strval(intval($feed_settings['ttl']))));
+            $root->appendChild($feed->createElement('ttl', (string)(int)$feed_settings['ttl']));
         }
         #Add categories
         if (!empty($feed_settings['categories']) && is_array($feed_settings['categories'])) {
@@ -188,10 +189,10 @@ class RSS
             $image->appendChild($feed->createElement('title', $feed_settings['title']));
             $image->appendChild($feed->createElement('link', Common::htmlToRFC3986($feed_settings['link'])));
             if (!empty($feed_settings['image']['width'])) {
-                $image->appendChild($feed->createElement('width', strval(intval($feed_settings['image']['width']))));
+                $image->appendChild($feed->createElement('width', (string)(int)$feed_settings['image']['width']));
             }
             if (!empty($feed_settings['image']['height'])) {
-                $image->appendChild($feed->createElement('height', strval(intval($feed_settings['image']['height']))));
+                $image->appendChild($feed->createElement('height', (string)(int)$feed_settings['image']['height']));
             }
         }
         #Add skipDays
@@ -225,6 +226,9 @@ class RSS
     }
 
     #Helper function to add actual entries
+    /**
+     * @throws \DOMException
+     */
     private static function rssAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry): void
     {
         if (!empty($entry['title'])) {
@@ -256,7 +260,7 @@ class RSS
         if (!empty($entry['enclosure_url'])) {
             $enclosure = $element->appendChild($feed->createElement('enclosure'));
             $enclosure->setAttribute('url', $entry['enclosure_url']);
-            $enclosure->setAttribute('length', strval(intval($entry['enclosure_length'])));
+            $enclosure->setAttribute('length', (string)(int)$entry['enclosure_length']);
             $enclosure->setAttribute('type', $entry['enclosure_type']);
         }
     }

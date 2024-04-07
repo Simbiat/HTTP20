@@ -5,17 +5,19 @@ namespace Simbiat\HTTP20;
 class Atom
 {
     #Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
+    /**
+     * @throws \DOMException
+     */
     public static function Atom(string $title, array $entries, string $id = '', string $textType = 'text', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
-        } else {
-            $feed_settings['title'] = $title;
         }
+        $feed_settings['title'] = $title;
         #validate text type
-        if (!in_array(strtolower($textType), ['text', 'html', 'xhtml'])) {
+        if (!in_array(mb_strtolower($textType, 'UTF-8'), ['text', 'html', 'xhtml'])) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
@@ -26,13 +28,11 @@ class Atom
         #Check id
         if (empty($id)) {
             $feed_settings['id'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+        } elseif (filter_var($id, FILTER_VALIDATE_URL)) {
+            $feed_settings['id'] = Common::htmlToRFC3986($id);
         } else {
-            if (filter_var($id, FILTER_VALIDATE_URL)) {
-                $feed_settings['id'] = Common::htmlToRFC3986($id);
-            } else {
-                Headers::clientReturn(500, false);
-                throw new \UnexpectedValueException('$id provided is not a valid URI');
-            }
+            Headers::clientReturn(500, false);
+            throw new \UnexpectedValueException('$id provided is not a valid URI');
         }
         #Check time
         if (empty($feed_settings['updated'])) {
@@ -73,8 +73,8 @@ class Atom
         $root = $feed->appendChild($feed->createElement('feed'));
         $root->setAttribute('xmlns', 'https://www.w3.org/2005/Atom');
         #Add global mandatory feed tags
-        $title = $root->appendChild($feed->createElement('title', $feed_settings['title']));
-        $title->setAttribute('type', $textType);
+        $titleDOM = $root->appendChild($feed->createElement('title', $feed_settings['title']));
+        $titleDOM->setAttribute('type', $textType);
         $root->appendChild($feed->createElement('updated', $feed_settings['updated']));
         $root->appendChild($feed->createElement('id', $feed_settings['id']));
         #Add recommended feed tags
@@ -148,19 +148,16 @@ class Atom
             }
             if (empty($elementToVal[$element])) {
                 unset($elements[$key]);continue;
-            } else {
-                if (!is_string($elementToVal[$element])) {
-                    unset($elements[$key]);continue;
-                }
+            }
+            if (!is_string($elementToVal[$element])) {
+                unset($elements[$key]);continue;
             }
             if ($type === 'link') {
                 if (!filter_var($elementToVal['href'], FILTER_VALIDATE_URL)) {
                     unset($elements[$key]);continue;
                 }
-                if (!empty($elementToVal['rel'])) {
-                    if (!in_array($elementToVal['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
-                        unset($elements[$key]);continue;
-                    }
+                if (!empty($elementToVal['rel']) && !in_array($elementToVal['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
+                    unset($elements[$key]);continue;
                 }
             }
             if ($type === 'entry') {
@@ -178,6 +175,9 @@ class Atom
     }
 
     #Helper function to add some elements
+    /**
+     * @throws \DOMException
+     */
     private static function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $topTag): void
     {
         foreach (['name', 'email', 'uri'] as $subNode) {
@@ -210,6 +210,9 @@ class Atom
     }
 
     #Helper function to add actual entries
+    /**
+     * @throws \DOMException
+     */
     private static function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $textType): void
     {
         #Adding mandatory tags

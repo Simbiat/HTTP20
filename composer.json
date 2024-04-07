@@ -14,7 +14,7 @@
         }
     ],
     "require": {
-        "php": "^8"
+        "php": "^8.3"
     },
     "suggest": {
         "simbiat/filename-sanitizer": "Small class to replace common characters that are restiricted in filenames."

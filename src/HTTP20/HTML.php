@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Simbiat\HTTP20;
 
+use Simbiat\SandClock;
+
 class HTML
 {
     #Static to count breadcrumbs in case multiple ones are created
@@ -13,7 +15,7 @@ class HTML
 
     #Function to generate timeline
     public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0): string {
-        if (method_exists('\Simbiat\SandClock','seconds')) {
+        if (method_exists(SandClock::class,'seconds')) {
             $sandClock = true;
         } else {
             $sandClock = false;
@@ -41,7 +43,7 @@ class HTML
                     continue;
                 } else if (is_float($item['endTime'])) {
                     #Convert float to integer
-                    $item['endTime'] = intval($item['endTime']);
+                    $item['endTime'] = (int)$item['endTime'];
                 }
             }
             if (!empty($item['startTime'])) {
@@ -58,7 +60,7 @@ class HTML
                     continue;
                 } else if (is_float($item['startTime'])) {
                     #Convert float to integer
-                    $item['startTime'] = intval($item['startTime']);
+                    $item['startTime'] = (int)$item['startTime'];
                 }
             }
             #Check if endTime is set
@@ -91,17 +93,17 @@ class HTML
         }
         #Order timeline
         if ($asc) {
-            usort($toOrder, function($a, $b) {
+            usort($toOrder, static function($a, $b) {
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         } else {
-            usort($toOrder, function($a, $b) {
+            usort($toOrder, static function($a, $b) {
                 return [$b['time'], $b['start']] <=> [$a['time'], $a['start']];
             });
         }
         #Order current events if any
         if (!empty($current)) {
-            usort($current, function($a, $b) {
+            usort($current, static function($a, $b) {
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         }
@@ -139,14 +141,11 @@ class HTML
                     if (!empty($item['startTime'])) {
                         $elapsed = $item['endTime'] - $item['startTime'];
                     }
-                } else {
-                    if ($item['ended'] === false) {
-                        $elapsed = $time - $item['startTime'];
-                    }
+                } elseif ($item['ended'] === false) {
+                    $elapsed = $time - $item['startTime'];
                 }
                 if ($elapsed > 0) {
-                    /** @noinspection PhpFullyQualifiedNameUsageInspection */
-                    $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="' .\Simbiat\SandClock::seconds($elapsed, iso: true). '">' .\Simbiat\SandClock::seconds($elapsed, lang: $lang). '</time></div>';
+                    $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="' .SandClock::seconds($elapsed, iso: true). '">' .SandClock::seconds($elapsed, lang: $lang). '</time></div>';
                 }
             }
             if (($asc === false && ($item['start'] === 0 || ($item['start'] === 1 && $item['ended'] === false))) || ($asc === true && $item['start'] === 1)) {
@@ -189,7 +188,7 @@ class HTML
                     $brs = $item['time'] - $toOrder[$key + 1]['time'];
                 }
                 #Convert difference to number of months
-                $brs = intval(floor($brs / 60 / 60 / 24 / 30));
+                $brs = (int)floor($brs / 60 / 60 / 24 / 30);
                 #Limit it to 12
                 if ($brs > $brLimit) {
                     $brs = $brLimit;
@@ -200,18 +199,16 @@ class HTML
         #Close timeline
         $output .= '</section>';
         #Process current events. Doing this here, because it's less important.
-        if (!empty($current)) {
-            #Check if there are finished events in timeline. If there are none - do not create links to "current" ones
-            if (in_array(0, array_column($toOrder, 'start'))) {
-                $currentList = '<div class="timeline_shortcut"><b>Ongoing: </b>';
-                foreach ($current as $item) {
-                    #Generate id
-                    $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
-                    $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
-                }
-                $currentList .= '</div>';
-                $output = $currentList.$output;
+        #Check if there are finished events in timeline. If there are none - do not create links to "current" ones
+        if (!empty($current) && in_array(0, array_column($toOrder, 'start'), true)) {
+            $currentList = '<div class="timeline_shortcut"><b>Ongoing: </b>';
+            foreach ($current as $item) {
+                #Generate id
+                $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
+                $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
             }
+            $currentList .= '</div>';
+            $output = $currentList.$output;
         }
         return $output;
     }
@@ -231,12 +228,10 @@ class HTML
             if ($links) {
                 if ($headers) {
                     return ['breadcrumbs' => '', 'links' => ''];
-                } else {
-                    return ['breadcrumbs' => '', 'links' => []];
                 }
-            } else {
-                return '';
+                return ['breadcrumbs' => '', 'links' => []];
             }
+            return '';
         }
         #Increase the count for crumbs
         self::$crumbs++;
@@ -277,9 +272,8 @@ class HTML
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
             return ['breadcrumbs' => $output, 'links' => $linksArr];
-        } else {
-            return $output;
         }
+        return $output;
     }
 
     #Function to generate pagination navigation
@@ -304,12 +298,10 @@ class HTML
             if ($links) {
                 if ($headers) {
                     return ['pagination' => '', 'links' => ''];
-                } else {
-                    return ['pagination' => '', 'links' => []];
                 }
-            } else {
-                return '';
+                return ['pagination' => '', 'links' => []];
             }
+            return '';
         }
         #Sanitize settings for non-numeric settings
         foreach ($nonNumerics as $key=>$value) {
@@ -341,7 +333,7 @@ class HTML
         #Increase the count for paginations
         self::$paginations++;
         #Calculate maximum number of numeric links to left/right of the current one
-        $sideNumerics = intval(floor(($maxNumerics - 1)/2));
+        $sideNumerics = (int)floor(($maxNumerics - 1) / 2);
         #Calculate starting page
         $startPage = $current - $sideNumerics;
         if ($startPage < 1) {
@@ -449,9 +441,8 @@ class HTML
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
             return ['pagination' => $output, 'links' => $linksArr];
-        } else {
-            return $output;
         }
+        return $output;
     }
 
 

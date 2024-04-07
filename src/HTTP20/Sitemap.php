@@ -27,8 +27,8 @@ class Sitemap
             };
             #Set initial string length
             $strLen = match($format) {
-                'xml' => strlen($output) + strlen('</urlset>'),
-                'index' => strlen($output) + strlen('</sitemapindex>'),
+                'xml' => mb_strlen($output, 'UTF-8') + mb_strlen('</urlset>', 'UTF-8'),
+                'index' => mb_strlen($output, 'UTF-8') + mb_strlen('</sitemapindex>', 'UTF-8'),
                 default => 0,
             };
             foreach ($links as $key=>$link) {
@@ -41,7 +41,7 @@ class Sitemap
                     default => '',
                 };
                 #Get its length
-                $lenToAdd = strlen($toAdd);
+                $lenToAdd = mb_strlen($toAdd, 'UTF-8');
                 #Check, that we are not exceeding the limit of 50 MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather than from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
                 if (($strLen + $lenToAdd) < 52428800) {
                     $output .= $toAdd;
@@ -109,7 +109,7 @@ class Sitemap
                 throw new \UnexpectedValueException('No `loc` value provided for link `'.$key.'`');
             }
             #Check if `loc` has same base URL
-            if (strripos($link['loc'], $first) !== 0) {
+            if (mb_strripos($link['loc'], $first, 0, 'UTF-8') !== 0) {
                 throw new \UnexpectedValueException('Link `'.$key.'` has different base URL');
             }
             #Check for duplicates
@@ -137,7 +137,7 @@ class Sitemap
             }
             if (isset($link['priority'])) {
                 if (is_numeric($link['priority'])) {
-                    $link['priority'] = floatval($link['priority']);
+                    $link['priority'] = (float)$link['priority'];
                     if ($link['priority'] > 1.0) {
                         $links[$key]['priority'] = '1.0';
                     } elseif ($link['priority'] < 0.0) {

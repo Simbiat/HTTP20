@@ -48,11 +48,9 @@ class Meta
         }
         #Add images' tags, that are not use with 'app' cards
         if ($general['card'] !== 'app') {
-            if (!empty($general['image'])) {
-                #Add only if URL looks like a valid URL for a supported image
-                if (preg_match('/.*\.(jpg|png|webp|gif)(\?.*)?$/i', $general['image']) === 1) {
-                    $output .= '<meta name="twitter:image" content="'.$general['image'].'" />';
-                }
+            #Add only if URL looks like a valid URL for a supported image
+            if (!empty($general['image']) && preg_match('/\.(jpg|png|webp|gif)(\?.*)?$/i', $general['image']) === 1) {
+                $output .= '<meta name="twitter:image" content="'.$general['image'].'" />';
             }
             #Add image description
             if (!empty($general['image:alt'])) {
@@ -62,7 +60,7 @@ class Meta
         #Process player tags
         if ($general['card'] === 'player') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
-            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || preg_match('/.*twitter:image".*/i', $output) !== 1 || empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || preg_match('/^\d+$/', $playerApp['width']) !== 1 || preg_match('/^\d+$/', $playerApp['height']) !== 1) {
+            if (empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || preg_match('/twitter:site/i', $output) !== 1 || preg_match('/twitter:image/i', $output) !== 1 || preg_match('/^\d+$/', $playerApp['width']) !== 1 || preg_match('/^\d+$/', $playerApp['height']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
                 trigger_error('One or more Twitter player card parameter is missing or incorrect');
                 return '';
@@ -78,7 +76,7 @@ class Meta
             }
         } elseif ($general['card'] === 'app') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card
-            if (preg_match('/.*twitter:site.*/i', $output) !== 1 || empty($playerApp['id:iphone']) || empty($playerApp['id:ipad']) || empty($playerApp['id:googleplay']) || preg_match('/^\d+$/', $playerApp['id:iphone']) !== 1 || preg_match('/^\d+$/', $playerApp['id:ipad']) !== 1 || preg_match('/^\d+$/', $playerApp['id:googleplay']) !== 1) {
+            if (empty($playerApp['id:iphone']) || empty($playerApp['id:ipad']) || empty($playerApp['id:googleplay']) || preg_match('/twitter:site/i', $output) !== 1 || preg_match('/^\d+$/', $playerApp['id:iphone']) !== 1 || preg_match('/^\d+$/', $playerApp['id:ipad']) !== 1 || preg_match('/^\d+$/', $playerApp['id:googleplay']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
                 trigger_error('One or more Twitter app card parameter is missing or incorrect');
                 return '';
@@ -131,7 +129,7 @@ class Meta
         }
         #If starturl is not provided set it to current host.
         if (empty($general['starturl'])) {
-            $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
+            $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] !== 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
         }
         #If window is not provided set or incorrect
         if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d+)\d{2};\s*height=([89]|[1-9]\d+)\d{2})|(height=([89]|[1-9]\d+)\d{2};\s*width=([89]|[1-9]\d+)\d{2})$/i', $general['window']) === 0) {
@@ -141,24 +139,22 @@ class Meta
         if (!isset($general['allowDomainApiCalls'])) {
             $general['allowDomainApiCalls'] = 'true';
         } else {
-            $general['allowDomainApiCalls'] = boolval($general['allowDomainApiCalls']);
+            $general['allowDomainApiCalls'] = (bool)$general['allowDomainApiCalls'];
             $general['allowDomainApiCalls'] = ($general['allowDomainApiCalls'] ? 'true' : 'false');
         }
         #If allowDomainApiCalls is not set, set it to true by default
         if (!isset($general['allowDomainMetaTags'])) {
             $general['allowDomainMetaTags'] = 'true';
         } else {
-            $general['allowDomainMetaTags'] = boolval($general['allowDomainMetaTags']);
+            $general['allowDomainMetaTags'] = (bool)$general['allowDomainMetaTags'];
             $general['allowDomainMetaTags'] = ($general['allowDomainMetaTags'] ? 'true' : 'false');
         }
         #Validate URI for badge (https://docs.microsoft.com/en-us/uwp/schemas/tiles/badgeschema/schema-root) and remove it if it's invalid
         if (empty($general['badge']) || preg_match('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge']) !== 1) {
             unset($general['badge']);
-        } else {
             #Enforce explicit frequency, if it's not set
-            if (preg_match('/^frequency=(30|60|360|720|1440);.*$/i', $general['badge']) !== 1) {
-                $general['badge'] = 'frequency=1440; '.$general['badge'];
-            }
+        } elseif (preg_match('/^frequency=(30|60|360|720|1440);.*$/i', $general['badge']) !== 1) {
+            $general['badge'] = 'frequency=1440; '.$general['badge'];
         }
         #Validate colors
         if (empty($general['navbutton-color']) || preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $general['navbutton-color']) !== 1) {
@@ -169,19 +165,19 @@ class Meta
             unset($general['TileColor']);
         }
         #Validate images
-        if (empty($general['square150x150logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square150x150logo']) !== 1) {
+        if (empty($general['square150x150logo']) || preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['square150x150logo']) !== 1) {
             unset($general['square150x150logo']);
         }
-        if (empty($general['square310x310logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square310x310logo']) !== 1) {
+        if (empty($general['square310x310logo']) || preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['square310x310logo']) !== 1) {
             unset($general['square310x310logo']);
         }
-        if (empty($general['square70x70logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['square70x70logo']) !== 1) {
+        if (empty($general['square70x70logo']) || preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['square70x70logo']) !== 1) {
             unset($general['square70x70logo']);
         }
-        if (empty($general['wide310x150logo']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['wide310x150logo']) !== 1) {
+        if (empty($general['wide310x150logo']) || preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['wide310x150logo']) !== 1) {
             unset($general['wide310x150logo']);
         }
-        if (empty($general['TileImage']) || preg_match('/.*\.(jpg|png|gif)(\?.*)?$/i', $general['TileImage']) !== 1) {
+        if (empty($general['TileImage']) || preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['TileImage']) !== 1) {
             unset($general['TileImage']);
         }
         #Prepare notification value (should lead to XML formatted like https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root)
@@ -225,7 +221,7 @@ class Meta
                 }
             } else {
                 #We do not have any links left (if we even had any)
-                unset($notifications);
+                $notifications = [];
             }
         }
         #Prepare tasks
@@ -235,21 +231,15 @@ class Meta
             foreach ($tasks as $key=>$task) {
                 #Skip separators
                 if ($task !== 'separator') {
-                    if (is_array($task)) {
-                        #Validate settings
-                        if (!empty($task['name']) && is_string($task['name']) &&
-                            !empty($task['action-uri']) && is_string($task['action-uri']) &&
-                            !empty($task['icon-uri']) && is_string($task['icon-uri']) && preg_match('/.*\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
-                        ) {
+                    #Validate settings
+                    if (is_array($task) && !empty($task['name']) && is_string($task['name']) &&
+                        !empty($task['action-uri']) && is_string($task['action-uri']) &&
+                        !empty($task['icon-uri']) && is_string($task['icon-uri']) && preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1) {
                             $tasksCount++;
                             if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
                                 $tasks[$key]['window-type'] = 'tab';
                             }
                         } else {
-                            #Remove value
-                            unset($tasks[$key]);
-                        }
-                    } else {
                         #Remove if not an array
                         unset($tasks[$key]);
                     }
@@ -257,7 +247,7 @@ class Meta
             }
             #If there are no valid tasks, unset the array
             if ($tasksCount === 0) {
-                unset($tasks);
+                $tasks = [];
             } else {
                 #Reset indexes for future use
                 $tasks = array_values($tasks);
@@ -303,7 +293,7 @@ class Meta
                 $notifications = array_values($notifications);
                 #Add URLs
                 foreach ($notifications as $key=>$value) {
-                    $output .= '<polling-uri'.($key != 0 ? $key : '').' src="'.htmlspecialchars($value).'"/>';
+                    $output .= '<polling-uri'.($key !== 0 ? $key : '').' src="'.htmlspecialchars($value).'"/>';
                 }
                 $output .= '</notification>';
             }
@@ -333,7 +323,7 @@ class Meta
                 $notifications = array_values($notifications);
                 #Add URLs
                 foreach ($notifications as $key=>$value) {
-                    $output .= 'polling-uri'.($key != 0 ? $key : '').'='.htmlspecialchars($value).';';
+                    $output .= 'polling-uri'.($key !== 0 ? $key : '').'='.htmlspecialchars($value).';';
                 }
                 #Close the tag
                 $output .= '" />';
@@ -365,7 +355,7 @@ class Meta
         foreach ($admins as $key=>$admin) {
             if (is_numeric($admin)) {
                 #Convert to int
-                $admins[$key] = intval($admin);
+                $admins[$key] = (int)$admin;
             } else {
                 #Remove value
                 unset($admins[$key]);
