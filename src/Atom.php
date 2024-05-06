@@ -1,14 +1,29 @@
 <?php
-declare(strict_types=1);
-namespace Simbiat\HTTP20;
+declare(strict_types = 1);
 
+namespace Simbiat\http20;
+
+use JetBrains\PhpStorm\ExpectedValues;
+
+use function in_array, is_array;
+
+/**
+ * Generate Atom feed
+ */
 class Atom
 {
-    #Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
     /**
+     * Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
+     * @param string $title         Text to be used in `<title>` element
+     * @param array  $entries       Items for the feed
+     * @param string $id            Text, that will be used as `id`. It needs to be a URI. If empty `$_SERVER['REQUEST_URI']` will be used.
+     * @param string $textType      Text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
+     * @param array  $feed_settings Array with optional settings for the feed. Check Atom.md for details.
+     *
+     * @return void
      * @throws \DOMException
      */
-    public static function Atom(string $title, array $entries, string $id = '', string $textType = 'text', array $feed_settings = []): void
+    public static function Atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $textType = 'text', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
@@ -27,7 +42,7 @@ class Atom
         }
         #Check id
         if (empty($id)) {
-            $feed_settings['id'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+            $feed_settings['id'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } elseif (filter_var($id, FILTER_VALIDATE_URL)) {
             $feed_settings['id'] = Common::htmlToRFC3986($id);
         } else {
@@ -135,37 +150,53 @@ class Atom
         }
         $feed->normalizeDocument();
         #Output
-        @header('Content-type: application/atom+xml;charset=utf-8');
+        if (!headers_sent()) {
+            header('Content-type: application/atom+xml;charset=utf-8');
+        }
         Common::zEcho($feed->saveXML(), 'hour');
     }
-
-    #Helper function to validate some elements
-    private static function atomElementValidator(array &$elements, string $type = 'author', string $element = 'name'): void
+    
+    /**
+     * Helper function to validate some elements
+     * @param array  $elements    Array of elements to validate
+     * @param string $type        Optional type of the element
+     * @param string $elementName Name of the element
+     *
+     * @return void
+     */
+    private static function atomElementValidator(array &$elements, string $type = 'author', string $elementName = 'name'): void
     {
-        foreach ($elements as $key=> $elementToVal) {
+        foreach ($elements as $key => $elementToVal) {
             if (!is_array($elementToVal)) {
-                unset($elements[$key]);continue;
+                unset($elements[$key]);
+                continue;
             }
-            if (empty($elementToVal[$element])) {
-                unset($elements[$key]);continue;
+            if (empty($elementToVal[$elementName])) {
+                unset($elements[$key]);
+                continue;
             }
-            if (!is_string($elementToVal[$element])) {
-                unset($elements[$key]);continue;
+            if (!\is_string($elementToVal[$elementName])) {
+                unset($elements[$key]);
+                continue;
             }
             if ($type === 'link') {
                 if (!filter_var($elementToVal['href'], FILTER_VALIDATE_URL)) {
-                    unset($elements[$key]);continue;
+                    unset($elements[$key]);
+                    continue;
                 }
                 if (!empty($elementToVal['rel']) && !in_array($elementToVal['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
-                    unset($elements[$key]);continue;
+                    unset($elements[$key]);
+                    continue;
                 }
             }
             if ($type === 'entry') {
                 if (empty($elementToVal['title'])) {
-                    unset($elements[$key]);continue;
+                    unset($elements[$key]);
+                    continue;
                 }
                 if (empty($elementToVal['updated'])) {
-                    unset($elements[$key]);continue;
+                    unset($elements[$key]);
+                    continue;
                 }
                 if (!filter_var($elementToVal['link'], FILTER_VALIDATE_URL)) {
                     unset($elements[$key]);
@@ -173,9 +204,14 @@ class Atom
             }
         }
     }
-
-    #Helper function to add some elements
+    
     /**
+     * Helper function to add sub elements
+     * @param \DOMNode     $element Node to process
+     * @param \DOMDocument $feed    Main feed object
+     * @param array        $topTag  Tag name
+     *
+     * @return void
      * @throws \DOMException
      */
     private static function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $topTag): void
@@ -183,15 +219,22 @@ class Atom
         foreach (['name', 'email', 'uri'] as $subNode) {
             if (!empty($topTag[$subNode])) {
                 if ($subNode === 'uri') {
-                    $element->appendChild($feed->createElement($subNode, Common::htmlToRFC3986( $topTag[$subNode])));
+                    $element->appendChild($feed->createElement($subNode, Common::htmlToRFC3986($topTag[$subNode])));
                 } else {
                     $element->appendChild($feed->createElement($subNode, $topTag[$subNode]));
                 }
             }
         }
     }
-
-    #Helper function to add some elements
+    
+    /**
+     * Helper function to add attributes
+     * @param \DOMElement $element    Node to process
+     * @param array       $topTag     Tag name
+     * @param array       $attributes Attributes to add
+     *
+     * @return void
+     */
     private static function atomAddAttributes(\DOMElement $element, array $topTag, array $attributes): void
     {
         if (empty($attributes)) {
@@ -208,9 +251,15 @@ class Atom
             }
         }
     }
-
-    #Helper function to add actual entries
+    
     /**
+     * Helper function to add actual entries
+     * @param \DOMNode     $element  Node to process
+     * @param \DOMDocument $feed     Main feed object
+     * @param array        $entry    List of elements to add
+     * @param string       $textType Text type
+     *
+     * @return void
      * @throws \DOMException
      */
     private static function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $textType): void
@@ -290,8 +339,13 @@ class Atom
             }
         }
     }
-
-    #Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
+    
+    /**
+     * Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
+     * @param string $link
+     *
+     * @return string
+     */
     private static function atomIDGen(string $link): string
     {
         $date = Common::valueToTime(null, 'Y-m-d', '/^\d{4}-\d{2}-\d{2}$/i');

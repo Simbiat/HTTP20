@@ -1,7 +1,9 @@
 ## Atom
+
 ```php
 \Simbiat\HTTP20\Atom::Atom(string $title, array $entries, string $id = '', string $textType = 'text', array $feed_settings = []);
 ```
+
 Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.html specification.
 
 `$title` - string that will be used for `<title>` tag in the feed.
@@ -11,6 +13,7 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
 `$textType` is the text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
 
 `$feed_settings` - array with optional settings for the feed. Maximum will look like this:
+
 ```php
 [
   'subtitle' => 'Latest deleted banks',
@@ -50,9 +53,11 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
    ],
 ]
 ```
+
 For details on elements above (what they mean, recommendations, etc.), please, refer to Atom specification: names in `array` correspond to respective tags in feed.
 
 `$entries` - array of elements (arrays), that will populate the feed. Mandatory value is `link`, instead of `id` as in specification, because `id` is expected to be a URI regardless (although it will be a modified one). `title` and `updated` are also mandatory. Maximum for each element will look like this:
+
 ```php
 [
   'id' => '',
@@ -75,4 +80,5 @@ For details on elements above (what they mean, recommendations, etc.), please, r
   'source_updated' => '',
 ]
 ```
+
 Since the code was designed with idea of entries taken from a database, only 1 `author`, `contributor` and `source` are supported, and their respective values were 'flattened' (`author_name` and the like). If `published` is empty `updated` will be used instead of it. Otherwise, the parameters conform with Atom specifications.

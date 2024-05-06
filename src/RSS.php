@@ -1,11 +1,23 @@
 <?php
-declare(strict_types=1);
-namespace Simbiat\HTTP20;
+declare(strict_types = 1);
 
+namespace Simbiat\http20;
+
+use function is_array;
+
+/**
+ * Class to generate RSS feed
+ */
 class RSS
 {
-    #Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
     /**
+     * Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
+     * @param string $title         Title for RSS feed.
+     * @param array  $entries       Items for the feed.
+     * @param string $feedLink      Link to feed. If empty current `REQUEST_URI` will be used.
+     * @param array  $feed_settings Feed settings
+     *
+     * @return void
      * @throws \DOMException
      */
     public static function RSS(string $title, array $entries, string $feedLink = '', array $feed_settings = []): void
@@ -18,7 +30,7 @@ class RSS
         $feed_settings['title'] = $title;
         #Check feed link
         if (empty($feedLink)) {
-            $feed_settings['link'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+            $feed_settings['link'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } elseif (filter_var($feedLink, FILTER_VALIDATE_URL)) {
             $feed_settings['link'] = Common::htmlToRFC3986($feedLink);
         } else {
@@ -27,16 +39,19 @@ class RSS
         }
         #Validate content
         if (!empty($entries)) {
-            foreach ($entries as $key=>$entry) {
+            foreach ($entries as $key => $entry) {
                 if (empty($entry['title']) && empty($entry['description'])) {
-                    unset($entries[$key]);continue;
+                    unset($entries[$key]);
+                    continue;
                 }
                 if (!empty($entry['enclosure_url'])) {
                     if (empty($entry['enclosure_length']) || empty($entry['enclosure_type'])) {
-                        unset($entries[$key]);continue;
+                        unset($entries[$key]);
+                        continue;
                     }
                     if (is_numeric($entry['enclosure_length'])) {
-                        unset($entries[$key]);continue;
+                        unset($entries[$key]);
+                        continue;
                     }
                 }
                 #Add <source> data
@@ -120,7 +135,7 @@ class RSS
         #Check skipDays
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
-                if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
+                if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
                 }
@@ -221,12 +236,19 @@ class RSS
         }
         $feed->normalizeDocument();
         #Output
-        @header('Content-type: application/rss+xml;charset=utf-8');
+        if (!headers_sent()) {
+            header('Content-type: application/rss+xml;charset=utf-8');
+        }
         Common::zEcho($feed->saveXML(), 'hour');
     }
-
-    #Helper function to add actual entries
+    
     /**
+     * Helper function to add actual entries
+     * @param \DOMNode     $element Node to process
+     * @param \DOMDocument $feed    Main feed object
+     * @param array        $entry   Element to add
+     *
+     * @return void
      * @throws \DOMException
      */
     private static function rssAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry): void

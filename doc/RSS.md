@@ -1,12 +1,15 @@
 ## RSS
+
 ```php
 \Simbiat\HTTP20\RSS::RSS(string $title, array $entries, string $feedLink = '', array $feed_settings = []);
 ```
+
 Function to generate RSS feed as per https://www.rssboard.org/rss-specification specification. Function is designed similarly to Atom described above, with minor changes listed below. Otherwise - refer to feed specifications.
 
 `id` in function call is renamed as `feedLink`, since as per specification feed does not have `id` but has `link` for similar purpose. At the same time elements also can have links, so `feedLink` name is used for clarity.
 
 `feed_settings` at its maximum will look like this:
+
 ```php
 [
   'description' => 'why are we even doing this?',
@@ -50,7 +53,9 @@ Function to generate RSS feed as per https://www.rssboard.org/rss-specification 
   ],
 ]
 ```
+
 Maximum for each element in `$entries` will look like this (either `title` or `description` should be present):
+
 ```php
 [
   'title' => 'rss',

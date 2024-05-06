@@ -3,15 +3,19 @@
 - [facebook](#facebook)
 
 # Meta
+
 Functions, that generate sets of meta-tags, that may be useful for your website.
 
 ## twitter
+
 ```php
 twitter(array $general, array $playerApp = [], bool $pretty = false);
 ```
+
 Function creates a set of `<meta>` tags required for Twitter Cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards). It does some validation of the values you provide to reduce chances of botching the card.
 
 `$general` is an array of general settings used by cards:
+
 ```php
 [
   #Mandatory type of the card. Supported values are summary, summary_large_image, app, player
@@ -34,9 +38,11 @@ Function creates a set of `<meta>` tags required for Twitter Cards (https://deve
   'image:alt' => 'Just an image',
 ]
 ```
+
 `$playerApp` is an array of values used for cards with types 'app' or 'player'.
 
 For player cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card) the array will look like this:
+
 ```php
   #Mandatory URL to a frame of the player
   'player' => 'https://www.simbiat.dev/iframe',
@@ -48,7 +54,9 @@ For player cards (https://developer.twitter.com/en/docs/twitter-for-websites/car
   'stream' => 'https://www.simbiat.dev/iframe/mp3.mp3',
 ]
 ```
+
 For app cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card) the array will look like this:
+
 ```php
   #Mandatory app ID for iPad
   'id:ipad' => '101',
@@ -66,16 +74,22 @@ For app cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/
   'country' => 'RU',
 ]
 ```
+
 `$pretty` if set to `true` will add new line to the end of each `meta` tag. May be useful if you prefer a bit cleaner and human-readable look.
 
 ## msTile
+
 ```php
 msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true);
 ```
+
 #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file. Based on following specification:
+
 - Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
 - browserconfig.xml specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
+
 `$general` - array of basic settings:
+
 ```php
 [
   #Name for the tile. Not used by XML config. Not mandatory by Meta specification, but mandatory in this function to provide you with proper control (other wise tile takes tile of current page)
@@ -104,7 +118,9 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   'TileImage' => 'https://www.simbiat.dev/frontend/images/favicons/mstile-144x144.png',
 ]
 ```
+
 `$tasks` - array of so-called "tasks", that appear as pinned links, if pinned from IE. Does not seem to be used by Edge. Not used by XML config.
+
 ```php
 [
   #Array for an actual task
@@ -129,7 +145,9 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   ],
 ]
 ```
+
 `$notifications` - array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
+
 ```php
 [
   #List of up to 5 links
@@ -141,14 +159,17 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   'cycle' => 1,
 ]
 ```
+
 `$xml` indicates whether you want to generate XML config file. `False` by default.
 
 `$prettyDirect` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
 
 ## facebook
+
 ```php
 facebook(int $appId, array $admins = []);
 ```
+
 Simple function to prepare a string of Facebook meta tags.
 
 `$appId` is mandatory application ID, that you want to link to the page.

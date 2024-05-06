@@ -3,14 +3,18 @@
 - [pagination](#pagination)
 
 # HTML
+
 Functions, that generate useful HTML code.
 
 ## timeline
+
 ```php
-timeline(array $items, string $format = 'Y-m-d', bool $asc = false, string $lang = 'en', int $brLimit = 0);
+timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $brLimit = 0);
 ```
+
 Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.css)) can be seen on [video](https://youtu.be/_cSezN3JxUs).
 `items` is an array of items you want to show on timeline. Here is sample of what it can look like:
+
 ```php
 [
     #Start and end time of the event. Either or both need to be present and be convertable to date (float, int, valid datetime string)
@@ -40,15 +44,15 @@ Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.c
     ],
 ],
 ```
+
 `format` - how to format time of each event, which is shown near the center delimiter. Needs to be a valid string, that can be parsed by `date()`.
 
 `asc` - whether to sort the elements in ascending (`true`) or descending (`false`, default) order.
 
-`lang` - if [SandClock](https://github.com/Simbiat/sand-clock) library is available this can be used to set language to `Elapsed time` field in respective events.
-
 `brLimit` - option to allow up to the number of `<br>` elements between events. 1 `<br>` equals 1 month. Can be used to spread out the elements along the line to provide visual representation of time between events. `0` disables the feature.
 
 Some clarifications about logic:
+
 1. Elements with just `startTime` are considered "ongoing". Such elements will have extra class `timeline_current`, so that you can give them some extra style. If there are any "finished" events in the timeline, the "ongoing" ones will have shortcuts in beginning of the timeline.
 2. Elements with just `endTime` or with identical `startTime` and `endTime` can be considered as "onetime" and will appear only on the right side with `timeline_right` class.
 3. Elements with both `startTime` and `endTime` will be split into starting event shown on left of the timeline with `timeline_left` class and on ending event on the right.
@@ -56,28 +60,34 @@ Some clarifications about logic:
 5. Elapsed time will be calculated only if SandClock library is available.
 
 ## breadcrumbs
+
 ```php
 breadcrumbs(array $items, bool $links = false, bool $headers = false);
 ```
+
 Generates breadcrumbs for your website in Microdata format (as per https://schema.org/BreadcrumbList) wrapping it in proper `<nav>` tag with `id` attributes for `<li>`, `<a>`, `<span>` tags, as well as useful `aria` attributes, where applicable. `id` values are structures in a way, that allows you to style items depending on their "level" (for example always hide first element, since it's supposed to be your home page): first item will always have an `id` ending with `0` and the last one - with `1`.
 
 `$items` is an array of the items (arrays) you plan to present as breadcrumbs. Each array needs to have `href` and `name` elements, otherwise it will be skipped.
 
 `$links` - if set to `false`, you will get just a string of the requested breadcrumbs, but if set to `true`, this will also generate values for `rel="home index top begin prefetch"` and `rel="up prefetch"` required for `Links()` [function](Headers.md#links), and thus function will return an array like this:
+
 ```php
 [
     'breadcrumbs' => 'string_of_breadcrumbs',
     'links' => [...],
 ]
 ```
+
 You can then manually send the `'links'` array to `Links()` function to generate respective tags or headers.
 
 `$headers` is checked only if `$links` is `true`. If `$headers` is also `true`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).
 
 ## pagination
+
 ```php
 pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page', 'next_text' => 'Next page', 'last_text' => 'Last page', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false)
 ```
+
 Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `aria` attributes.
 
 `$current` - current page number.
@@ -87,6 +97,7 @@ Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `ari
 `$maxNumerics` - maximum number of numeric links, that is those pages, that show actual numbers, and not 'First'/'Previous'/'Next'/'Last'. This number includes the current page.
 
 `$nonNumerics` is an array of default text values to style 'First', 'Previous', 'Next' and 'Last' pages (with some default values):
+
 ```php
 [
     #Visible text for First page. If empty, element will be skipped in HTML (will still be present in Links).
@@ -109,15 +120,18 @@ Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `ari
     'page_text' => 'Page ',
 ]
 ```
+
 `$prefix` is an optional prefix for the links used in `href` attribute. Generally you will be ok with an empty string (default) and respective relative links, but in some cases, you may want to change that, for example, if your pages are using links like `#1` or `?page=1`. You can use that setting to adjust accordingly.
 
 `$links` - if set to `false`, you will get just a string of the requested pagination, but if set to `true`, this will also generate values for `rel="first prefetch"`, `rel="prev prefetch"`, `rel="next prefetch"` and `rel="last prefetch"` required for `Links()` [function](Headers.md#links), and thus function will return an array like this:
+
 ```php
 [
     'pagination' => 'string_of_pagination',
     'links' => [...],
 ]
 ```
+
 You can then manually send the `'links'` array to `Links()` function to generate respective tags or headers.
 
 `$headers` is checked only if `$links` is `true`. If `$headers` is also `true`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).

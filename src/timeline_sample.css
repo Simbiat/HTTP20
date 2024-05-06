@@ -3,15 +3,19 @@ body {
     background-color: hsl(256, 20%, 20%);
     color: hsl(0, 20%, 95%);
 }
+
 a {
     color: hsl(196, 65%, 76%);
 }
+
 time {
     font-style: italic;
 }
+
 audio, canvas, iframe, img, svg, video {
     vertical-align: middle;
 }
+
 .linkIcon {
     width: 1.25rem;
     height: 1.25rem;
@@ -67,6 +71,7 @@ audio, canvas, iframe, img, svg, video {
 .timeline_start {
     left: 0;
 }
+
 .timeline_start .timeline_time {
     text-align: right;
     width: 100%;
@@ -78,6 +83,7 @@ audio, canvas, iframe, img, svg, video {
 .timeline_end {
     left: calc(50% + 2rem);
 }
+
 .timeline_end .timeline_time {
     text-align: left;
     width: 100%;
@@ -121,6 +127,7 @@ audio, canvas, iframe, img, svg, video {
     padding: 0.5rem;
     position: relative;
 }
+
 /*Flash on target*/
 .timeline_block:target {
     animation: timeline-flash 1.5s ease-in-out 0s;
@@ -137,6 +144,7 @@ audio, canvas, iframe, img, svg, video {
     /*Negative margin to align with text*/
     margin: 0 0.25rem 0.25rem 0.25rem;
 }
+
 .timeline_icon_current {
     width: 1.25rem;
     height: 1.25rem;
@@ -153,6 +161,7 @@ audio, canvas, iframe, img, svg, video {
     list-style: '🏆';
     margin-top: 0;
 }
+
 .timeline_shortcut {
     text-align: center;
 }

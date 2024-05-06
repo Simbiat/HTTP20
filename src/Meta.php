@@ -1,10 +1,23 @@
 <?php
-declare(strict_types=1);
-namespace Simbiat\HTTP20;
+declare(strict_types = 1);
 
+namespace Simbiat\http20;
+
+use function in_array, is_string;
+
+/**
+ * Functions, that generate sets of meta-tags, that may be useful for your website.
+ */
 class Meta
 {
-    #Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards
+    /**
+     * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards
+     * @param array $general   Array of general settings used by cards
+     * @param array $playerApp Array of values used for cards with types `app` or `player`
+     * @param bool  $pretty    Ff set to `true` will add new line to the end of each `meta` tag
+     *
+     * @return string
+     */
     public static function twitter(array $general, array $playerApp = [], bool $pretty = false): string
     {
         #Check that settings are not an empty array
@@ -17,7 +30,6 @@ class Meta
             trigger_error('Empty title was provided for Twitter card');
             return '';
         }
-
         #If card type is not set or is unsupported - use 'summary'
         if (empty($general['card']) || !in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'])) {
             $general['card'] = 'summary';
@@ -106,10 +118,20 @@ class Meta
         }
         return $output;
     }
-
-    #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file
-    #Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
-    #browserconfig specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
+    
+    /**
+     * Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file.
+     * Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
+     * `browserconfig` specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
+     *
+     * @param array $general       Array of basic settings
+     * @param array $tasks         Array of so-called "tasks", that appear as pinned links, if pinned from IE
+     * @param array $notifications Array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
+     * @param bool  $xml           Whether to generate XML
+     * @param bool  $prettyDirect  If `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
+     *
+     * @return string
+     */
     public static function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true): string
     {
         #Check that settings are not an empty array
@@ -129,25 +151,25 @@ class Meta
         }
         #If starturl is not provided set it to current host.
         if (empty($general['starturl'])) {
-            $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] !== 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
+            $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] !== 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
         }
         #If window is not provided set or incorrect
         if (empty($general['window']) || preg_match('/^(width=([89]|[1-9]\d+)\d{2};\s*height=([89]|[1-9]\d+)\d{2})|(height=([89]|[1-9]\d+)\d{2};\s*width=([89]|[1-9]\d+)\d{2})$/i', $general['window']) === 0) {
             $general['window'] = 'width=800;height=600';
         }
         #If allowDomainApiCalls is not set, set it to true by default
-        if (!isset($general['allowDomainApiCalls'])) {
-            $general['allowDomainApiCalls'] = 'true';
-        } else {
+        if (isset($general['allowDomainApiCalls'])) {
             $general['allowDomainApiCalls'] = (bool)$general['allowDomainApiCalls'];
             $general['allowDomainApiCalls'] = ($general['allowDomainApiCalls'] ? 'true' : 'false');
+        } else {
+            $general['allowDomainApiCalls'] = 'true';
         }
         #If allowDomainApiCalls is not set, set it to true by default
-        if (!isset($general['allowDomainMetaTags'])) {
-            $general['allowDomainMetaTags'] = 'true';
-        } else {
+        if (isset($general['allowDomainMetaTags'])) {
             $general['allowDomainMetaTags'] = (bool)$general['allowDomainMetaTags'];
             $general['allowDomainMetaTags'] = ($general['allowDomainMetaTags'] ? 'true' : 'false');
+        } else {
+            $general['allowDomainMetaTags'] = 'true';
         }
         #Validate URI for badge (https://docs.microsoft.com/en-us/uwp/schemas/tiles/badgeschema/schema-root) and remove it if it's invalid
         if (empty($general['badge']) || preg_match('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge']) !== 1) {
@@ -183,7 +205,7 @@ class Meta
         #Prepare notification value (should lead to XML formatted like https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root)
         if (!empty($notifications)) {
             #Count elements (links)
-            $links = count($notifications);
+            $links = \count($notifications);
             #Exclude frequency
             if (isset($notifications['frequency'])) {
                 $links--;
@@ -195,7 +217,7 @@ class Meta
             if ($links > 0) {
                 if ($links > 5) {
                     $links = 0;
-                    foreach ($notifications as $key=>$value) {
+                    foreach ($notifications as $key => $value) {
                         #Skip frequency and cycle
                         if (!in_array($key, ['frequency', 'cycle'])) {
                             #Remove any extra links
@@ -228,18 +250,19 @@ class Meta
         if (!empty($tasks)) {
             #Start counter for valid tasks
             $tasksCount = 0;
-            foreach ($tasks as $key=>$task) {
+            foreach ($tasks as $key => $task) {
                 #Skip separators
                 if ($task !== 'separator') {
                     #Validate settings
-                    if (is_array($task) && !empty($task['name']) && is_string($task['name']) &&
+                    if (\is_array($task) && !empty($task['name']) && is_string($task['name']) &&
                         !empty($task['action-uri']) && is_string($task['action-uri']) &&
-                        !empty($task['icon-uri']) && is_string($task['icon-uri']) && preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1) {
-                            $tasksCount++;
-                            if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
-                                $tasks[$key]['window-type'] = 'tab';
-                            }
-                        } else {
+                        !empty($task['icon-uri']) && is_string($task['icon-uri']) && preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
+                    ) {
+                        $tasksCount++;
+                        if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
+                            $tasks[$key]['window-type'] = 'tab';
+                        }
+                    } else {
                         #Remove if not an array
                         unset($tasks[$key]);
                     }
@@ -292,7 +315,7 @@ class Meta
                 #Reset keys just in case
                 $notifications = array_values($notifications);
                 #Add URLs
-                foreach ($notifications as $key=>$value) {
+                foreach ($notifications as $key => $value) {
                     $output .= '<polling-uri'.($key !== 0 ? $key : '').' src="'.htmlspecialchars($value).'"/>';
                 }
                 $output .= '</notification>';
@@ -301,13 +324,15 @@ class Meta
             $output .= '</msapplication></browserconfig>';
             #Output directly to client if parameter is true
             if ($prettyDirect) {
-                @header('Content-Type: text/xml; charset=utf-8');
+                if (!headers_sent()) {
+                    header('Content-Type: text/xml; charset=utf-8');
+                }
                 Common::zEcho($output);
             }
         } else {
             $output = '';
             #Iterate through settings adding them to the output
-            foreach ($general as $setting=>$value) {
+            foreach ($general as $setting => $value) {
                 #'name' is the only special case, since it uses 'application' prefix, not 'msapplication'
                 if ($setting === 'name') {
                     $output .= '<meta name="application-name" content="'.htmlspecialchars($value).'" />';
@@ -322,7 +347,7 @@ class Meta
                 #Reset keys just in case
                 $notifications = array_values($notifications);
                 #Add URLs
-                foreach ($notifications as $key=>$value) {
+                foreach ($notifications as $key => $value) {
                     $output .= 'polling-uri'.($key !== 0 ? $key : '').'='.htmlspecialchars($value).';';
                 }
                 #Close the tag
@@ -330,7 +355,7 @@ class Meta
             }
             #Add tasks if set (seems to be used only by IE11 at the time of writing)
             if (!empty($tasks)) {
-                foreach ($tasks as $key=>$task) {
+                foreach ($tasks as $key => $task) {
                     if ($task === 'separator') {
                         $output .= '<meta name="msapplication-task-separator" content="'.$key.'" />';
                     } else {
@@ -345,14 +370,20 @@ class Meta
         }
         return $output;
     }
-
-    #Function to generate Facebook special meta tags
+    
+    /**
+     * Function to generate Facebook special meta tags
+     * @param int   $appId  Facebook appID
+     * @param array $admins List of Facebook admin IDs
+     *
+     * @return string
+     */
     public static function facebook(int $appId, array $admins = []): string
     {
         #Add appId tag
         $output = '<meta property="fb:app_id" content="'.$appId.'"/>';
         #Check values of admins IDs
-        foreach ($admins as $key=>$admin) {
+        foreach ($admins as $key => $admin) {
             if (is_numeric($admin)) {
                 #Convert to int
                 $admins[$key] = (int)$admin;

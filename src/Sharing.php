@@ -1,12 +1,30 @@
 <?php
-declare(strict_types=1);
-namespace Simbiat\HTTP20;
+declare(strict_types = 1);
 
+namespace Simbiat\http20;
+
+use JetBrains\PhpStorm\ExpectedValues;
+use JetBrains\PhpStorm\NoReturn;
 use Simbiat\SafeFileName;
 
+use function is_array, count, is_string, in_array, extension_loaded, is_resource;
+
+/**
+ * Functions related to file sharing
+ */
 class Sharing
 {
-    #Function for smart resumable download with proper headers
+    /**
+     * Function for smart resumable download with proper headers
+     * @param string $file       Path to file to send to browser.
+     * @param string $filename   Optional override for file name, if you want to provide a file with a different name.
+     * @param string $mime       Optional MIME type. If empty, will try to determine the type based on extension or use `application/octet-stream`.
+     * @param bool   $inline     If set to `true` will feed the file "inline", as regular images are sent (for example).
+     * @param int    $speedLimit Download speed limit in bytes per second.
+     * @param bool   $exit       If set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a `false` or `true` value, that you can utilize somehow.
+     *
+     * @return bool|int
+     */
     public static function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedLimit = 10485760, bool $exit = true): bool|int
     {
         #Sanitize speed limit
@@ -183,8 +201,18 @@ class Sharing
         }
         return $result;
     }
-
-    #Function to handle file uploads
+    
+    /**
+     * Function to handle file uploads
+     * @param string|array $destPath      Path to save a file(s) to.
+     * @param bool         $preserveNames Whether to preserve name(s). If `false` will rename files to their hash + extension based on MIME type. Only for POST uploads.
+     * @param bool         $overwrite     Whether to overwrite existing file(s). Only for POST uploads.
+     * @param array        $allowedMime   List of allowed MIME types to block files, that do not match it.
+     * @param bool         $intolerant    Changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array). Only for POST uploads.
+     * @param bool         $exit          If set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a value, that you can utilize somehow.
+     *
+     * @return int|array
+     */
     public static function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intolerant = true, bool $exit = true): int|array
     {
         #Set upload directory
@@ -209,14 +237,14 @@ class Sharing
         }
         #Sanitize provided MIME types
         if (!empty($allowedMime)) {
-            foreach ($allowedMime as $key=>$mime) {
+            foreach ($allowedMime as $key => $mime) {
                 if (preg_match('/^'.Common::mimeRegex.'$/i', $mime) !== 1) {
                     unset($allowedMime[$key]);
                 }
             }
         }
         #Cache filename sanitizer
-        if (method_exists(SafeFileName::class,'sanitize')) {
+        if (method_exists(SafeFileName::class, 'sanitize')) {
             $SafeFileName = true;
         } else {
             $SafeFileName = false;
@@ -236,7 +264,7 @@ class Sharing
                 return Headers::clientReturn(500, $exit);
             }
         } elseif (is_array($destPath)) {
-            foreach ($destPath as $key=>$path) {
+            foreach ($destPath as $key => $path) {
                 $destPath[$key] = realpath($path);
                 if (!is_dir($destPath[$key]) || !is_writable($destPath[$key])) {
                     return Headers::clientReturn(500, $exit);
@@ -253,11 +281,11 @@ class Sharing
             }
             #Standardize $_FILES and also count them
             $totalFiles = 0;
-            foreach ($_FILES as $field=>$files) {
+            foreach ($_FILES as $field => $files) {
                 #Check if multiple files were uploaded to a field and process the values accordingly
                 if (is_array($files['name'])) {
                     $totalFiles += count($files['name']);
-                    foreach ($files['name'] as $key=>$file) {
+                    foreach ($files['name'] as $key => $file) {
                         $_FILES[$field][$key]['name'] = $file;
                         $_FILES[$field][$key]['full_path'] = $files['full_path'][$key];
                         $_FILES[$field][$key]['type'] = $files['type'][$key];
@@ -284,7 +312,7 @@ class Sharing
             #Prepare array for uploaded files
             $uploadedFiles = [];
             #Check for any errors in files, so that we can exit before actually processing the rest
-            foreach ($_FILES as $field=>$files) {
+            foreach ($_FILES as $field => $files) {
                 #Check that field has a folder to copy file to
                 if (is_array($destPath) && !isset($destPath[$field])) {
                     if ($intolerant) {
@@ -295,14 +323,13 @@ class Sharing
                     continue;
                 }
                 #Set destination path
-                if (is_string($destPath)) {
-                    $finalPath = $destPath;
-                } else {
+                if (is_array($destPath)) {
                     $finalPath = $destPath[$field];
+                } else {
+                    $finalPath = $destPath;
                 }
-                foreach ($files as $key=>$file) {
-                    switch ($file['error'])
-                    {
+                foreach ($files as $key => $file) {
+                    switch ($file['error']) {
                         case UPLOAD_ERR_OK:
                             #Do nothing at this time
                             break;
@@ -369,7 +396,7 @@ class Sharing
                         }
                         #Check against allowed MIME types if any was set and fileinfo is loaded
                         #Get MIME from file (not relying on what was sent by client)
-                        if (!empty($allowedMime) && !in_array($_FILES[ $field ][ $key ]['type'], $allowedMime, true)) {
+                        if (!empty($allowedMime) && !in_array($_FILES[$field][$key]['type'], $allowedMime, true)) {
                             if ($intolerant) {
                                 return Headers::clientReturn(415, $exit);
                             }
@@ -379,7 +406,7 @@ class Sharing
                         }
                     }
                     #Sanitize name
-                    if (isset($_FILES[ $field ][ $key ]) && $SafeFileName !== false) {
+                    if (isset($_FILES[$field][$key]) && $SafeFileName !== false) {
                         $_FILES[$field][$key]['name'] = basename(SafeFileName::sanitize($file['name']));
                         #If name is empty or name is too long, do not process it
                         if (empty($_FILES[$field][$key]['name']) || mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
@@ -396,16 +423,16 @@ class Sharing
                                 $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                             } else {
                                 #Get extension (if any)
-                                $ext = array_search($_FILES[ $field ][ $key ]['type'], Common::extToMime, true);
-                                if ($ext === false) {
-                                    $ext = (string)pathinfo($_FILES[ $field ][ $key ]['name'])['extension'];
+                                $ext = array_search($_FILES[$field][$key]['type'], Common::extToMime, true);
+                                if ($ext) {
+                                    $ext = '.'.$ext;
+                                } else {
+                                    $ext = (string)pathinfo($_FILES[$field][$key]['name'])['extension'];
                                     if (!empty($ext)) {
                                         $ext = '.'.$ext;
                                     } else {
                                         $ext = '';
                                     }
-                                } else {
-                                    $ext = '.'.$ext;
                                 }
                                 #Generate name from hash and extension from original file
                                 $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['hash'].$ext;
@@ -445,12 +472,12 @@ class Sharing
                 }
             } else {
                 #Process files and put them into an array
-                foreach ($_FILES as $field=>$files) {
+                foreach ($_FILES as $field => $files) {
                     #Set destination path
-                    if (is_string($destPath)) {
-                        $finalPath = $destPath;
-                    } else {
+                    if (is_array($destPath)) {
                         $finalPath = $destPath[$field];
+                    } else {
+                        $finalPath = $destPath;
                     }
                     foreach ($files as $file) {
                         #Move file, but only if it's not already present in destination
@@ -462,7 +489,7 @@ class Sharing
                     }
                 }
             }
-        #Process PUT requests
+            #Process PUT requests
         } else {
             if (!isset($_SERVER['CONTENT_LENGTH']) || (int)$_SERVER['CONTENT_LENGTH'] === 0) {
                 return Headers::clientReturn(411, $exit);
@@ -486,7 +513,7 @@ class Sharing
             if (isset($_SERVER['HTTP_CONTENT_DISPOSITION'])) {
                 #filename* is preferred over filename as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
                 #Note that this format MAY include charset
-                $name = preg_replace('/^(.*filename\*='.(new Common)::langEncRegex.'"?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
+                $name = preg_replace('/^(.*filename\*='.Common::langEncRegex.'"?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
                 if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
                     #If we are here, it means that there is no filename*
                     $name = preg_replace('/^(.*filename="?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$2', $_SERVER['HTTP_CONTENT_DISPOSITION']);
@@ -543,7 +570,11 @@ class Sharing
                         return Headers::clientReturn(500, $exit);
                     }
                 }
-                if (feof($stream) === false) {
+                if (feof($stream)) {
+                    #Most likely our stream got interrupted during initial read
+                    fclose($stream);
+                    $result = false;
+                } else {
                     #Open output stream
                     if ($offset < $client_size) {
                         $output = fopen($uploadDir.'/'.$name, 'ab');
@@ -572,18 +603,14 @@ class Sharing
                     } else {
                         $result = true;
                     }
-                } else {
-                    #Most likely our stream got interrupted during initial read
-                    fclose($stream);
-                    $result = false;
                 }
             } else {
                 #Means the file we have is complete
                 $result = true;
             }
             if ($result === false) {
-                if (!$resumable) {
-                    @unlink($uploadDir.'/'.$name);
+                if (!$resumable && file_exists($uploadDir.'/'.$name)) {
+                    unlink($uploadDir.'/'.$name);
                 }
                 return Headers::clientReturn(500, $exit);
             }
@@ -595,7 +622,9 @@ class Sharing
             #Check against allowed MIME types if any was set and fileinfo is loaded
             #Get MIME from file (not relying on what was sent by client)
             if (!empty($allowedMime) && !in_array($filetype, $allowedMime, true)) {
-                @unlink($uploadDir.'/'.$name);
+                if (file_exists($uploadDir.'/'.$name)) {
+                    unlink($uploadDir.'/'.$name);
+                }
                 return Headers::clientReturn(415, $exit);
             }
             #Get extension of the file
@@ -623,8 +652,17 @@ class Sharing
         }
         return $uploadedFiles;
     }
-
-    #Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
+    
+    /**
+     * Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
+     * @param resource $input     Input stream
+     * @param resource $output    Output stream
+     * @param int      $totalSize Total size of bytes to copy
+     * @param int      $offset    Offset of bytes to copy from
+     * @param int      $speed     Maximum speed of copying in bytes per second
+     *
+     * @return bool|int
+     */
     public static function streamCopy($input, $output, int $totalSize = 0, int $offset = 0, int $speed = 10485760): bool|int
     {
         #Ignore user abort to attempt to identify when client has aborted
@@ -639,7 +677,12 @@ class Sharing
         }
         #Get size if not provided
         if ($totalSize <= 0) {
-            $totalSize = fstat($input)['size'];
+            $fstat = fstat($input);
+            if (is_array($fstat)) {
+                $totalSize = $fstat['size'];
+            } else {
+                $totalSize = 0;
+            }
         }
         #Sanitize speed
         $speed = self::speedLimit($speed);
@@ -674,8 +717,14 @@ class Sharing
         }
         return false;
     }
-
-    #Function to determine speed limit based on maximum allowed memory usage
+    
+    /**
+     * Function to determine speed limit based on maximum allowed memory usage
+     * @param int   $speed      Desired maximum speed
+     * @param float $percentage Maximum percentage of memory allowed to use
+     *
+     * @return int
+     */
     public static function speedLimit(int $speed = 0, float $percentage = 0.9): int
     {
         #Sanitize percentage
@@ -695,15 +744,20 @@ class Sharing
         }
         return $speed;
     }
-
-    #Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes)
+    
+    /**
+     * Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes)
+     * @param string $memory
+     *
+     * @return int
+     */
     public static function phpMemoryToInt(string $memory): int
     {
         #Get suffix
-        $suffix = mb_strtolower($memory[mb_strlen($memory, 'UTF-8')-1], 'UTF-8');
+        $suffix = mb_strtolower($memory[(int)mb_strlen($memory, 'UTF-8') - 1], 'UTF-8');
         #Get int value
         $memoryInt = (int)mb_substr($memory, 0, -1, 'UTF-8');
-        $memoryInt *= match($suffix) {
+        $memoryInt *= match ($suffix) {
             'g' => 1073741824,
             'm' => 1048576,
             'k' => 1024,
@@ -711,8 +765,13 @@ class Sharing
         };
         return $memoryInt;
     }
-
-    #Function to validate HTTP header "Range" and return it as an array. If case of errors it will return array with one element (index 0) equalling false.
+    
+    /**
+     * Function to validate HTTP header `Range` and return it as an array. If case of errors it will return array with one element (index 0) equalling false. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
+     * @param int $size
+     *
+     * @return array
+     */
     public static function rangesValidate(int $size): array
     {
         if (isset($_SERVER['HTTP_RANGE'])) {
@@ -726,7 +785,7 @@ class Sharing
             #Split ranges
             $ranges = explode(',', $ranges);
             #Sanitize
-            foreach ($ranges as $key=> $range) {
+            foreach ($ranges as $key => $range) {
                 if (preg_match('/^-\d+$/', $range) === 1) {
                     $ranges[$key] = ['start' => 0, 'end' => (int)ltrim($range, '-')];
                 } elseif (preg_match('/^\d+-$/', $range) === 1) {
@@ -745,8 +804,8 @@ class Sharing
             }
             #Checking for overlaps, since as per https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html we expect non-overlapping ranges
             if (count($ranges) > 1) {
-                foreach ($ranges as $keyPrime=>$rangePrime) {
-                    foreach ($ranges as $keySec=>$rangeSec) {
+                foreach ($ranges as $keyPrime => $rangePrime) {
+                    foreach ($ranges as $keySec => $rangeSec) {
                         #Only compare pairs after current one
                         if ($keySec > $keyPrime) {
                             #If overlap in any way - exit
@@ -769,9 +828,17 @@ class Sharing
         }
         return [];
     }
-
-    #Function to send a file to browser
-    public static function fileEcho(string $filepath, array $allowedMime = [], string $cacheStrat = 'month', bool $exit = true): int
+    
+    /**
+     * Function to send a file directly to browser
+     * @param string $filepath    Path to file
+     * @param array  $allowedMime List of allowed MIME types
+     * @param string $cacheStrat  Cashing strategy (same as for `Headers::cacheControl`)
+     * @param bool   $exit        Whether to stop execution in case of errors
+     *
+     * @return int
+     */
+    public static function fileEcho(string $filepath, array $allowedMime = [], #[ExpectedValues(['', 'aggressive', 'private', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = 'month', bool $exit = true): int
     {
         #Check if file exists
         if (is_file($filepath)) {
@@ -781,7 +848,7 @@ class Sharing
                 $mimeType = mime_content_type($filepath);
                 if (!empty($allowedMime)) {
                     #Sanitize provided MIME types
-                    foreach ($allowedMime as $key=>$mime) {
+                    foreach ($allowedMime as $key => $mime) {
                         if (preg_match('/^'.Common::mimeRegex.'$/i', $mime) !== 1) {
                             unset($allowedMime[$key]);
                         }
@@ -857,18 +924,24 @@ class Sharing
             }
             #Either exit or return
             if ($exit) {
-               exit;
+                exit;
             }
             return 200;
         }
         return Headers::clientReturn(404, $exit);
     }
-
-    #Function to proxy-stream file from another server
-    public static function proxyFile(string $url, string $cacheStrat = ''): void
+    
+    /**
+     * Function to proxy-stream file from another server
+     * @param string $url        URL to proxy
+     * @param string $cacheStrat Cashing strategy (same as for `Headers::cacheControl`)
+     *
+     * @return void
+     */
+    #[NoReturn] public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = ''): void
     {
         #Get headers
-        $headersData = @get_headers($url, context: stream_context_create(['http' => [
+        $headersData = get_headers($url, context: stream_context_create(['http' => [
             'method' => 'HEAD',
             'follow_location' => 1,
             'protocol_version' => 2.0
@@ -894,14 +967,14 @@ class Sharing
         #Process lastModified and eTag to attempt to rely on client cache and not waste server resources
         foreach ($headersData as $headerValue) {
             if (preg_match('/^Last-Modified:.*$/', $headerValue) === 1) {
-               Headers::lastModified(strtotime(preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $headerValue)), true);
+                Headers::lastModified(strtotime(preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $headerValue)), true);
             } elseif (preg_match('/^ETag:.*$/', $headerValue) === 1) {
                 Headers::eTag(preg_replace('/^(ETag:\s*"?)([^"]*)("?)$/', '$2', $headerValue), true);
             }
         }
         #Open streams
         #Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
-        $urlOpen = @fopen($url, 'rb', context: stream_context_create(['http' => [
+        $urlOpen = fopen($url, 'rb', context: stream_context_create(['http' => [
             'method' => 'GET',
             'follow_location' => 1,
             'protocol_version' => 2.0
