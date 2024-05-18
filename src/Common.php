@@ -29,7 +29,7 @@ class Common
      * @var string
      */
     public const string mimeRegex = /** @lang RegExp */
-        '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
+        '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
     /**
      * Linkage of extensions to MIME types
      * @var array
