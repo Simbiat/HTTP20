@@ -259,10 +259,10 @@ class Headers
             #Allow headers sent from server, normally restricted by CORS
             #Keep a default list, that includes those originally allowed by CORS and those present in this class as self::exposedHeaders
             #Send list
-            header('Access-Control-Expose-Headers: '.implode(', ', array_merge(self::exposedHeaders, $exposeHeaders)));
+            header('Access-Control-Expose-Headers: '.implode(', ', array_unique(array_merge(self::exposedHeaders, $exposeHeaders))));
             #Allow headers, that can change server state, but are normally restricted by CORS
             if (!empty($allowHeaders)) {
-                header('Access-Control-Allow-Headers: '.implode(', ', array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allowHeaders)));
+                header('Access-Control-Allow-Headers: '.implode(', ', array_unique(array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allowHeaders))));
             }
             #Set CORS strategy
             switch (mb_strtolower($strat, 'UTF-8')) {
