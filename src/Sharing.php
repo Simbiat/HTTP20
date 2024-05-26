@@ -142,12 +142,12 @@ class Sharing
             }
             header('Content-Type: multipart/byteranges; boundary='.$boundary);
             #Calculate size starting with the mandatory end of the feed (delimiter)
-            $partsSize = mb_strlen("\r\n--".$boundary."\r\n", 'UTF-8');
+            $partsSize = strlen("\r\n--".$boundary."\r\n", 'UTF-8');
             foreach ($ranges as $range) {
                 #Add content size
                 $partsSize += $range['end'] - $range['start'] + 1;
                 #Add size of supportive text
-                $partsSize += mb_strlen("\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n", 'UTF-8');
+                $partsSize += strlen("\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n", 'UTF-8');
             }
             #Send expected size to client
             header('Content-Length: '.$partsSize);

@@ -834,7 +834,7 @@ class Common
         Headers::cacheControl($string, $cacheStrat, true, $postfix);
         #Send header with length
         if (!headers_sent()) {
-            header('Content-Length: '.mb_strlen($string, 'UTF-8'));
+            header('Content-Length: '.strlen($string));
         }
         #Some HTTP methods do not support body, thus we need to ensure it's not sent.
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
