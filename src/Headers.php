@@ -754,7 +754,7 @@ class Headers
             $code = 302;
         }
         #Validate URI
-        if (filter_var($newURI, FILTER_VALIDATE_URL)) {
+        if (IRI::isValidIri($newURI)) {
             #Send Location header, indicating new URL to be used
             if (!headers_sent()) {
                 header('Location: '.$newURI);

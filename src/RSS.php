@@ -31,7 +31,7 @@ class RSS
         #Check feed link
         if (empty($feedLink)) {
             $feed_settings['link'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
-        } elseif (filter_var($feedLink, FILTER_VALIDATE_URL)) {
+        } elseif (IRI::isValidIri($feedLink)) {
             $feed_settings['link'] = Common::htmlToRFC3986($feedLink);
         } else {
             Headers::clientReturn(500, false);
