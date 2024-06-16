@@ -22,7 +22,8 @@
     ],
     "require": {
         "php": "^8.3",
-        "ext-intl": "*"
+        "ext-intl": "*",
+        "ext-mbstring": "*"
     },
     "suggest": {
         "simbiat/filename-sanitizer": "Small class to replace common characters that are restiricted in filenames."
