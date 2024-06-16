@@ -49,3 +49,7 @@ _Notice:_ While some functions (like `zEcho` or different `Headers`) can replace
         + [htmlToRFC3986](doc/Common.md#htmltorfc3986)
         + [reductor](doc/Common.md#reductor)
         + [forceClose](doc/Common.md#forceclose)
+    * [IRI](doc/IRI.md)
+        + [isValidIri](doc/IRI.md#isvalidiri)
+        + [iriToUri](doc/IRI.md#iritouri)
+        + [restoreUri](doc/IRI.md#restoreuri)
