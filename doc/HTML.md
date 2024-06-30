@@ -85,7 +85,7 @@ You can then manually send the `'links'` array to `Links()` function to generate
 ## pagination
 
 ```php
-pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page', 'next_text' => 'Next page', 'last_text' => 'Last page', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false)
+pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title')
 ```
 
 Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `aria` attributes.
@@ -121,6 +121,8 @@ Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `ari
 ]
 ```
 
+Text for previous, next and last pages support `$number` value, that will be replaced by respective page number.
+
 `$prefix` is an optional prefix for the links used in `href` attribute. Generally you will be ok with an empty string (default) and respective relative links, but in some cases, you may want to change that, for example, if your pages are using links like `#1` or `?page=1`. You can use that setting to adjust accordingly.
 
 `$links` - if set to `false`, you will get just a string of the requested pagination, but if set to `true`, this will also generate values for `rel="first prefetch"`, `rel="prev prefetch"`, `rel="next prefetch"` and `rel="last prefetch"` required for `Links()` [function](Headers.md#links), and thus function will return an array like this:
@@ -135,3 +137,5 @@ Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `ari
 You can then manually send the `'links'` array to `Links()` function to generate respective tags or headers.
 
 `$headers` is checked only if `$links` is `true`. If `$headers` is also `true`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).
+
+`$tooltip` - attribute to use for tooltip. `title` by default.
