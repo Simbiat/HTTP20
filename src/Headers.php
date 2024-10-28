@@ -73,7 +73,7 @@ class Headers
         #Document directives
         'base-uri' => '\'self\'', 'plugin-types' => '', 'sandbox' => '',
         #Navigate directives
-        'form-action' => '\'self\'', 'frame-ancestors' => '\'self\'', 'navigate-to' => '\'self\'',
+        'form-action' => '\'self\'', 'frame-ancestors' => '\'self\'',
         #Other directives
         'require-trusted-types-for' => '\'script\'', 'trusted-types' => '', 'report-to' => '',
     ];
