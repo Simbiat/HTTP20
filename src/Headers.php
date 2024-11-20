@@ -86,8 +86,6 @@ class Headers
         'accelerometer' => '\'none\'', 'ambient-light-sensor' => '\'none\'', 'gyroscope' => '\'none\'', 'magnetometer' => '\'none\'', 'vibrate' => '\'none\'',
         #Disable access to devices
         'camera' => '\'none\'', 'microphone' => '\'none\'', 'midi' => '\'none\'', 'usb' => '\'none\'', 'speaker' => '\'none\'',
-        #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
-        'document-domain' => '\'none\'',
         #document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
         'document-write' => '\'none\'',
         #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
