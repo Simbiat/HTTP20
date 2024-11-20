@@ -85,7 +85,7 @@ class Headers
         #Disable access to sensors
         'accelerometer' => '\'none\'', 'ambient-light-sensor' => '\'none\'', 'gyroscope' => '\'none\'', 'magnetometer' => '\'none\'', 'vibrate' => '\'none\'',
         #Disable access to devices
-        'camera' => '\'none\'', 'microphone' => '\'none\'', 'midi' => '\'none\'', 'battery' => '\'none\'', 'usb' => '\'none\'', 'speaker' => '\'none\'',
+        'camera' => '\'none\'', 'microphone' => '\'none\'', 'midi' => '\'none\'', 'usb' => '\'none\'', 'speaker' => '\'none\'',
         #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
         'document-domain' => '\'none\'',
         #document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
@@ -100,8 +100,6 @@ class Headers
         'web-share' => '\'none\'',
         #Disable synchronous XMLHttpRequests (that were technically deprecated)
         'sync-xhr' => '\'none\'',
-        #Disable synchronous parsing blocking scripts (inline without defer/async attribute)
-        'sync-script' => '\'none\'',
         #Disable WebVR API (halted standard, replaced by WebXR)
         'vr' => '\'none\'',
         #Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
@@ -112,10 +110,6 @@ class Headers
         'autoplay' => '\'none\'', 'fullscreen' => '\'none\'', 'picture-in-picture' => '\'none\'',
         #Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g. top, width, max-height)
         'font-display-late-swap' => '\'none\'', 'layout-animations' => '\'none\'',
-        #Disable execution of scripts/task in elements, that are not rendered or visible
-        'execution-while-not-rendered' => '\'none\'', 'execution-while-out-of-viewport' => '\'none\'',
-        #Disabling APIs for modification of spatial navigation and scrolling, since you need them only for specific cases
-        'navigation-override' => '\'none\'', 'vertical-scroll' => '\'none\'',
     ];
     /**
      * Default values for Permissions-Policy, essentially disabling most of them. It is different from secureFeatures, because of slightly different values and different list of policies
@@ -125,11 +119,11 @@ class Headers
         #Disable access to sensors
         'accelerometer' => '', 'ambient-light-sensor' => '', 'gyroscope' => '', 'magnetometer' => '',
         #Disable access to devices
-        'battery' => '', 'camera' => '', 'keyboard-map' => '', 'microphone' => '', 'midi' => '', 'usb' => '', 'gamepad' => '', 'speaker-selection' => '', 'hid' => '', 'serial' => '', 'window-placement' => '',
+        'camera' => '', 'keyboard-map' => '', 'microphone' => '', 'midi' => '', 'usb' => '', 'gamepad' => '', 'speaker-selection' => '', 'hid' => '', 'serial' => '',
         #Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
         'document-domain' => '',
         #Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => 'self', 'publickey-credentials-get' => 'self', 'trust-token-redemption' => 'self',
+        'encrypted-media' => 'self', 'publickey-credentials-get' => 'self',
         #Disable geolocation, XR tracking, payment and screen capture APIs
         'geolocation' => '', 'xr-spatial-tracking' => '', 'payment' => '', 'display-capture' => '',
         #Disable wake-locks
@@ -138,18 +132,12 @@ class Headers
         'web-share' => '',
         #Disable synchronous XMLHttpRequests (that were technically deprecated)
         'sync-xhr' => '',
-        #Disable synchronous parsing blocking scripts (inline without defer/async attribute)
-        'sync-script' => '',
         #Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
         'autoplay' => '', 'fullscreen' => '', 'picture-in-picture' => '',
-        #Disable execution of scripts/task in elements, that are not rendered or visible
-        'execution-while-not-rendered' => '', 'execution-while-out-of-viewport' => '',
-        #Disabling APIs for modification of spatial navigation and scrolling, since you need them only for specific cases
-        'navigation-override' => '', 'vertical-scroll' => '', 'focus-without-user-activation' => '',
         #Clipboard access. Enable only if you are going to manipulate clipboard on client side
         'clipboard-read' => '', 'clipboard-write' => '',
         #User tracking stuff
-        'cross-origin-isolated' => '', 'conversion-measurement' => '', 'interest-cohort' => '',
+        'cross-origin-isolated' => '', 'interest-cohort' => '',
     ];
     /**
      * Values supported by Sandbox in CSP
