@@ -17,8 +17,8 @@ Function to generate RSS feed as per https://www.rssboard.org/rss-specification 
   'lastBuildDate' => '2021-01-29',
   'language' => 'en-us',
   'copyright' => 'Copyrighted',
-  'managingEditor' => 'simbiat@outlook.com',
-  'webMaster' => 'simbiat@outlook.com',
+  'managingEditor' => 'support@simbiat.dev',
+  'webMaster' => 'support@simbiat.dev',
   'cloud' =>
   [
     'domain' => 'test.com',
@@ -61,7 +61,7 @@ Maximum for each element in `$entries` will look like this (either `title` or `d
   'title' => 'rss',
   'link' => 'gppgle.com',
   'description' => 'just some text',
-  'author' => 'simbiat@outlook.com',
+  'author' => 'support@simbiat.dev',
   'category' => 'php',
   'comments' => 'gppgle.com/comments.html',
   'pubDate' => '20201-01-29',

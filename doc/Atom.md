@@ -20,15 +20,15 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
   'rights' => 'Copyrighted',
   'authors' => [
     [
-      'name' => 'Dmitry Kustov',
-      'email' => 'simbiat@outlook.com',
+      'name' => 'Dmitrii Kustov',
+      'email' => 'support@simbiat.dev',
       'uri' => 'https://www.simbiat.dev/',
     ]
   ],
   'contributors' => [
     [
-      'name' => 'Dmitry Kustov',
-      'email' => 'simbiat@outlook.com',
+      'name' => 'Dmitrii Kustov',
+      'email' => 'support@simbiat.dev',
       'uri' => 'https://www.simbiat.dev/',
     ]
   ],
@@ -64,11 +64,11 @@ For details on elements above (what they mean, recommendations, etc.), please, r
   'title' => 'Google it',
   'updated' => '2021-01-08 20:00',
   'link' => 'https://google.com',
-  'author_name' => 'Dmitry Kustov',
-  'author_email' => 'simbiat@outlook.com',
+  'author_name' => 'Dmitrii Kustov',
+  'author_email' => 'support@simbiat.dev',
   'author_uri' => 'https://www.simbiat.dev/',
-  'contributor_name' => 'Dmitry Kustov',
-  'contributor_email' => 'simbiat@outlook.com',
+  'contributor_name' => 'Dmitrii Kustov',
+  'contributor_email' => 'support@simbiat.dev',
   'contributor_uri' => 'https://www.simbiat.dev/',
   'content' => 'Just google it',
   'summary' => 'Search',
