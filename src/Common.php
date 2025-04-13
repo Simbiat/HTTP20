@@ -881,7 +881,7 @@ class Common
      *
      * @return void
      */
-    public static function zEcho(string $string, #[ExpectedValues(['', 'aggressive', 'private', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = '', bool $exit = true): void
+    public static function zEcho(string $string, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = '', bool $exit = true): void
     {
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {

@@ -838,7 +838,7 @@ class Sharing
      *
      * @return int
      */
-    public static function fileEcho(string $filepath, array $allowedMime = [], #[ExpectedValues(['', 'aggressive', 'private', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = 'month', bool $exit = true): int
+    public static function fileEcho(string $filepath, array $allowedMime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = 'month', bool $exit = true): int
     {
         #Check if file exists
         if (is_file($filepath)) {
@@ -938,7 +938,7 @@ class Sharing
      *
      * @return void
      */
-    #[NoReturn] public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = ''): void
+    #[NoReturn] public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = ''): void
     {
         #Get headers
         $headersData = get_headers($url, context: stream_context_create(['http' => [

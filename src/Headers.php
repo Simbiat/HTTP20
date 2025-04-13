@@ -609,7 +609,7 @@ class Headers
      *
      * @return void
      */
-    public static function cacheControl(#[ExpectedValues(['', 'aggressive', 'private', 'live', 'month', 'week', 'day', 'hour'])] string $string = 'hour', string $cacheStrat = '', bool $exit = false, string $postfix = ''): void
+    public static function cacheControl(#[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $string = 'hour', string $cacheStrat = '', bool $exit = false, string $postfix = ''): void
     {
         if (!headers_sent()) {
             #Send headers related to cache based on strategy selected
@@ -619,7 +619,10 @@ class Headers
                     header('Cache-Control: max-age=31536000, immutable, no-transform');
                     break;
                 case 'private':
-                    header('Cache-Control: private, no-cache, no-store, no-transform');
+                    header('Cache-Control: private, no-cache, no-transform');
+                    break;
+                case 'none':
+                    header('Cache-Control: no-cache, no-store, no-transform');
                     break;
                 case 'live':
                     header('Cache-Control: no-cache, no-transform');
