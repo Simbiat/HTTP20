@@ -909,7 +909,7 @@ class Sharing
                     if (session_status() === PHP_SESSION_ACTIVE) {
                         session_write_close();
                     }
-                    exit;
+                    exit(0);
                 }
                 #Send data
                 if (fpassthru($stream) === 0) {
@@ -924,7 +924,7 @@ class Sharing
             }
             #Either exit or return
             if ($exit) {
-                exit;
+                exit(0);
             }
             return 200;
         }
@@ -993,6 +993,6 @@ class Sharing
             session_write_close();
         }
         #Ensure we exit
-        exit;
+        exit(0);
     }
 }

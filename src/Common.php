@@ -922,7 +922,7 @@ class Common
             echo $string;
         }
         if ($exit) {
-            exit;
+            exit(0);
         }
     }
     
@@ -1162,6 +1162,6 @@ class Common
         @ob_end_clean();
         #Clean system buffer
         @flush();
-        exit;
+        exit(0);
     }
 }
