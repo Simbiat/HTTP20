@@ -368,9 +368,9 @@ class Headers
             }
             #If report is set also send Content-Security-Policy-Report-Only header
             if ($reportOnly === false) {
-                header('Content-Security-Policy: upgrade-insecure-requests; '.trim($cspLine));
+                header('Content-Security-Policy: upgrade-insecure-requests; '.mb_trim($cspLine, encoding: 'UTF-8'));
             } elseif (!empty($defaultDirectives['report-to'])) {
-                header('Content-Security-Policy-Report-Only: '.trim($cspLine));
+                header('Content-Security-Policy-Report-Only: '.mb_trim($cspLine, encoding: 'UTF-8'));
             }
         }
     }
@@ -542,8 +542,8 @@ class Headers
             }
             foreach ($features as $feature => $allowList) {
                 #Sanitize
-                $feature = mb_strtolower(trim($feature), 'UTF-8');
-                $allowList = mb_strtolower(trim($allowList), 'UTF-8');
+                $feature = mb_strtolower(mb_trim($feature, encoding: 'UTF-8'), 'UTF-8');
+                $allowList = mb_strtolower(mb_trim($allowList, encoding: 'UTF-8'), 'UTF-8');
                 #If validation is enforced, validate the feature and value provided
                 if ($forceCheck === false || ($forceCheck === true && isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d+(\.\d+)?\))?)|(\'self\' ?)?(?<origin>'.self::originRegex.'(?<setting_o>\(\d+(\.\d+)?\))?(?<delimiter> )?)+$/i', $allowList) === 1)) {
                     #Update value
@@ -560,9 +560,9 @@ class Headers
                 }
             }
             if ($permissions) {
-                header('Permissions-Policy: '.rtrim(trim($headerLine), ','));
+                header('Permissions-Policy: '.mb_rtrim(mb_trim($headerLine, encoding: 'UTF-8'), ',', 'UTF-8'));
             } else {
-                header('Feature-Policy: '.trim($headerLine));
+                header('Feature-Policy: '.mb_trim($headerLine, encoding: 'UTF-8'));
             }
         }
     }
@@ -665,12 +665,12 @@ class Headers
             #Send ETag for caching purposes
             header('ETag: '.$etag);
             #Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since ideally you will have some text to output first, but it can still save some time on client side
-            if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+            if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && mb_trim($_SERVER['HTTP_IF_NONE_MATCH'], encoding: 'UTF-8') === $etag) {
                 #If content has not been modified - return 304
                 self::clientReturn(304, $exit);
             }
             #Return error if If-Match was sent, and it's different from our etag
-            if (isset($_SERVER['HTTP_IF_MATCH']) && trim($_SERVER['HTTP_IF_MATCH']) !== $etag) {
+            if (isset($_SERVER['HTTP_IF_MATCH']) && mb_trim($_SERVER['HTTP_IF_MATCH'], encoding: 'UTF-8') !== $etag) {
                 self::clientReturn(412, $exit);
             }
         }
@@ -834,14 +834,14 @@ class Headers
             #Check if we have multiple keys
             if (str_contains($name, '[')) {
                 #Explode keys into array
-                $keys = explode('[', trim($name));
+                $keys = explode('[', mb_trim($name, encoding: 'UTF-8'));
                 $name = '';
                 #Build JSON array string from keys
                 foreach ($keys as $key) {
-                    $name .= '{"'.rtrim($key, ']').'":';
+                    $name .= '{"'.mb_rtrim($key, ']', 'UTF-8').'":';
                 }
                 #Add the value itself (as string, since in this case it will always be a string) and closing brackets
-                $name .= '"'.trim($value).'"'.str_repeat('}', \count($keys));
+                $name .= '"'.mb_trim($value, encoding: 'UTF-8').'"'.str_repeat('}', \count($keys));
                 #Convert into actual PHP array
                 $array = json_decode($name, true, flags: JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE | JSON_OBJECT_AS_ARRAY);
                 #Check if we actually got an array and did not fail
@@ -851,7 +851,7 @@ class Headers
                 }
             } else {
                 #Single key - simple processing
-                $parsedData[trim($name)] = trim($value);
+                $parsedData[mb_trim($name, encoding: 'UTF-8')] = mb_trim($value, encoding: 'UTF-8');
             }
         }
         #Update static variable based on method value

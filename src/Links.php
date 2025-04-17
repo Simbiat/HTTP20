@@ -409,7 +409,7 @@ class Links
         if (self::$saveData === true && isset($link['rel']) && preg_match(self::preloadRel, $link['rel']) === 1) {
             $link['rel'] = preg_replace(self::preloadRel, '', $link['rel']);
             #Replace multiple whitespaces with single space and trim
-            $link['rel'] = trim(preg_replace('/\s{2,}/', ' ', $link['rel']));
+            $link['rel'] = mb_trim(preg_replace('/\s{2,}/', ' ', $link['rel']), encoding: 'UTF-8');
             #Unset rel if it's empty
             if (empty($link['rel'])) {
                 unset($link['rel']);

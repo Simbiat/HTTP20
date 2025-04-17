@@ -787,9 +787,9 @@ class Sharing
             #Sanitize
             foreach ($ranges as $key => $range) {
                 if (preg_match('/^-\d+$/', $range) === 1) {
-                    $ranges[$key] = ['start' => 0, 'end' => (int)ltrim($range, '-')];
+                    $ranges[$key] = ['start' => 0, 'end' => (int)mb_ltrim($range, '-', 'UTF-8')];
                 } elseif (preg_match('/^\d+-$/', $range) === 1) {
-                    $ranges[$key] = ['start' => (int)rtrim($range, '-'), 'end' => ($size - 1)];
+                    $ranges[$key] = ['start' => (int)mb_rtrim($range, '-', 'UTF-8'), 'end' => ($size - 1)];
                 } elseif (preg_match('/^\d+-\d+$/', $range) === 1) {
                     $tempRange = explode('-', $range);
                     $ranges[$key] = ['start' => (int)$tempRange[0], 'end' => (int)$tempRange[1]];
