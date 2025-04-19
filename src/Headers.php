@@ -17,15 +17,20 @@ class Headers
      */
     public static array $_PUT = [];
     /**
-     * Same as `$_DELETE`, but for DELETE
+     * Same as `$_POST`, but for DELETE
      * @var array
      */
     public static array $_DELETE = [];
     /**
-     * Same as `$_PATCH`, but for PATCH
+     * Same as `$_POST`, but for PATCH
      * @var array
      */
     public static array $_PATCH = [];
+    /**
+     * Same as `$_FILES`, but gotten from PUT, PATCH or DELETE requests
+     * @var array
+     */
+    public static array $_FILES = [];
     
     /**
      * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)
@@ -802,7 +807,6 @@ class Headers
     
     /**
      * Function to parse multipart/form-data for PUT/DELETE/PATCH methods
-     * @throws \JsonException
      */
     public static function multiPartFormParse(): void
     {
@@ -811,50 +815,11 @@ class Headers
         #Get Content-Type
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         #Exit if not one of the supported methods or wrong content-type
-        if (!in_array($method, ['PUT', 'DELETE', 'PATCH']) || preg_match('/^multipart\/form-data; boundary=.*$/ui', $contentType) !== 1) {
+        if (!in_array($method, ['PUT', 'DELETE', 'PATCH']) || preg_match('/(^application\/x-www-form-urlencoded$)|(^multipart\/form-data; boundary=.*$)/ui', $contentType) !== 1) {
             return;
         }
-        #Get boundary value
-        $boundary = preg_replace('/(^multipart\/form-data; boundary=)(.*$)/ui', '$2', $contentType);
-        #Get input stream
-        $formData = file_get_contents('php://input');
-        #Exit if failed to get the input or if it's not compliant with the RFC2046
-        if ($formData === false || preg_match('/^\s*--'.$boundary.'.*\s*--'.$boundary.'--\s*$/muis', $formData) !== 1) {
-            return;
-        }
-        #Strip ending boundary
-        $formData = preg_replace('/(^\s*--'.$boundary.'.*)(\s*--'.$boundary.'--\s*$)/muis', '$1', $formData);
-        #Split data into array of fields
-        $formData = preg_split('/\s*--'.$boundary.'\s*Content-Disposition: form-data;\s*/muis', $formData, 0, PREG_SPLIT_NO_EMPTY);
-        #Convert to associative array
-        $parsedData = [];
-        foreach ($formData as $field) {
-            $name = preg_replace('/(name=")(?<name>[^"]+)("\s*)(?<value>.*$)/mui', '$2', $field);
-            $value = preg_replace('/(name=")(?<name>[^"]+)("\s*)(?<value>.*$)/mui', '$4', $field);
-            #Check if we have multiple keys
-            if (str_contains($name, '[')) {
-                #Explode keys into array
-                $keys = explode('[', mb_trim($name, encoding: 'UTF-8'));
-                $name = '';
-                #Build JSON array string from keys
-                foreach ($keys as $key) {
-                    $name .= '{"'.mb_rtrim($key, ']', 'UTF-8').'":';
-                }
-                #Add the value itself (as string, since in this case it will always be a string) and closing brackets
-                $name .= '"'.mb_trim($value, encoding: 'UTF-8').'"'.str_repeat('}', \count($keys));
-                #Convert into actual PHP array
-                $array = json_decode($name, true, flags: JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE | JSON_OBJECT_AS_ARRAY);
-                #Check if we actually got an array and did not fail
-                if ($array !== null) {
-                    #"Merge" the array into existing data. Doing recursive replace, so that new fields will be added, and in case of duplicates, only the latest will be used
-                    $parsedData = array_replace_recursive($parsedData, $array);
-                }
-            } else {
-                #Single key - simple processing
-                $parsedData[mb_trim($name, encoding: 'UTF-8')] = mb_trim($value, encoding: 'UTF-8');
-            }
-        }
-        #Update static variable based on method value
-        self::${'_'.mb_strtoupper($method, 'UTF-8')} = $parsedData;
+        $parsedData = request_parse_body();
+        self::${'_'.mb_strtoupper($method, 'UTF-8')} = $parsedData[0];
+        self::$_FILES = $parsedData[1];
     }
 }
