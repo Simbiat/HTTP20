@@ -7,7 +7,7 @@
 Functions useful for work with International Resource Identifiers (IRIs)
 
 ```php
-\Simbiat\HTTP20\IRI::nameOfFunction();
+\Simbiat\http20\IRI::nameOfFunction();
 ```
 
 ## isValidIri

@@ -139,8 +139,8 @@ class Atom
             }
         }
         #Add generator referencing the library itself
-        $generator = $root->appendChild($feed->createElement('generator', 'Simbiat/HTTP20'));
-        $generator->setAttribute('uri', 'https://github.com/Simbiat/HTTP20');
+        $generator = $root->appendChild($feed->createElement('generator', 'Simbiat/http20'));
+        $generator->setAttribute('uri', 'https://github.com/Simbiat/http20');
         #Add actual entries in the feed
         if (!empty($entries)) {
             foreach ($entries as $entry) {

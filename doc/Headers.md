@@ -18,7 +18,7 @@ Functions that send/handle different HTTP headers.
 I hope that at some point this will become popular. While some frameworks do seem to implement some similar functionality it seems to be generally ignored, while HTTP headers can make user experience better and more secure. If you start using `Headers` (especially `security`) it will (by default) force you into following best practices when designing your website. If you need to loosen up your security for some reason, it is possible in a relatively convenient way. If you find that it isn't (like you need to use `unsafe` directives, for example), most likely you are trying to save a security hole, that you should not be saving.
 
 ```php
-\Simbiat\HTTP20\Headers::nameOfFunction();
+\Simbiat\http20\Headers::nameOfFunction();
 ```
 
 ## cacheControl
@@ -222,7 +222,7 @@ If none of your supported MIME types match `Accept` header, `406` header will be
 multiPartFormParse()
 ```
 
-This function parses `multipart/form-data` data for PUT, DELETE and PATCH methods and dumps the result as associative array to respective static variables `$_PUT`, `$_DELETE` and `$_PATCH` (accessed as `\Simbiat\HTTP20\Headers::$_PUT`).
+This function parses `multipart/form-data` data for PUT, DELETE and PATCH methods and dumps the result as associative array to respective static variables `$_PUT`, `$_DELETE` and `$_PATCH` (accessed as `\Simbiat\http20\Headers::$_PUT`).
 
 The same logic can technically be used for POST as well, but PHP already parses it into native `$_POST`, so need to cover it.
 

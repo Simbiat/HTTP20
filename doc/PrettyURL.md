@@ -1,7 +1,7 @@
 ## PrettyURL
 
 ```php
-\Simbiat\HTTP20\PrettyURL::pretty(string $string, string $whitespace = '-', bool $urlSafe = true);
+\Simbiat\http20\PrettyURL::pretty(string $string, string $whitespace = '-', bool $urlSafe = true);
 ```
 
 Function transliterates lots of characters and makes a safe and pretty URL. This is intended more as a SEO thing, rather than sanitization.

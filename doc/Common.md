@@ -11,7 +11,7 @@
 Assortment of functions, that are used by classes inside the library, but can also be used directly. They are all called as
 
 ```php
-\Simbiat\HTTP20\Common::nameOfFunction();
+\Simbiat\http20\Common::nameOfFunction();
 ```
 
 ## valueToTime

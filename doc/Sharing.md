@@ -12,7 +12,7 @@
 Function that can be used in processes related to file sharing.
 
 ```php
-\Simbiat\HTTP20\Sharing::nameOfFunction();
+\Simbiat\http20\Sharing::nameOfFunction();
 ```
 
 ## download

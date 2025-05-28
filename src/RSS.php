@@ -225,7 +225,7 @@ class RSS
             }
         }
         #Add generator referencing the library itself
-        $root->appendChild($feed->createElement('generator', 'Simbiat/HTTP20, https://github.com/Simbiat/HTTP20'));
+        $root->appendChild($feed->createElement('generator', 'Simbiat/http20, https://github.com/Simbiat/http20'));
         $root->appendChild($feed->createElement('docs', 'https://www.rssboard.org/rss-specification'));
         #Add actual entries in the feed
         if (!empty($entries)) {
