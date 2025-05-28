@@ -108,7 +108,7 @@ class Sitemap
             throw new \UnexpectedValueException('No `loc` value provided for first link');
         }
         #Parse the URL
-        $first = parse_url($first['loc']);
+        $first = IRI::parseUri($first['loc']);
         if (!\is_array($first)) {
             throw new \UnexpectedValueException('Failed to parse `loc` element as URL');
         }

@@ -747,7 +747,7 @@ class Headers
         } elseif (!$permanent && !$preserveMethod) {
             $code = 302;
         }
-        #Validate URI
+        #Validate URI. Not checking the scheme since it may be a valid use-case to redirect to something besides HTTPS
         if (IRI::isValidIri($newURI)) {
             #Send Location header, indicating new URL to be used
             if (!headers_sent()) {

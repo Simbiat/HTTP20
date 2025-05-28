@@ -43,7 +43,7 @@ class Atom
         #Check id
         if (empty($id)) {
             $feed_settings['id'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
-        } elseif (IRI::isValidIri($id)) {
+        } elseif (IRI::isValidIri($id, 'https')) {
             $feed_settings['id'] = Common::htmlToRFC3986($id);
         } else {
             Headers::clientReturn(500, false);
@@ -180,7 +180,7 @@ class Atom
                 continue;
             }
             if ($type === 'link') {
-                if (!IRI::isValidIri($elementToVal['href'])) {
+                if (!IRI::isValidIri($elementToVal['href'], 'https')) {
                     unset($elements[$key]);
                     continue;
                 }
@@ -198,7 +198,7 @@ class Atom
                     unset($elements[$key]);
                     continue;
                 }
-                if (!IRI::isValidIri($elementToVal['link'])) {
+                if (!IRI::isValidIri($elementToVal['link'], 'https')) {
                     unset($elements[$key]);
                 }
             }

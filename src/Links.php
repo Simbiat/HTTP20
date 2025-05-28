@@ -244,6 +244,11 @@ class Links
     private static function processIntegrity(array &$link): bool
     {
         if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) === 0) {
+            $potentialIRI = IRI::parseUri($link['integrity']);
+            if (\is_array($potentialIRI) && !empty($potentialIRI['host'])) {
+                #It looks like we have an absolute link. Assume error or malicious intent
+                return false;
+            }
             #If not valid, check if it's a file and generate hash
             if (is_file($link['integrity'])) {
                 #Attempt to get actual MIME type while we're at it
@@ -251,7 +256,7 @@ class Links
                     $link['type'] = mime_content_type(realpath($link['integrity']));
                 }
                 #Get size of the image, if the file is an image
-                if (!isset($link['sizes']) && isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1 && parse_url($link['integrity'], PHP_URL_HOST) === NULL) {
+                if (!isset($link['sizes']) && isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1) {
                     $size = self::getImageSize($link);
                     #Set tags if we were able to get size
                     if (!empty($size)) {
@@ -272,7 +277,7 @@ class Links
                     }
                 }
                 #Get hash if we have a script or style
-                if (isset($link['type']) && preg_match('/^(application\/javascript|text\/css)$/i', $link['type']) === 1 && parse_url($link['integrity'], PHP_URL_HOST) === NULL) {
+                if (isset($link['type']) && preg_match('/^(application\/javascript|text\/css)$/i', $link['type']) === 1) {
                     $link['integrity'] = 'sha512-'.base64_encode(hash_file('sha512', realpath($link['integrity'])));
                 } else {
                     unset($link['integrity']);

@@ -31,7 +31,7 @@ class RSS
         #Check feed link
         if (empty($feedLink)) {
             $feed_settings['link'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
-        } elseif (IRI::isValidIri($feedLink)) {
+        } elseif (IRI::isValidIri($feedLink, 'https')) {
             $feed_settings['link'] = Common::htmlToRFC3986($feedLink);
         } else {
             Headers::clientReturn(500, false);
@@ -172,10 +172,10 @@ class RSS
         if (!empty($feed_settings['copyright'])) {
             $root->appendChild($feed->createElement('copyright', $feed_settings['copyright']));
         }
-        if (!empty($feed_settings['managingEditor']) && filter_var($feed_settings['managingEditor'], FILTER_VALIDATE_EMAIL | FILTER_FLAG_EMAIL_UNICODE)) {
+        if (!empty($feed_settings['managingEditor']) && filter_var($feed_settings['managingEditor'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
             $root->appendChild($feed->createElement('managingEditor', $feed_settings['managingEditor']));
         }
-        if (!empty($feed_settings['webMaster']) && filter_var($feed_settings['webMaster'], FILTER_VALIDATE_EMAIL | FILTER_FLAG_EMAIL_UNICODE)) {
+        if (!empty($feed_settings['webMaster']) && filter_var($feed_settings['webMaster'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
             $root->appendChild($feed->createElement('webMaster', $feed_settings['webMaster']));
         }
         #Add cloud details (rssCloud)
@@ -267,7 +267,7 @@ class RSS
         if (!empty($entry['description'])) {
             $element->appendChild($feed->createElement('description', $entry['description']));
         }
-        if (!empty($feed_settings['author']) && filter_var($feed_settings['author'], FILTER_VALIDATE_EMAIL | FILTER_FLAG_EMAIL_UNICODE)) {
+        if (!empty($feed_settings['author']) && filter_var($feed_settings['author'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
             $element->appendChild($feed->createElement('author', $feed_settings['author']));
         }
         if (!empty($entry['category'])) {
