@@ -64,14 +64,14 @@ class Sharing
         Headers::eTag($boundary, true);
         #Check if MIME was provided
         #If yes, validate its format
-        if (!empty($mime) && preg_match('/^(('.Common::mimeRegex.') ?)+$/i', $mime) !== 1) {
+        if (!empty($mime) && preg_match('/^(('.Common::MIME_REGEX.') ?)+$/i', $mime) !== 1) {
             #Empty invalid MIME
             $mime = '';
         }
         #Check if it's empty again (or was from the start)
         if (empty($mime)) {
             #If not, attempt to check if in the constant list based on extension
-            $mime = Common::extToMime[$fileinfo['extension']] ?? 'application/octet-stream';
+            $mime = Common::EXTENSION_TO_MIME[$fileinfo['extension']] ?? 'application/octet-stream';
         }
         #Get file name
         if (empty($filename)) {
@@ -207,13 +207,13 @@ class Sharing
      * @param string|array $destPath      Path to save a file(s) to.
      * @param bool         $preserveNames Whether to preserve name(s). If `false` will rename files to their hash + extension based on MIME type. Only for POST uploads.
      * @param bool         $overwrite     Whether to overwrite existing file(s). Only for POST uploads.
-     * @param array        $allowedMime   List of allowed MIME types to block files, that do not match it.
+     * @param array        $allowed_mime  List of allowed MIME types to block files, that do not match it.
      * @param bool         $intolerant    Changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array). Only for POST uploads.
-     * @param bool         $exit          If set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a value, that you can utilize somehow.
+     * @param bool         $exit          If set to `false` will not automatically exit once a file/range or a "bad" header is sent to a client. It then will return a value, that you can utilize somehow.
      *
      * @return int|array
      */
-    public static function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intolerant = true, bool $exit = true): int|array
+    public static function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): int|array
     {
         #Set upload directory
         if (is_writable(ini_get('upload_tmp_dir')) === true) {
@@ -236,10 +236,10 @@ class Sharing
             return Headers::clientReturn(415, $exit);
         }
         #Sanitize provided MIME types
-        if (!empty($allowedMime)) {
-            foreach ($allowedMime as $key => $mime) {
-                if (preg_match('/^'.Common::mimeRegex.'$/i', $mime) !== 1) {
-                    unset($allowedMime[$key]);
+        if (!empty($allowed_mime)) {
+            foreach ($allowed_mime as $key => $mime) {
+                if (preg_match('/^'.Common::MIME_REGEX.'$/i', $mime) !== 1) {
+                    unset($allowed_mime[$key]);
                 }
             }
         }
@@ -395,12 +395,12 @@ class Sharing
                             $_FILES[$field][$key]['type'] = mime_content_type($file['tmp_name']);
                         }
                         #Check against allowed MIME types if any was set and fileinfo is loaded
-                        #Get MIME from file (not relying on what was sent by client)
-                        if (!empty($allowedMime) && !in_array($_FILES[$field][$key]['type'], $allowedMime, true)) {
+                        #Get MIME from the file (not relying on what was sent by client)
+                        if (!empty($allowed_mime) && !in_array($_FILES[$field][$key]['type'], $allowed_mime, true)) {
                             if ($intolerant) {
                                 return Headers::clientReturn(415, $exit);
                             }
-                            #Remove the file from list
+                            #Remove the file from the list
                             unset($_FILES[$field][$key]);
                             continue;
                         }
@@ -423,7 +423,7 @@ class Sharing
                                 $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                             } else {
                                 #Get extension (if any)
-                                $ext = array_search($_FILES[$field][$key]['type'], Common::extToMime, true);
+                                $ext = array_search($_FILES[$field][$key]['type'], Common::EXTENSION_TO_MIME, true);
                                 if ($ext) {
                                     $ext = '.'.$ext;
                                 } else {
@@ -504,8 +504,8 @@ class Sharing
             if (!is_string($destPath)) {
                 return Headers::clientReturn(500, $exit);
             }
-            #Get MIME from file (not relying on what was sent by client)
-            if (!empty($allowedMime) && isset($_SERVER['CONTENT_TYPE']) && !in_array($_SERVER['CONTENT_TYPE'], $allowedMime, true)) {
+            #Get MIME from the file (not relying on what was sent by client)
+            if (!empty($allowed_mime) && isset($_SERVER['CONTENT_TYPE']) && !in_array($_SERVER['CONTENT_TYPE'], $allowed_mime, true)) {
                 return Headers::clientReturn(415, $exit);
             }
             #Attempt to get name from header
@@ -513,7 +513,7 @@ class Sharing
             if (isset($_SERVER['HTTP_CONTENT_DISPOSITION'])) {
                 #filename* is preferred over filename as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
                 #Note that this format MAY include charset
-                $name = preg_replace('/^(.*filename\*='.Common::langEncRegex.'"?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
+                $name = preg_replace('/^(.*filename\*='.Common::LANGUAGE_ENC_REGEX.'"?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
                 if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
                     #If we are here, it means that there is no filename*
                     $name = preg_replace('/^(.*filename="?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$2', $_SERVER['HTTP_CONTENT_DISPOSITION']);
@@ -621,14 +621,14 @@ class Sharing
             }
             #Check against allowed MIME types if any was set and fileinfo is loaded
             #Get MIME from file (not relying on what was sent by client)
-            if (!empty($allowedMime) && !in_array($filetype, $allowedMime, true)) {
-                if (file_exists($uploadDir.'/'.$name)) {
+            if (!empty($allowed_mime) && !in_array($filetype, $allowed_mime, true)) {
+                if (is_file($uploadDir.'/'.$name)) {
                     unlink($uploadDir.'/'.$name);
                 }
                 return Headers::clientReturn(415, $exit);
             }
             #Get extension of the file
-            $ext = array_search($filetype, Common::extToMime, true);
+            $ext = array_search($filetype, Common::EXTENSION_TO_MIME, true);
             if ($ext === false) {
                 $ext = 'PUT';
             }
@@ -831,14 +831,14 @@ class Sharing
     
     /**
      * Function to send a file directly to browser
-     * @param string $filepath    Path to file
-     * @param array  $allowedMime List of allowed MIME types
-     * @param string $cacheStrat  Cashing strategy (same as for `Headers::cacheControl`)
-     * @param bool   $exit        Whether to stop execution in case of errors
+     * @param string $filepath     Path to file
+     * @param array  $allowed_mime List of allowed MIME types
+     * @param string $cacheStrat   Cashing strategy (same as for `Headers::cacheControl`)
+     * @param bool   $exit         Whether to stop execution in case of errors
      *
      * @return int
      */
-    public static function fileEcho(string $filepath, array $allowedMime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = 'month', bool $exit = true): int
+    public static function fileEcho(string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = 'month', bool $exit = true): int
     {
         #Check if file exists
         if (is_file($filepath)) {
@@ -846,15 +846,15 @@ class Sharing
             if (extension_loaded('fileinfo')) {
                 #Get MIME from file
                 $mimeType = mime_content_type($filepath);
-                if (!empty($allowedMime)) {
+                if (!empty($allowed_mime)) {
                     #Sanitize provided MIME types
-                    foreach ($allowedMime as $key => $mime) {
-                        if (preg_match('/^'.Common::mimeRegex.'$/i', $mime) !== 1) {
-                            unset($allowedMime[$key]);
+                    foreach ($allowed_mime as $key => $mime) {
+                        if (preg_match('/^'.Common::MIME_REGEX.'$/i', $mime) !== 1) {
+                            unset($allowed_mime[$key]);
                         }
                     }
                     #Check if MIME is allowed
-                    if (!empty($allowedMime) && !in_array($mimeType, $allowedMime, true)) {
+                    if (!empty($allowed_mime) && !in_array($mimeType, $allowed_mime, true)) {
                         return Headers::clientReturn(403, $exit);
                     }
                 }
@@ -862,8 +862,8 @@ class Sharing
             #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
             $extension = pathinfo($filepath)['extension'];
             #Set MIME from extension, of available
-            if (!empty($extension) && !empty(Common::extToMime[$extension])) {
-                $mimeTypeAlt = Common::extToMime[$extension];
+            if (!empty($extension) && !empty(Common::EXTENSION_TO_MIME[$extension])) {
+                $mimeTypeAlt = Common::EXTENSION_TO_MIME[$extension];
             }
             #Set MIME type to stream, if it's empty
             if (empty($mimeTypeAlt)) {

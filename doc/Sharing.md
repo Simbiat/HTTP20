@@ -43,7 +43,7 @@ While this function can return the number of bytes, that may be useful for some 
 ## upload
 
 ```php
-upload($destPath, bool $preserveNames = false, bool $overwrite = false, array $allowedMime = [], bool $intolerant = true, bool $exit = true);
+upload($destPath, bool $preserveNames = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true);
 ```
 
 Function to handle uploads. It's not fancy as https://tus.io/, but if you need handling some simple file uploads, this still can provide you useful features:
@@ -70,7 +70,7 @@ Function to handle uploads. It's not fancy as https://tus.io/, but if you need h
 
 `$overwrite` (only for POST) allows overwriting files, if set to `true`. Otherwise - they will be ignored (but still will be returned in the resulting array).
 
-`$allowedMime` - optional array of MIME types, that you accept for upload.
+`$allowed_mime` - optional array of MIME types, that you accept for upload.
 
 `$intolerant` (only for POST) changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array).
 
@@ -160,14 +160,14 @@ I can't think of a case, when this can be used outside of `download` function, e
 ## fileEcho
 
 ```php
-fileEcho(string $filepath, array $allowedMime = [], string $cacheStrat = 'month', bool $exit = true)
+fileEcho(string $filepath, array $allowed_mime = [], string $cacheStrat = 'month', bool $exit = true)
 ```
 
 A function, that will pass a file to client while sending appropriate headers. Note, that, while this can be used for download, I'd recommend against that: for downloads, please, use [download](Sharing.md#download) function, instead. Use `fileEcho` for small files, that you want to display inline.
 
 `$filepath` - path to the file. If path is not a file, function will return 404.
 
-`$allowedMime` - array of allowed MIME types, if you want to restrict the use of this function by the type. Note, that it will check the actual file MIME type, but attempt to send the MIME type based on file extension to the client. If MIME type is not allowed, will return 403.
+`$allowed_mime` - array of allowed MIME types, if you want to restrict the use of this function by the type. Note, that it will check the actual file MIME type, but attempt to send the MIME type based on file extension to the client. If MIME type is not allowed, will return 403.
 
 `$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](Headers.md#cachecontrol))
 

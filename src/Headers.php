@@ -36,22 +36,22 @@ class Headers
      * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)
      * @var string
      */
-    public const string originRegex = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
+    public const string ORIGIN_REGEX = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
     /**
      * Safe HTTP methods which can, generally, be allowed for processing
      * @var array
      */
-    public const array safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+    public const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
     /**
      * Full list of HTTP methods
      * @var array
      */
-    public const array allMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
+    public const array ALL_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
     /**
      * List of headers we allow exposing by default
      * @var array
      */
-    public const array exposedHeaders = [
+    public const array EXPOSED_HEADERS = [
         #CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
         'Cache-Control', 'Content-Language', 'Content-Type', 'Last-Modified',
         #Security headers
@@ -68,7 +68,7 @@ class Headers
      * Default values for CSP directives set to mostly restrictive values
      * @var array
      */
-    public const array secureDirectives = [
+    public const array SECURE_DIRECTIVES = [
         #Fetch Directives
         'default-src' => '\'self\'', 'child-src' => '\'self\'', 'connect-src' => '\'self\'', 'font-src' => '\'self\'', 'frame-src' => '\'self\'',
         #Blocking images, because images can be used to inject scripts:
@@ -86,7 +86,7 @@ class Headers
      * Default values for Feature-Policy, essentially disabling most of them
      * @var array
      */
-    public const array secureFeatures = [
+    public const array SECURE_FEATURES = [
         #Disable access to sensors
         'accelerometer' => '\'none\'', 'ambient-light-sensor' => '\'none\'', 'gyroscope' => '\'none\'', 'magnetometer' => '\'none\'', 'vibrate' => '\'none\'',
         #Disable access to devices
@@ -115,10 +115,10 @@ class Headers
         'font-display-late-swap' => '\'none\'', 'layout-animations' => '\'none\'',
     ];
     /**
-     * Default values for Permissions-Policy, essentially disabling most of them. It is different from secureFeatures, because of slightly different values and different list of policies
+     * Default values for Permissions-Policy, essentially disabling most of them. It is different from SECURE_FEATURES, because of slightly different values and different list of policies
      * @var array
      */
-    public const array permissionsDefault = [
+    public const array PERMISSIONS_DEFAULT = [
         #Disable access to sensors
         'accelerometer' => '', 'ambient-light-sensor' => '', 'gyroscope' => '', 'magnetometer' => '',
         #Disable access to devices
@@ -146,37 +146,37 @@ class Headers
      * Values supported by Sandbox in CSP
      * @var array
      */
-    public const array sandboxValues = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
+    public const array SANDBOX_VALUES = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
     /**
      * ist of standard values for `Set-Fetch-Site`
      * @var array
      */
-    public const array fetchSite = ['cross-site', 'same-origin', 'same-site', 'none'];
+    public const array FETCH_SITE = ['cross-site', 'same-origin', 'same-site', 'none'];
     /**
      * List of standard values for `Set-Fetch-Mode`
      * @var array
      */
-    public const array fetchMode = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
+    public const array FETCH_MODE = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
     /**
      * List of values for `Set-Fetch-User`
      * @var array
      */
-    public const array fetchUser = ['?0', '?1'];
+    public const array FETCH_USER = ['?0', '?1'];
     /**
      * List of standard Set-Fetch-Destinations besides "script-like"
      * @var array
      */
-    public const array fetchDest = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
+    public const array FETCH_DESTINATIONS = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
     /**
      * List of standard Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (`<script>` or similar object)
      * @var array
      */
-    public const array scriptLike = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
+    public const array SCRIPT_LIKE = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
     /**
      * List of standard HTTP status codes
      * @var array
      */
-    public const array HTTPCodes = [
+    public const array HTTP_CODES = [
         100 => 'Continue', 101 => 'Switching Protocols', 102 => 'Processing', 103 => 'Early Hints',
         200 => 'OK', 201 => 'Created', 202 => 'Accepted', 203 => 'Non-Authoritative Information', 204 => 'No Content', 205 => 'Reset Content', 206 => 'Partial Content', 207 => 'Multi-Status', 208 => 'Already Reported', 226 => 'IM Used',
         300 => 'Multiple Choices', 301 => 'Moved Permanently', 302 => 'Found', 303 => 'See Other', 304 => 'Not Modified', 305 => 'Use Proxy', 306 => 'Switch Proxy', 307 => 'Temporary Redirect', 308 => 'Permanent Redirect',
@@ -198,10 +198,10 @@ class Headers
     {
         if (!headers_sent()) {
             #Default list of allowed methods, limited to only "simple" ones
-            $defaultMethods = self::safeMethods;
+            $defaultMethods = self::SAFE_METHODS;
             #Sanitize the custom methods
             foreach ($allowMethods as $key => $method) {
-                if (!in_array($method, self::allMethods, true)) {
+                if (!in_array($method, self::ALL_METHODS, true)) {
                     unset($allowMethods[$key]);
                 }
             }
@@ -218,13 +218,13 @@ class Headers
             }
             #Sanitize Origins list
             foreach ($allowOrigins as $key => $origin) {
-                if (preg_match('/'.self::originRegex.'/i', $origin) !== 1) {
+                if (preg_match('/'.self::ORIGIN_REGEX.'/i', $origin) !== 1) {
                     unset($allowOrigins[$key]);
                 }
             }
             #Check that list is still not empty, otherwise, we assume, that access from all origins is allowed (akin to *)
             if (!empty($allowOrigins)) {
-                if (isset($_SERVER['HTTP_ORIGIN']) && preg_match('/'.self::originRegex.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allowOrigins, true)) {
+                if (isset($_SERVER['HTTP_ORIGIN']) && preg_match('/'.self::ORIGIN_REGEX.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allowOrigins, true)) {
                     #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
                     header('Vary: Origin', false);
                     #Send actual headers
@@ -248,9 +248,9 @@ class Headers
             #Allows credentials to be shared to front-end JS. By itself this should not be a security issue, but it may ease of use for 3rd-party parser in some cases if you are using cookies.
             header('Access-Control-Allow-Credentials: true');
             #Allow headers sent from server, normally restricted by CORS
-            #Keep a default list, that includes those originally allowed by CORS and those present in this class as self::exposedHeaders
+            #Keep a default list, that includes those originally allowed by CORS and those present in this class as self::EXPOSED_HEADERS
             #Send list
-            header('Access-Control-Expose-Headers: '.implode(', ', array_unique(array_merge(self::exposedHeaders, $exposeHeaders))));
+            header('Access-Control-Expose-Headers: '.implode(', ', array_unique(array_merge(self::EXPOSED_HEADERS, $exposeHeaders))));
             #Allow headers, that can change server state, but are normally restricted by CORS
             if (!empty($allowHeaders)) {
                 header('Access-Control-Allow-Headers: '.implode(', ', array_unique(array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allowHeaders))));
@@ -293,7 +293,7 @@ class Headers
     {
         if (!headers_sent()) {
             #Set defaults directives for CSP
-            $defaultDirectives = self::secureDirectives;
+            $defaultDirectives = self::SECURE_DIRECTIVES;
             #Apply custom directives
             foreach ($cspDirectives as $directive => $value) {
                 #If value is empty, assume, that we want to remove the directive entirely
@@ -303,7 +303,7 @@ class Headers
                     switch ($directive) {
                         case 'sandbox':
                             #Validate the value we have
-                            if (in_array($value, self::sandboxValues, true)) {
+                            if (in_array($value, self::SANDBOX_VALUES, true)) {
                                 $defaultDirectives['sandbox'] = $value;
                             } else {
                                 #Ignore the value entirely
@@ -321,7 +321,7 @@ class Headers
                             break;
                         case 'plugin-types':
                             #Validate the value we have
-                            if (preg_match('/^(('.Common::mimeRegex.') ?)+$/i', $value) === 1) {
+                            if (preg_match('/^(('.Common::MIME_REGEX.') ?)+$/i', $value) === 1) {
                                 $defaultDirectives['plugin-types'] = $value;
                             } else {
                                 #Ignore the value entirely
@@ -341,7 +341,7 @@ class Headers
                             break;
                         default:
                             #Validate the value
-                            if (isset($defaultDirectives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|self|\*)\'))|(\'self\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::originRegex.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?)+$/i', $value) === 1) {
+                            if (isset($defaultDirectives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|self|\*)\'))|(\'self\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::ORIGIN_REGEX.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?)+$/i', $value) === 1) {
                                 #Check if it's script or style source
                                 #If it's not 'none' - add 'report-sample'
                                 if ($value !== '\'none\'' && in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])) {
@@ -399,24 +399,24 @@ class Headers
         #Set flag for processing
         $badRequest = false;
         #Check if Sec-Fetch was passed at all (older browsers or bots may not use it). Process it only if it's present.
-        if (isset($_SERVER['HTTP_SEC_FETCH_SITE']) && in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::fetchSite)) {
+        if (isset($_SERVER['HTTP_SEC_FETCH_SITE']) && in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::FETCH_SITE)) {
             #Setting defaults
-            $site = array_intersect($site, self::fetchSite);
+            $site = array_intersect($site, self::FETCH_SITE);
             if (empty($site)) {
                 #Allow everything
-                $site = self::fetchSite;
+                $site = self::FETCH_SITE;
             }
-            $mode = array_intersect($mode, self::fetchMode);
+            $mode = array_intersect($mode, self::FETCH_MODE);
             if (empty($mode)) {
                 #Allow all modes
-                $mode = self::fetchMode;
+                $mode = self::FETCH_MODE;
             }
-            $user = array_intersect($user, self::fetchUser);
+            $user = array_intersect($user, self::FETCH_USER);
             if (empty($user)) {
                 #Allow only actions triggered by user activation
                 $user = ['?1'];
             }
-            $dest = array_intersect($dest, self::fetchDest);
+            $dest = array_intersect($dest, self::FETCH_DESTINATIONS);
             if (empty($dest)) {
                 $dest = [
                     #Allow navigation (including from frames)
@@ -451,7 +451,7 @@ class Headers
                 )
             ) {
                 $badRequest = true;
-            } elseif (!empty($_SERVER['HTTP_SEC_FETCH_DEST']) && in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::scriptLike)) {
+            } elseif (!empty($_SERVER['HTTP_SEC_FETCH_DEST']) && in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::SCRIPT_LIKE)) {
                 #Attempt to get content-type headers
                 $contentType = '';
                 #This header may be present in some cases
@@ -464,7 +464,7 @@ class Headers
                 foreach (headers_list() as $header) {
                     if (str_starts_with($header, 'Content-type:') === true) {
                         #Get MIME
-                        $contentType = preg_replace('/^(Content-type:\s*)('.Common::mimeRegex.')$/', '$2', $header);
+                        $contentType = preg_replace('/^(Content-type:\s*)('.Common::MIME_REGEX.')$/', '$2', $header);
                         break;
                     }
                 }
@@ -541,16 +541,16 @@ class Headers
     {
         if (!headers_sent()) {
             if ($permissions) {
-                $defaults = self::permissionsDefault;
+                $defaults = self::PERMISSIONS_DEFAULT;
             } else {
-                $defaults = self::secureFeatures;
+                $defaults = self::SECURE_FEATURES;
             }
             foreach ($features as $feature => $allowList) {
                 #Sanitize
                 $feature = mb_strtolower(mb_trim($feature, encoding: 'UTF-8'), 'UTF-8');
                 $allowList = mb_strtolower(mb_trim($allowList, encoding: 'UTF-8'), 'UTF-8');
                 #If validation is enforced, validate the feature and value provided
-                if ($forceCheck === false || ($forceCheck === true && isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d+(\.\d+)?\))?)|(\'self\' ?)?(?<origin>'.self::originRegex.'(?<setting_o>\(\d+(\.\d+)?\))?(?<delimiter> )?)+$/i', $allowList) === 1)) {
+                if ($forceCheck === false || ($forceCheck === true && isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d+(\.\d+)?\))?)|(\'self\' ?)?(?<origin>'.self::ORIGIN_REGEX.'(?<setting_o>\(\d+(\.\d+)?\))?(?<delimiter> )?)+$/i', $allowList) === 1)) {
                     #Update value
                     $defaults[$feature] = $allowList;
                 }
@@ -694,11 +694,11 @@ class Headers
         if (is_numeric($code)) {
             #Enforce string for convenience
             $code = (int)$code;
-            if (isset(self::HTTPCodes[$code])) {
-                $response = $code.' '.self::HTTPCodes[$code];
+            if (isset(self::HTTP_CODES[$code])) {
+                $response = $code.' '.self::HTTP_CODES[$code];
             } else {
                 #Non-standard code without text, not compliant with the standard
-                $response = '500 '.self::HTTPCodes[500];
+                $response = '500 '.self::HTTP_CODES[500];
             }
         } else {
             $response = $code;

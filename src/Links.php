@@ -15,29 +15,29 @@ class Links
      * Regex for all valid `rel` values, based on https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats (types, that NEED to be supported by clients). Also includes webmention (https://www.w3.org/TR/2017/REC-webmention-20170112/).
      * @var string
      */
-    public const string validRels = '/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation|up|first|last|index|home|top|webmention)( |$))*/i';
+    public const string VALID_REL = '/^(?!$)(alternate( |$))?((appendix|author|canonical|chapter|child|contents|copyright|dns-prefetch|glossary|help|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|its-rules|license|manifest|me|modulepreload|next|pingback|preconnect|prefetch|preload|prerender|prev|previous|search|section|stylesheet|subsection|toc|transformation|up|first|last|index|home|top|webmention)( |$))*/i';
     /**
      * Regex for `rel` values, that are allowed in HTML body
      * @var string
      */
-    public const string allowedInBody = '/^(alternate )?.*(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet).*$/i';
+    public const string ALLOWED_IN_BODY = '/^(alternate )?.*(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet).*$/i';
     /**
      * Regex for `rel` values, that are used for preload
      * @var string
      */
-    public const string preloadRel = '/(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender)/i';
+    public const string PRELOAD_REL = '/(dns-prefetch|modulepreload|preconnect|prefetch|preload|prerender)/i';
     /**
      * Regex for allowed `as` values
      * @var string
      */
-    public const string asValues = '/^(document|object|embed|audio|font|image|script|worker|style|track|video|fetch)$/i';
+    public const string AS_VALUES = '/^(document|object|embed|audio|font|image|script|worker|style|track|video|fetch)$/i';
     /**
      * Regex for `rel` values, that are considered external resources
      * @var string
      */
-    public const string externalResources = '/^(alternate )?((dns-prefetch|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet)( |$))*/i';
+    public const string EXTERNAL_RESOURCES = '/^(alternate )?((dns-prefetch|icon|apple-touch-icon|apple-touch-icon-precomposed|mask-icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|prerender|stylesheet)( |$))*/i';
     /**
-     * Flag indicating that HTTP_SAVE_DATA is was received and is `on`
+     * Flag indicating that HTTP_SAVE_DATA was received and is `on`
      * @var bool
      */
     private static bool $saveData = false;
@@ -163,14 +163,14 @@ class Links
     private static function processTypeProperty(array &$link): bool
     {
         #Empty MIME type if it does ont confirm with the standard
-        if (isset($link['type']) && preg_match('/'.Common::mimeRegex.'/', $link['type']) !== 1) {
+        if (isset($link['type']) && preg_match('/'.Common::MIME_REGEX.'/', $link['type']) !== 1) {
             $link['type'] = '';
         }
         #Set or update media type based on link. Or, at least, try to
         if (empty($link['type']) && isset($link['href'])) {
             $ext = pathinfo($link['href'], PATHINFO_EXTENSION);
-            if (\is_string($ext) && isset(Common::extToMime[$ext])) {
-                $link['type'] = Common::extToMime[$ext];
+            if (\is_string($ext) && isset(Common::EXTENSION_TO_MIME[$ext])) {
+                $link['type'] = Common::EXTENSION_TO_MIME[$ext];
             } else {
                 $link['type'] = '';
             }
@@ -203,7 +203,7 @@ class Links
             unset($link['referrerpolicy']);
         }
         #Remove hreflang, if it's a wrong language value
-        if (isset($link['hreflang']) && preg_match(Common::langTagRegex, $link['hreflang']) !== 1) {
+        if (isset($link['hreflang']) && preg_match(Common::LANGUAGE_TAG_REGEX, $link['hreflang']) !== 1) {
             unset($link['hreflang']);
         }
         #Remove sizes if wrong format
@@ -221,7 +221,7 @@ class Links
             $link['title'] = '';
         }
         #Validate title*, which is valid only for HTTP header
-        if (isset($link['title*']) && ($type !== 'header' || preg_match('/'.Common::langEncRegex.'.*/i', $link['title*']) !== 1)) {
+        if (isset($link['title*']) && ($type !== 'header' || preg_match('/'.Common::LANGUAGE_ENC_REGEX.'.*/i', $link['title*']) !== 1)) {
             unset($link['title*']);
         }
         #If integrity is set, validate if it's a valid value
@@ -319,7 +319,7 @@ class Links
      * Check if valid according to https://html.spec.whatwg.org/multipage/semantics.html#the-link-element
      * @param array  $link   Link element
      * @param string $type   Type of link expected
-     * @param bool   $strict Whether to support only types from `validRels`
+     * @param bool   $strict Whether to support only types from `VALID_REL`
      *
      * @return bool
      */
@@ -343,7 +343,7 @@ class Links
         }
         if (isset($link['as'])) {
             #as is allowed to have limited set of values (as per https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content).
-            if ((preg_match(self::asValues, $link['as']) !== 1)) {
+            if ((preg_match(self::AS_VALUES, $link['as']) !== 1)) {
                 return false;
             }
             #Also check that crossorigin is set, if as=fetch
@@ -358,27 +358,27 @@ class Links
      * Check validity of links with rel set
      * @param array  $link   Link element
      * @param string $type   Type of link expected
-     * @param bool   $strict Whether to support only types from `validRels`
+     * @param bool   $strict Whether to support only types from `VALID_REL`
      *
      * @return bool
      */
     private static function isRelValid(array $link, #[ExpectedValues(['header', 'head', 'body'])] string $type, bool $strict = true): bool
     {
-        if ($strict === true) {
+        if ($strict) {
             #Check that rel is valid
-            if (preg_match(self::validRels, $link['rel']) !== 1) {
+            if (preg_match(self::VALID_REL, $link['rel']) !== 1) {
                 return false;
             }
             #If crossorigin or referrerpolicy is set, check that rel type is an external resource
             if (
                 (isset($link['crossorigin']) || isset($link['referrerpolicy'])) &&
-                preg_match(self::externalResources, $link['rel']) !== 1
+                preg_match(self::EXTERNAL_RESOURCES, $link['rel']) !== 1
             ) {
                 return false;
             }
         }
         #If we are using "body", check that rel is body-ok one
-        if ($type === 'body' && preg_match(self::allowedInBody, $link['rel']) !== 1) {
+        if ($type === 'body' && preg_match(self::ALLOWED_IN_BODY, $link['rel']) !== 1) {
             return false;
         }
         #imagesrcset and imagesizes are allowed only for preload with as=image
@@ -411,8 +411,8 @@ class Links
      */
     private static function disablePreload(array &$link): void
     {
-        if (self::$saveData === true && isset($link['rel']) && preg_match(self::preloadRel, $link['rel']) === 1) {
-            $link['rel'] = preg_replace(self::preloadRel, '', $link['rel']);
+        if (self::$saveData === true && isset($link['rel']) && preg_match(self::PRELOAD_REL, $link['rel']) === 1) {
+            $link['rel'] = preg_replace(self::PRELOAD_REL, '', $link['rel']);
             #Replace multiple whitespaces with single space and trim
             $link['rel'] = mb_trim(preg_replace('/\s{2,}/', ' ', $link['rel']), encoding: 'UTF-8');
             #Unset rel if it's empty
