@@ -1,7 +1,7 @@
 ## Atom
 
 ```php
-\Simbiat\http20\Atom::Atom(string $title, array $entries, string $id = '', string $textType = 'text', array $feed_settings = []);
+\Simbiat\http20\Atom::atom(string $title, array $entries, string $id = '', string $textType = 'text', array $feed_settings = []);
 ```
 
 Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.html specification.

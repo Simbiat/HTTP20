@@ -20,7 +20,7 @@ class RSS
      * @return void
      * @throws \DOMException
      */
-    public static function RSS(string $title, array $entries, string $feedLink = '', array $feed_settings = []): void
+    public static function rss(string $title, array $entries, string $feedLink = '', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
@@ -166,7 +166,7 @@ class RSS
         #Add optional feed tags
         $root->appendChild($feed->createElement('pubDate', $feed_settings['pubDate']));
         $root->appendChild($feed->createElement('lastBuildDate', $feed_settings['lastBuildDate']));
-        if (!empty($feed_settings['language']) && Common::LangCodeCheck($feed_settings['language'])) {
+        if (!empty($feed_settings['language']) && Common::langCodeCheck($feed_settings['language'])) {
             $root->appendChild($feed->createElement('language', mb_strtolower($feed_settings['language'], 'UTF-8')));
         }
         if (!empty($feed_settings['copyright'])) {

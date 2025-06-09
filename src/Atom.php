@@ -23,7 +23,7 @@ class Atom
      * @return void
      * @throws \DOMException
      */
-    public static function Atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $textType = 'text', array $feed_settings = []): void
+    public static function atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $textType = 'text', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
