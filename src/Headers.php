@@ -595,12 +595,9 @@ class Headers
             #Send header
             header('Last-Modified: '.gmdate(\DATE_RFC7231, $modTime));
             #Set the flag to false for now
-            if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-                $IfModifiedSince = strtotime(mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, null, 'UTF-8'));
-                if ($IfModifiedSince >= $modTime) {
-                    #If content has not been modified - return 304
-                    self::clientReturn(304, $exit);
-                }
+            if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime(mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, null, 'UTF-8')) >= $modTime) {
+                #If content has not been modified - return 304
+                self::clientReturn(304, $exit);
             }
         }
     }

@@ -245,9 +245,9 @@ class Sharing
         }
         #Cache filename sanitizer
         if (method_exists(SafeFileName::class, 'sanitize')) {
-            $SafeFileName = true;
+            $safe_filename = true;
         } else {
-            $SafeFileName = false;
+            $safe_filename = false;
         }
         #Check if file upload is enabled on server
         if (!ini_get('file_uploads')) {
@@ -406,7 +406,7 @@ class Sharing
                         }
                     }
                     #Sanitize name
-                    if (isset($_FILES[$field][$key]) && $SafeFileName !== false) {
+                    if (isset($_FILES[$field][$key]) && $safe_filename !== false) {
                         $_FILES[$field][$key]['name'] = basename(SafeFileName::sanitize($file['name']));
                         #If name is empty or name is too long, do not process it
                         if (empty($_FILES[$field][$key]['name']) || mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
@@ -524,7 +524,7 @@ class Sharing
                 }
             }
             #Sanitize the name
-            if (!empty($name) && $SafeFileName !== false) {
+            if (!empty($name) && $safe_filename) {
                 $name = basename(SafeFileName::sanitize($name));
             }
             if (empty($name)) {
