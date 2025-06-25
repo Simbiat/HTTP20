@@ -3,6 +3,8 @@ declare(strict_types = 1);
 
 namespace Simbiat\http20;
 
+use function is_array, is_int, is_string;
+
 /**
  * IRI-related function
  */
@@ -50,15 +52,15 @@ class IRI
     public static function isValidIri(string $iri, string|array $scheme = []): bool
     {
         #Validate scheme, if provided
-        if (empty($scheme)) {
-            if (\is_string($scheme)) {
+        if (!empty($scheme)) {
+            if (is_string($scheme)) {
                 $scheme = [$scheme];
             }
             if (preg_match('/^('.implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
                 return false;
             }
         }
-        #Convert to URI. If we succeeded - then it's a valid IRI
+        #Convert to URI. If we have succeeded - then it's a valid IRI
         return self::iriToUri($iri) !== null;
     }
     
@@ -84,10 +86,10 @@ class IRI
         $iri = mb_scrub($iri, 'UTF-8');
         #Try parsing the IRI first
         $parsed_iri = self::parseUri($iri);
-        if (!\is_array($parsed_iri)) {
+        if (!is_array($parsed_iri)) {
             return null;
         }
-        #If there is no scheme, then it may be a relative path, and thus in some cases it's not possible to determine if first part (before first slash) is a domain or actual part of a path
+        #If there is no scheme, then it may be a relative path, and thus in some cases it's not possible to determine if the first part (before first slash) is a domain or actual part of a path
         if (empty($parsed_iri['scheme'])) {
             return null;
         }
@@ -115,7 +117,7 @@ class IRI
         if (!empty($parsed_iri['pass'])) {
             $parsed_iri['pass'] = rawurlencode($parsed_iri['pass']);
         }
-        #Process path, if present
+        #Process the path, if present
         if (!empty($parsed_iri['path'])) {
             #Need to use explode/implode to preserve `/` symbols. Doing rawurlencode and then restoring them may restore symbols encoded in the original IRI
             $parsed_iri['path'] = implode('/', array_map('rawurlencode', explode('/', $parsed_iri['path'])));
@@ -123,9 +125,9 @@ class IRI
         #Process query, if present
         if (!empty($parsed_iri['query'])) {
             #"Explode" the query into an array using parse_str
-            parse_str($parsed_iri['query'], $explodedQuery);
+            parse_str($parsed_iri['query'], $exploded_query);
             #Rebuild the query to ensure we URL encode properly
-            $parsed_iri['query'] = http_build_query($explodedQuery, encoding_type: PHP_QUERY_RFC3986);
+            $parsed_iri['query'] = http_build_query($exploded_query, encoding_type: PHP_QUERY_RFC3986);
         }
         #Process fragment, if present
         if (!empty($parsed_iri['fragment'])) {
@@ -140,22 +142,22 @@ class IRI
     
     /**
      * Restore the array from `parse_url()` function to original URL
-     * @param array $parsedUri Array from `parse_url()`
+     * @param array $parsed_uri Array from `parse_url()`
      *
      * @return string|null
      */
-    public static function restoreUri(array $parsedUri): ?string
+    public static function restoreUri(array $parsed_uri): ?string
     {
-        if (empty($parsedUri)) {
+        if (empty($parsed_uri)) {
             return null;
         }
-        return (!empty($parsedUri['scheme']) ? $parsedUri['scheme'].'://' : '')
-            .(!empty($parsedUri['user']) ? $parsedUri['user'].(!empty($parsedUri['pass']) ? ':'.$parsedUri['pass'] : '').'@' : '')
-            .($parsedUri['host'] ?? '')
-            .(!empty($parsedUri['port']) ? ':'.$parsedUri['port'] : '')
-            .($parsedUri['path'] ?? '')
-            .(!empty($parsedUri['query']) ? '?'.$parsedUri['query'] : '')
-            .(!empty($parsedUri['fragment']) ? '#'.$parsedUri['fragment'] : '');
+        return (!empty($parsed_uri['scheme']) ? $parsed_uri['scheme'].'://' : '')
+            .(!empty($parsed_uri['user']) ? $parsed_uri['user'].(!empty($parsed_uri['pass']) ? ':'.$parsed_uri['pass'] : '').'@' : '')
+            .($parsed_uri['host'] ?? '')
+            .(!empty($parsed_uri['port']) ? ':'.$parsed_uri['port'] : '')
+            .($parsed_uri['path'] ?? '')
+            .(!empty($parsed_uri['query']) ? '?'.$parsed_uri['query'] : '')
+            .(!empty($parsed_uri['fragment']) ? '#'.$parsed_uri['fragment'] : '');
     }
     
     /**
@@ -175,7 +177,7 @@ class IRI
         }
         #Remove the numeric keys
         foreach ($matches as $key => $value) {
-            if (\is_int($key)) {
+            if (is_int($key)) {
                 unset($matches[$key]);
             }
         }
