@@ -9,7 +9,7 @@ Functions, that generate useful HTML code.
 ## timeline
 
 ```php
-timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $brLimit = 0);
+timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $br_limit = 0);
 ```
 
 Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.css)) can be seen on [video](https://youtu.be/_cSezN3JxUs).
@@ -18,8 +18,8 @@ Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.c
 ```php
 [
     #Start and end time of the event. Either or both need to be present and be convertable to date (float, int, valid datetime string)
-    'startTime' => '2009-06-04',
-    'endTime' => '2011-05-20',
+    'start_time' => '2009-06-04',
+    'end_time' => '2011-05-20',
     #Name of the event. In this example timeline is used for resume to show job experience, thus it's a name of the company.
     'name' => 'IBS Datafort',
     #Position if even is expected to be a job. Either or both name and position need to be present. If event is not a job, I recommend using 'name'.
@@ -30,14 +30,14 @@ Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.c
     'href' => 'https://www.datafort.ru/',
     #Optional free format description of the event
     'description' => 'Outsourced job for Citi Russia as evening operator.',
-    #Optional list of responsibilities, that can be used for job events. Can be either a string or an array of strings.
+    #Optional list of responsibilities that can be used for job events. Can be either a string or an array of strings.
     'responsibilities' => [
         'Initiate operations related to End of Day processing',
         'Monitor continuous night processes',
         'Level 1 support of subset of regional applications',
         'Level 1 or level 2 support of local applications'
     ],
-    #Optional list of achievements, that can be used for job or education or similar events. Can be either a string or an array of strings.
+    #Optional list of achievements that can be used for job or education or similar events. Can be either a string or an array of strings.
     'achievements' => [
         'Promoted to day-time operator after approximately 1 year',
         'Transferred a paper-based checklist used by operators to Excel featuring several automated functions to improve traceability of work',
@@ -49,13 +49,13 @@ Generates a timeline, sample of which (using [sample CSS](/src/timeline_sample.c
 
 `asc` - whether to sort the elements in ascending (`true`) or descending (`false`, default) order.
 
-`brLimit` - option to allow up to the number of `<br>` elements between events. 1 `<br>` equals 1 month. Can be used to spread out the elements along the line to provide visual representation of time between events. `0` disables the feature.
+`br_limit` - option to allow up to the number of `<br>` elements between events. 1 `<br>` equals 1 month. Can be used to spread out the elements along the line to provide visual representation of time between events. `0` disables the feature.
 
 Some clarifications about logic:
 
-1. Elements with just `startTime` are considered "ongoing". Such elements will have extra class `timeline_current`, so that you can give them some extra style. If there are any "finished" events in the timeline, the "ongoing" ones will have shortcuts in beginning of the timeline.
-2. Elements with just `endTime` or with identical `startTime` and `endTime` can be considered as "onetime" and will appear only on the right side with `timeline_right` class.
-3. Elements with both `startTime` and `endTime` will be split into starting event shown on left of the timeline with `timeline_left` class and on ending event on the right.
+1. Elements with just `start_time` are considered "ongoing". Such elements will have extra class `timeline_current`, so that you can give them some extra style. If there are any "finished" events in the timeline, the "ongoing" ones will have shortcuts in beginning of the timeline.
+2. Elements with just `end_time` or with identical `start_time` and `end_time` can be considered as "onetime" and will appear only on the right side with `timeline_right` class.
+3. Elements with both `start_time` and `end_time` will be split into starting event shown on left of the timeline with `timeline_left` class and on ending event on the right.
 4. Description, responsibilities, achievements and elapsed time elements will be shown either on ending events or on starting events, if an event is "ongoing".
 5. Elapsed time will be calculated only if SandClock library is available.
 
@@ -85,7 +85,7 @@ You can then manually send the `'links'` array to `Links()` function to generate
 ## pagination
 
 ```php
-pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title')
+pagination(int $current, int $total, int $max_numerics = 5, array $non_numerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title')
 ```
 
 Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `aria` attributes.
@@ -94,9 +94,9 @@ Generates pagination as `<ol>` list wrapped in `<nav>` with proper `id` and `ari
 
 `$total` - total number of pages.
 
-`$maxNumerics` - maximum number of numeric links, that is those pages, that show actual numbers, and not 'First'/'Previous'/'Next'/'Last'. This number includes the current page.
+`$max_numerics` - maximum number of numeric links, that is those pages, that show actual numbers, and not 'First'/'Previous'/'Next'/'Last'. This number includes the current page.
 
-`$nonNumerics` is an array of default text values to style 'First', 'Previous', 'Next' and 'Last' pages (with some default values):
+`$non_numerics` is an array of default text values to style 'First', 'Previous', 'Next' and 'Last' pages (with some default values):
 
 ```php
 [

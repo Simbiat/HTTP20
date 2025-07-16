@@ -24,35 +24,35 @@ I hope that at some point this will become popular. While some frameworks do see
 ## cacheControl
 
 ```php
-cacheControl(string $string, string $cacheStrat = '', bool $exit = false, string $postfix ='');
+cacheControl(string $string, string $cache_strategy = '', bool $exit = false, string $postfix ='');
 ```
 
 Allows you to send appropriate `Cache-Control` headers (refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control for explanation on parameters):
 
 ```php
-switch (mb_strtolower($cacheStrat, 'UTF-8')) {
-	case 'aggressive':
-	    header('Cache-Control: max-age=31536000, immutable, no-transform');
-	    break;
-	case 'private':
-	    header('Cache-Control: private, no-cache, no-store, no-transform');
-	    break;
-	case 'live':
-	    header('Cache-Control: no-cache, no-transform');
-	    break;
-	case 'month':
-	    #28 days to be more precise
-	    header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-	    break;
-	case 'week':
-	    header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-	    break;
-	case 'day':
-	    header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-	    break;
-	case 'hour':
-	    header('Cache-Control: max-age=3600, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-	    break;
+switch (mb_strtolower($cache_strategy, 'UTF-8')) {
+    case 'aggressive':
+        header('Cache-Control: max-age=31536000, immutable, no-transform');
+        break;
+    case 'private':
+        header('Cache-Control: private, no-cache, no-store, no-transform');
+        break;
+    case 'live':
+        header('Cache-Control: no-cache, no-transform');
+        break;
+    case 'month':
+        #28 days to be more precise
+        header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+        break;
+    case 'week':
+        header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+        break;
+    case 'day':
+        header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+        break;
+    case 'hour':
+        header('Cache-Control: max-age=3600, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+        break;
 }
 ```
 
@@ -75,7 +75,7 @@ Sends ETag header and handles its validation depending on requesting headers (If
 ## lastModified
 
 ```php
-lastModified(int $modTime = 0, bool $exit = false);
+lastModified(int $mod_time = 0, bool $exit = false);
 ```
 
 Sends Last-Modified header based on either provided parameter, or the freshest date of all the script files used to generate a page. Also handles HTTP_IF_MODIFIED_SINCE header from client, if it was sent, allowing for some performance improvement if cache can be used.
@@ -85,19 +85,19 @@ Sends Last-Modified header based on either provided parameter, or the freshest d
 ## performance
 
 ```php
-performance(int $keepalive = 0, array $clientHints = []);
+performance(int $keepalive = 0, array $client_hints = []);
 ```
 
 Sends some headers that may improve performance on client side.
 
 `$keepalive` is used for `Keep-Alive` header governing how long the connection should stay up. Header will be sent only if server is using HTTP version other than 2.0.
 
-`$clientHints` instructs clients, that your server supports Client Hints (https://developer.mozilla.org/en-US/docs/Glossary/Client_hints) like DPR, Width, Viewport-Width, Downlink, etc. and client should cache the output accordingly, in order to increase allow cache hitting and thus improve performance.
+`$client_hints` instructs clients, that your server supports Client Hints (https://developer.mozilla.org/en-US/docs/Glossary/Client_hints) like DPR, Width, Viewport-Width, Downlink, etc. and client should cache the output accordingly, in order to increase allow cache hitting and thus improve performance.
 
 ## security
 
 ```php
-security(string $strat = 'strict', array $allowOrigins = [], array $exposeHeaders = [], array $allowHeaders = [], array $allowMethods = []);
+security(string $strat = 'strict', array $allow_origins = [], array $expose_headers = [], array $allow_headers = [], array $allow_methods = []);
 ```
 
 Sends headers that can improve security of your page.
@@ -106,63 +106,63 @@ Sends headers that can improve security of your page.
 
 ```php
 case 'mild':
-	header('Cross-Origin-Embedder-Policy: unsafe-none');
-	header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
-	header('Cross-Origin-Resource-Policy: same-site');
-	header('Referrer-Policy: strict-origin');
-	break;
+    header('Cross-Origin-Embedder-Policy: unsafe-none');
+    header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
+    header('Cross-Origin-Resource-Policy: same-site');
+    header('Referrer-Policy: strict-origin');
+    break;
 case 'loose':
-	header('Cross-Origin-Embedder-Policy: unsafe-none');
-	header('Cross-Origin-Opener-Policy: unsafe-none');
-	header('Cross-Origin-Resource-Policy: cross-origin');
-	header('Referrer-Policy: strict-origin-when-cross-origin');
-	break;
+    header('Cross-Origin-Embedder-Policy: unsafe-none');
+    header('Cross-Origin-Opener-Policy: unsafe-none');
+    header('Cross-Origin-Resource-Policy: cross-origin');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    break;
 case 'strict':
 default:
-	header('Cross-Origin-Embedder-Policy: require-corp');
-	header('Cross-Origin-Opener-Policy: same-origin');
-	header('Cross-Origin-Resource-Policy: same-origin');
-	header('Referrer-Policy: no-referrer');
-	break;
+    header('Cross-Origin-Embedder-Policy: require-corp');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header('Referrer-Policy: no-referrer');
+    break;
 ```
 
-`$allowOrigins` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) allows you to set a list of allowed `Origin` values, that can access your page. If empty - will allow access to all (`*`).
+`$allow_origins` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) allows you to set a list of allowed `Origin` values, that can access your page. If empty - will allow access to all (`*`).
 
-`Access-Control-Allow-Origin` allows only 1 values by specification, but `$allowOrigins` allows to overcome it by doing validation against the list you've provided. Then, if the origin is allowed - access will be granted, if not - 403 will be sent and code will exit.
+`Access-Control-Allow-Origin` allows only 1 values by specification, but `$allow_origins` allows to overcome it by doing validation against the list you've provided. Then, if the origin is allowed - access will be granted, if not - 403 will be sent and code will exit.
 
-`$exposeHeaders` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers) allows you to set a list of headers, that you are ok to expose to client. Headers, that are provided by this class, will always be exposed.
+`$expose_headers` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers) allows you to set a list of headers, that you are ok to expose to client. Headers, that are provided by this class, will always be exposed.
 
-`$allowHeaders` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers) lets you add headers, that you are willing to accept and use to change states in your code.
+`$allow_headers` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers) lets you add headers, that you are willing to accept and use to change states in your code.
 
-`$allowMethods` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods) allows you to restrict accepted methods. If request to page is done by a method not in the list - it will be rejected (405). By default, GET, POST and HEAD are the only allowed.
+`$allow_methods` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods) allows you to restrict accepted methods. If request to page is done by a method not in the list - it will be rejected (405). By default, GET, POST and HEAD are the only allowed.
 
 ## contentPolicy
 
 ```php
-contentPolicy(array $cspDirectives = [], bool $reportOnly = false, bool $reportUri = false);
+contentPolicy(array $csp_directives = [], bool $report_only = false, bool $report_uri = false);
 ```
 
 Sends Content-Security-Policy header, that improves your page security. It's done separately from other security stuff, because unlike the rest of the headers this is usable only for HTML.
 
-`$cspDirectives` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) allows you to provide a list of directives and their settings (with validation) to control CSP headers. By default, essentially everything is either disabled or allowed only from `self`, which give you a solid base in terms of restricting access.
+`$csp_directives` (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) allows you to provide a list of directives and their settings (with validation) to control CSP headers. By default, essentially everything is either disabled or allowed only from `self`, which give you a solid base in terms of restricting access.
 
-`$reportOnly` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
+`$report_only` allows you to control, whether you only report (`Content-Security-Policy-Report-Only`) CPS violations or report **and** block them. Be default it's set as `false` for security enforcement. Note, that if it's set to `true`, but you do not provide `report-to` directive **no** CSP header will be sent, reducing your security. For that reason, if you do want to report, I can suggest using https://rapidsec.com/ which is free. Also note, that while `report-uri` is **temporary** added until `report-to` is supported by all browsers, `report-uri` **will be discarded** if it's provided without `report-to` to encourage the use of a modern directive.
 
-`$reportUri` will add `report-uri` in the headers as well. It is deprecated, thus defaults to `false`, but if you want to support still - you can.
+`$report_uri` will add `report-uri` in the headers as well. It is deprecated, thus defaults to `false`, but if you want to support still - you can.
 
 ## features
 
 ```php
-features(array $features = [], bool $forceCheck = true, bool $permissions = false);
+features(array $features = [], bool $force_check = true, bool $permissions = false);
 ```
 
 Allows controlling different features through `Feature-Policy` header. It should only be used, when sending HTML.
 
 `$features` expects associative array, where each key is name of the policy in lower case and value - expected `allow list`. If an empty array is sent, default values will be applied (most features are disabled).
 
-`$forceCheck` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
+`$force_check` is added for futureproofing, but is enabled by default. If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
 
-`$permissions` is a flag to toggle `Permissions-Policy`, which is replacement for `Feature-Policy` header. Alternatively you can use `features(array $features = [], bool $forceCheck = true)` signature, which will call `features` internally.
+`$permissions` is a flag to toggle `Permissions-Policy`, which is replacement for `Feature-Policy` header. Alternatively you can use `features(array $features = [], bool $force_check = true)` signature, which will call `features` internally.
 
 ## secFetch
 
@@ -187,18 +187,18 @@ Returns a selected HTTP status code (defaults to 500) with option to forcibly cl
 ## redirect
 
 ```php
-redirect(string $newURI, bool $permanent = true, bool $preserveMethod = true, bool $forceGET = false)
+redirect(string $new_uri, bool $permanent = true, bool $preserve_method = true, bool $force_get = false)
 ```
 
 Function to allow redirects.
 
-`$newURI` is the URL, that will be used in `Location` header. If it fails validation as URI, instead of redirect a 500 error will be sent to client.
+`$new_uri` is the URL, that will be used in `Location` header. If it fails validation as URI, instead of redirect a 500 error will be sent to client.
 
 `$permanent` governs whether this is a permanent redirect or a temporary one. Permanent redirects tell browser to always use the new address, while temporary - only this time. `true` by default.
 
-`$preserveMethod` governs whether method is allowed to be changed when redirecting. Historically 301 and 302 redirects does not restrict client in this regard, which may cause some issues sometimes. If set to `true` (default) 307 and 308 codes will be used.
+`$preserve_method` governs whether method is allowed to be changed when redirecting. Historically 301 and 302 redirects does not restrict client in this regard, which may cause some issues sometimes. If set to `true` (default) 307 and 308 codes will be used.
 
-`$forceGET` is a flag to use 303 code. If you want client to specifically change method to GET when redirecting, you can use this one. Useful, if after POST or PUT you want to show output, that is handled by some other page.
+`$force_get` is a flag to use 303 code. If you want client to specifically change method to GET when redirecting, you can use this one. Useful, if after POST or PUT you want to show output, that is handled by some other page.
 
 ## notaccept
 

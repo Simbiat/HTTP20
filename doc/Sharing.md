@@ -18,7 +18,7 @@ Function that can be used in processes related to file sharing.
 ## download
 
 ```php
-download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedLimit = 10485760, bool $exit = true);
+download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speed_limit = 10485760, bool $exit = true);
 ```
 
 Function to download files (or more precisely, feed them to client). Unlike other functions, that can be found, this one can:
@@ -34,7 +34,7 @@ Function to download files (or more precisely, feed them to client). Unlike othe
 
 `$inline` - if set to `true` will feed the file "inline", as regular images are sent (for example). It is unlikely you will want to use it like that, but it may be useful if you want to stream a video/audio/image/other file like that and then do something once it's shown. Note, though, that some browsers may start downloading such content using `Range`.
 
-`$speedLimit` - the maximum of bytes you want to send per second. Default is 10MBs. Note, that if it's too large it will be overridden by internal logic (`speedLimit()`).
+`$speed_limit` - the maximum of bytes you want to send per second. Default is 10MBs. Note, that if it's too large it will be overridden by internal logic (`speedLimit()`).
 
 `$exit` - if set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a `false` or `true` value, that you can utilize somehow.
 
@@ -43,7 +43,7 @@ While this function can return the number of bytes, that may be useful for some 
 ## upload
 
 ```php
-upload($destPath, bool $preserveNames = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true);
+upload($dest_path, bool $preserve_names = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true);
 ```
 
 Function to handle uploads. It's not fancy as https://tus.io/, but if you need handling some simple file uploads, this still can provide you useful features:
@@ -57,7 +57,7 @@ Function to handle uploads. It's not fancy as https://tus.io/, but if you need h
 - For POST method you can use multiple forms, and they can even be uploading multiple files
 - PUT method somewhat supports resumable uploads
 
-`$destPath` is the only setting, that is mandatory, and it can be a `string` or a named `array`, where each element of the array is equal to the name of the field (`<input type="file"></input>`) in your web-form (as element key) and the path to save files from that field to. Both `string` value and each value of the `array` are expected to be existing and writable directories (no auto-creation, since this may be abused). Example of the array is below:
+`$dest_path` is the only setting, that is mandatory, and it can be a `string` or a named `array`, where each element of the array is equal to the name of the field (`<input type="file"></input>`) in your web-form (as element key) and the path to save files from that field to. Both `string` value and each value of the `array` are expected to be existing and writable directories (no auto-creation, since this may be abused). Example of the array is below:
 
 ```php
 [
@@ -66,7 +66,7 @@ Function to handle uploads. It's not fancy as https://tus.io/, but if you need h
 ]
 ```
 
-`$preserveNames` (only for POST) is set to false by default to replace names of the files with their hash + extension, based on actual MIME type (if we were able to grab it). This is done to avoid potential exploits, that may arise depending on how you use the files afterward.
+`$preserve_names` (only for POST) is set to false by default to replace names of the files with their hash + extension, based on actual MIME type (if we were able to grab it). This is done to avoid potential exploits, that may arise depending on how you use the files afterward.
 
 `$overwrite` (only for POST) allows overwriting files, if set to `true`. Otherwise - they will be ignored (but still will be returned in the resulting array).
 
@@ -113,13 +113,13 @@ If you're going to use PUT, there are some peculiarities, that you need to be aw
 ## streamCopy
 
 ```php
-streamCopy($input, $output, int $totalSize = 0, int $offset = 0, int $speed = 10485760);
+streamCopy($input, $output, int $total_size = 0, int $offset = 0, int $speed = 10485760);
 ```
 
 Function to copy data in small chunks (not HTTP1.1 chunks) with speed limitation from one stream to another. In essence, this is `stream_copy_to_stream`, but with said speed limitation. Example of usage is the above mentioned `download` function.
 `$input` and `$output` - these are resources (generally created from `fopen`), from which you will read and to which you will write.
 
-`$totalSize` - bytes to copy.
+`$total_size` - bytes to copy.
 
 `$offset` - where to start copying from.
 
@@ -160,7 +160,7 @@ I can't think of a case, when this can be used outside of `download` function, e
 ## fileEcho
 
 ```php
-fileEcho(string $filepath, array $allowed_mime = [], string $cacheStrat = 'month', bool $exit = true)
+fileEcho(string $filepath, array $allowed_mime = [], string $cache_strategy = 'month', bool $exit = true)
 ```
 
 A function, that will pass a file to client while sending appropriate headers. Note, that, while this can be used for download, I'd recommend against that: for downloads, please, use [download](Sharing.md#download) function, instead. Use `fileEcho` for small files, that you want to display inline.
@@ -169,16 +169,16 @@ A function, that will pass a file to client while sending appropriate headers. N
 
 `$allowed_mime` - array of allowed MIME types, if you want to restrict the use of this function by the type. Note, that it will check the actual file MIME type, but attempt to send the MIME type based on file extension to the client. If MIME type is not allowed, will return 403.
 
-`$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](Headers.md#cachecontrol))
+`$cache_strategy` is an optional caching strategy to apply (as described for [cacheControl](Headers.md#cachecontrol))
 
 ## proxyFile
 
 ```php
-proxyFile(string $url, string $cacheStrat = '')
+proxyFile(string $url, string $cache_strategy = '')
 ```
 
 A function, that will proxy a remote file to client while duplicating headers from that URL. It's not something you should use randomly, since it will increase load on your server, but it can be used when you need to keep your CSP rules strict, but still access resources without proper CORS support. This function will try to utilize Last-Modified and ETag headers if available and will also add Cache-Control, if it's missing in order to rely on client caching more.
 
 `$url` - URL to proxy.
 
-`$cacheStrat` is an optional caching strategy to apply (as described for [cacheControl](Headers.md#cachecontrol))
+`$cache_strategy` is an optional caching strategy to apply (as described for [cacheControl](Headers.md#cachecontrol))

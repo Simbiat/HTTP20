@@ -40,44 +40,44 @@ class Links
      * Flag indicating that HTTP_SAVE_DATA was received and is `on`
      * @var bool
      */
-    private static bool $saveData = false;
+    private static bool $save_data = false;
     
     public function __construct()
     {
         #Check if Save-Data is on
         if (isset($_SERVER['HTTP_SAVE_DATA']) && preg_match('/^on$/i', $_SERVER['HTTP_SAVE_DATA']) === 1) {
-            self::$saveData = true;
+            self::$save_data = true;
         } else {
-            self::$saveData = false;
+            self::$save_data = false;
         }
     }
     
     /**
      * Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
-     * @param array  $links     List of links
-     * @param string $type      Type of links: `header`, `head` or `body`.
-     * @param bool   $strictRel If set to `true` (default), if `rel` attribute is set it will be checked against a list based on https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats, meaning against `rel` values, that have to be supported by clients. If you are using something "special", set this to `false`. Personally, in such cases, I would recommend splitting the set of `Link` elements you have into 2 sets: standard and non-standard.
+     * @param array  $links      List of links
+     * @param string $type       Type of links: `header`, `head` or `body`.
+     * @param bool   $strict_rel If set to `true` (default), if `rel` attribute is set it will be checked against a list based on https://html.spec.whatwg.org/multipage/links.html#linkTypes and https://microformats.org/wiki/existing-rel-values#formats, meaning against `rel` values, that have to be supported by clients. If you are using something "special", set this to `false`. Personally, in such cases, I would recommend splitting the set of `Link` elements you have into 2 sets: standard and non-standard.
      *
      * @return string
      */
-    public static function links(array $links = [], #[ExpectedValues(['header', 'head', 'body'])] string $type = 'header', bool $strictRel = true): string
+    public static function links(array $links = [], #[ExpectedValues(['header', 'head', 'body'])] string $type = 'header', bool $strict_rel = true): string
     {
         #Validate type
         if (!in_array($type, ['header', 'head', 'body'])) {
             throw new \UnexpectedValueException('Unsupported type was provided to `links` function');
         }
         #Prepare an empty string
-        $linksToSend = [];
+        $links_to_send = [];
         foreach ($links as $link) {
             #Check that element is an array;
-            if (!\is_array($link)) {
+            if (!is_array($link)) {
                 continue;
             }
             self::disablePreload($link);
-            if (!self::isLinkValid($link, $type, $strictRel)) {
+            if (!self::isLinkValid($link, $type, $strict_rel)) {
                 continue;
             }
-            #Clean up link properties
+            #Cleanup link properties
             if (!self::cleanLink($link, $type)) {
                 continue;
             }
@@ -87,25 +87,25 @@ class Links
             }
             #Generate element as string
             if ($type === 'header') {
-                $linksToSend[] = self::generateHeader($link);
+                $links_to_send[] = self::generateHeader($link);
             } else {
-                $linksToSend[] = self::generateTag($link);
+                $links_to_send[] = self::generateTag($link);
             }
         }
-        if (empty($linksToSend)) {
+        if (empty($links_to_send)) {
             return '';
         }
         if ($type === 'header') {
             if (!headers_sent()) {
-                header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $linksToSend)), false);
+                header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $links_to_send)), false);
             }
             return '';
         }
-        return implode("\r\n", $linksToSend);
+        return implode("\r\n", $links_to_send);
     }
     
     /**
-     * Generate `<link>` representing respective Link object
+     * Generate `<link>` representing the respective `Link` object
      * @param array $link Link object
      *
      * @return string
@@ -169,7 +169,7 @@ class Links
         #Set or update media type based on link. Or, at least, try to
         if (empty($link['type']) && isset($link['href'])) {
             $ext = pathinfo($link['href'], PATHINFO_EXTENSION);
-            if (\is_string($ext) && isset(Common::EXTENSION_TO_MIME[$ext])) {
+            if (is_string($ext) && isset(Common::EXTENSION_TO_MIME[$ext])) {
                 $link['type'] = Common::EXTENSION_TO_MIME[$ext];
             } else {
                 $link['type'] = '';
@@ -244,18 +244,18 @@ class Links
     private static function processIntegrity(array &$link): bool
     {
         if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) === 0) {
-            $potentialIRI = IRI::parseUri($link['integrity']);
-            if (\is_array($potentialIRI) && !empty($potentialIRI['host'])) {
+            $potential_iri = IRI::parseUri($link['integrity']);
+            if (is_array($potential_iri) && !empty($potential_iri['host'])) {
                 #It looks like we have an absolute link. Assume error or malicious intent
                 return false;
             }
             #If not valid, check if it's a file and generate hash
             if (is_file($link['integrity'])) {
-                #Attempt to get actual MIME type while we're at it
-                if (!isset($link['type']) && \extension_loaded('fileinfo')) {
+                #Attempt to get the actual MIME type while we're at it
+                if (!isset($link['type']) && extension_loaded('fileinfo')) {
                     $link['type'] = mime_content_type(realpath($link['integrity']));
                 }
-                #Get size of the image, if the file is an image
+                #Get the size of the image if the file is an image
                 if (!isset($link['sizes']) && isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1) {
                     $size = self::getImageSize($link);
                     #Set tags if we were able to get size
@@ -411,10 +411,10 @@ class Links
      */
     private static function disablePreload(array &$link): void
     {
-        if (self::$saveData === true && isset($link['rel']) && preg_match(self::PRELOAD_REL, $link['rel']) === 1) {
+        if (self::$save_data && isset($link['rel']) && preg_match(self::PRELOAD_REL, $link['rel']) === 1) {
             $link['rel'] = preg_replace(self::PRELOAD_REL, '', $link['rel']);
             #Replace multiple whitespaces with single space and trim
-            $link['rel'] = mb_trim(preg_replace('/\s{2,}/', ' ', $link['rel']), encoding: 'UTF-8');
+            $link['rel'] = mb_trim(preg_replace('/\s{2,}/', ' ', $link['rel']), null, 'UTF-8');
             #Unset rel if it's empty
             if (empty($link['rel'])) {
                 unset($link['rel']);

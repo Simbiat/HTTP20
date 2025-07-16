@@ -17,13 +17,13 @@ class Atom
      * @param string $title         Text to be used in `<title>` element
      * @param array  $entries       Items for the feed
      * @param string $id            Text, that will be used as `id`. It needs to be a URI. If empty `$_SERVER['REQUEST_URI']` will be used.
-     * @param string $textType      Text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
+     * @param string $text_type     Text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
      * @param array  $feed_settings Array with optional settings for the feed. Check Atom.md for details.
      *
      * @return void
      * @throws \DOMException
      */
-    public static function atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $textType = 'text', array $feed_settings = []): void
+    public static function atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $text_type = 'text', array $feed_settings = []): void
     {
         #Validate title
         if (empty($title)) {
@@ -32,7 +32,7 @@ class Atom
         }
         $feed_settings['title'] = $title;
         #validate text type
-        if (!in_array(mb_strtolower($textType, 'UTF-8'), ['text', 'html', 'xhtml'])) {
+        if (!in_array(mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'])) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
@@ -88,8 +88,8 @@ class Atom
         $root = $feed->appendChild($feed->createElement('feed'));
         $root->setAttribute('xmlns', 'https://www.w3.org/2005/Atom');
         #Add global mandatory feed tags
-        $titleDOM = $root->appendChild($feed->createElement('title', $feed_settings['title']));
-        $titleDOM->setAttribute('type', $textType);
+        $title_dom = $root->appendChild($feed->createElement('title', $feed_settings['title']));
+        $title_dom->setAttribute('type', $text_type);
         $root->appendChild($feed->createElement('updated', $feed_settings['updated']));
         $root->appendChild($feed->createElement('id', $feed_settings['id']));
         #Add recommended feed tags
@@ -100,8 +100,8 @@ class Atom
         #Add any extra links
         if (!empty($feed_settings['links'])) {
             foreach ($feed_settings['links'] as $link) {
-                $linkElem = $root->appendChild($feed->createElement('link'));
-                self::atomAddAttributes($linkElem, $link, ['href', 'rel', 'type', 'hreflang', 'title', 'length']);
+                $link_elem = $root->appendChild($feed->createElement('link'));
+                self::atomAddAttributes($link_elem, $link, ['href', 'rel', 'type', 'hreflang', 'title', 'length']);
             }
         }
         #Add persons
@@ -120,7 +120,7 @@ class Atom
         #Add optional feed tags
         if (!empty($feed_settings['subtitle'])) {
             $subtitle = $root->appendChild($feed->createElement('subtitle', $feed_settings['subtitle']));
-            $subtitle->setAttribute('type', $textType);
+            $subtitle->setAttribute('type', $text_type);
         }
         if (!empty($feed_settings['icon'])) {
             $root->appendChild($feed->createElement('icon', Common::htmlToRFC3986($feed_settings['icon'])));
@@ -130,7 +130,7 @@ class Atom
         }
         if (!empty($feed_settings['rights'])) {
             $rights = $root->appendChild($feed->createElement('rights', $feed_settings['rights']));
-            $rights->setAttribute('type', $textType);
+            $rights->setAttribute('type', $text_type);
         }
         if (!empty($feed_settings['categories'])) {
             foreach ($feed_settings['categories'] as $cat) {
@@ -145,7 +145,7 @@ class Atom
         if (!empty($entries)) {
             foreach ($entries as $entry) {
                 $element = $root->appendChild($feed->createElement('entry'));
-                self::atomAddEntries($element, $feed, $entry, $textType);
+                self::atomAddEntries($element, $feed, $entry, $text_type);
             }
         }
         $feed->normalizeDocument();
@@ -158,47 +158,47 @@ class Atom
     
     /**
      * Helper function to validate some elements
-     * @param array  $elements    Array of elements to validate
-     * @param string $type        Optional type of the element
-     * @param string $elementName Name of the element
+     * @param array  $elements     Array of elements to validate
+     * @param string $type         Optional type of the element
+     * @param string $element_name Name of the element
      *
      * @return void
      */
-    private static function atomElementValidator(array &$elements, string $type = 'author', string $elementName = 'name'): void
+    private static function atomElementValidator(array &$elements, string $type = 'author', string $element_name = 'name'): void
     {
-        foreach ($elements as $key => $elementToVal) {
-            if (!is_array($elementToVal)) {
+        foreach ($elements as $key => $element_to_val) {
+            if (!is_array($element_to_val)) {
                 unset($elements[$key]);
                 continue;
             }
-            if (empty($elementToVal[$elementName])) {
+            if (empty($element_to_val[$element_name])) {
                 unset($elements[$key]);
                 continue;
             }
-            if (!\is_string($elementToVal[$elementName])) {
+            if (!is_string($element_to_val[$element_name])) {
                 unset($elements[$key]);
                 continue;
             }
             if ($type === 'link') {
-                if (!IRI::isValidIri($elementToVal['href'], 'https')) {
+                if (!IRI::isValidIri($element_to_val['href'], 'https')) {
                     unset($elements[$key]);
                     continue;
                 }
-                if (!empty($elementToVal['rel']) && !in_array($elementToVal['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
+                if (!empty($element_to_val['rel']) && !in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
                     unset($elements[$key]);
                     continue;
                 }
             }
             if ($type === 'entry') {
-                if (empty($elementToVal['title'])) {
+                if (empty($element_to_val['title'])) {
                     unset($elements[$key]);
                     continue;
                 }
-                if (empty($elementToVal['updated'])) {
+                if (empty($element_to_val['updated'])) {
                     unset($elements[$key]);
                     continue;
                 }
-                if (!IRI::isValidIri($elementToVal['link'], 'https')) {
+                if (!IRI::isValidIri($element_to_val['link'], 'https')) {
                     unset($elements[$key]);
                 }
             }
@@ -209,19 +209,19 @@ class Atom
      * Helper function to add sub elements
      * @param \DOMNode     $element Node to process
      * @param \DOMDocument $feed    Main feed object
-     * @param array        $topTag  Tag name
+     * @param array        $top_tag Tag name
      *
      * @return void
      * @throws \DOMException
      */
-    private static function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $topTag): void
+    private static function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $top_tag): void
     {
-        foreach (['name', 'email', 'uri'] as $subNode) {
-            if (!empty($topTag[$subNode])) {
-                if ($subNode === 'uri') {
-                    $element->appendChild($feed->createElement($subNode, Common::htmlToRFC3986($topTag[$subNode])));
+        foreach (['name', 'email', 'uri'] as $sub_node) {
+            if (!empty($top_tag[$sub_node])) {
+                if ($sub_node === 'uri') {
+                    $element->appendChild($feed->createElement($sub_node, Common::htmlToRFC3986($top_tag[$sub_node])));
                 } else {
-                    $element->appendChild($feed->createElement($subNode, $topTag[$subNode]));
+                    $element->appendChild($feed->createElement($sub_node, $top_tag[$sub_node]));
                 }
             }
         }
@@ -230,23 +230,23 @@ class Atom
     /**
      * Helper function to add attributes
      * @param \DOMElement $element    Node to process
-     * @param array       $topTag     Tag name
+     * @param array       $top_tag    Tag name
      * @param array       $attributes Attributes to add
      *
      * @return void
      */
-    private static function atomAddAttributes(\DOMElement $element, array $topTag, array $attributes): void
+    private static function atomAddAttributes(\DOMElement $element, array $top_tag, array $attributes): void
     {
         if (empty($attributes)) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Empty list of attributes provided for `atomAddAttributes` function');
         }
         foreach ($attributes as $attribute) {
-            if (!empty($topTag[$attribute])) {
+            if (!empty($top_tag[$attribute])) {
                 if ($attribute === 'href') {
-                    $element->setAttribute($attribute, Common::htmlToRFC3986($topTag[$attribute]));
+                    $element->setAttribute($attribute, Common::htmlToRFC3986($top_tag[$attribute]));
                 } else {
-                    $element->setAttribute($attribute, $topTag[$attribute]);
+                    $element->setAttribute($attribute, $top_tag[$attribute]);
                 }
             }
         }
@@ -254,15 +254,15 @@ class Atom
     
     /**
      * Helper function to add actual entries
-     * @param \DOMNode     $element  Node to process
-     * @param \DOMDocument $feed     Main feed object
-     * @param array        $entry    List of elements to add
-     * @param string       $textType Text type
+     * @param \DOMNode     $element   Node to process
+     * @param \DOMDocument $feed      Main feed object
+     * @param array        $entry     List of elements to add
+     * @param string       $text_type Text type
      *
      * @return void
      * @throws \DOMException
      */
-    private static function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $textType): void
+    private static function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $text_type): void
     {
         #Adding mandatory tags
         if (empty($entry['id'])) {
@@ -271,7 +271,7 @@ class Atom
             $element->appendChild($feed->createElement('id', $entry['id']));
         }
         $title = $element->appendChild($feed->createElement('title', $entry['title']));
-        $title->setAttribute('type', $textType);
+        $title->setAttribute('type', $text_type);
         $element->appendChild($feed->createElement('updated', Common::valueToTime($entry['updated'], \DATE_ATOM)));
         #Add link as alternate
         $link = $element->appendChild($feed->createElement('link'));
@@ -308,7 +308,7 @@ class Atom
         }
         if (!empty($entry['summary'])) {
             $summary = $element->appendChild($feed->createElement('summary', $entry['summary']));
-            $summary->setAttribute('type', $textType);
+            $summary->setAttribute('type', $text_type);
         }
         #Add optional tags
         if (!empty($entry['category'])) {
@@ -322,7 +322,7 @@ class Atom
         }
         if (!empty($entry['rights'])) {
             $rights = $element->appendChild($feed->createElement('rights', $entry['rights']));
-            $rights->setAttribute('type', $textType);
+            $rights->setAttribute('type', $text_type);
         }
         #Add source
         if (!empty($entry['source_id']) || !empty($entry['source_title']) || !empty($entry['source_updated'])) {
@@ -332,7 +332,7 @@ class Atom
             }
             if (!empty($entry['source_title'])) {
                 $source_title = $source->appendChild($feed->createElement('title', $entry['source_title']));
-                $source_title->setAttribute('type', $textType);
+                $source_title->setAttribute('type', $text_type);
             }
             if (!empty($entry['source_updated'])) {
                 $source->appendChild($feed->createElement('updated', Common::valueToTime($entry['source_updated'], \DATE_ATOM)));

@@ -7,7 +7,7 @@ use JetBrains\PhpStorm\ExpectedValues;
 use JetBrains\PhpStorm\NoReturn;
 use Simbiat\SafeFileName;
 
-use function is_array, count, is_string, in_array, extension_loaded, is_resource;
+use function is_array, count, is_string, in_array, extension_loaded, is_resource, strlen, ini_get;
 
 /**
  * Functions related to file sharing
@@ -16,19 +16,19 @@ class Sharing
 {
     /**
      * Function for smart resumable download with proper headers
-     * @param string $file       Path to file to send to browser.
-     * @param string $filename   Optional override for file name, if you want to provide a file with a different name.
-     * @param string $mime       Optional MIME type. If empty, will try to determine the type based on extension or use `application/octet-stream`.
-     * @param bool   $inline     If set to `true` will feed the file "inline", as regular images are sent (for example).
-     * @param int    $speedLimit Download speed limit in bytes per second.
-     * @param bool   $exit       If set to `false` will not automatically exit once a file/range or a "bad" header is sent to client. It then will return a `false` or `true` value, that you can utilize somehow.
+     * @param string $file        Path to file to send it to browser.
+     * @param string $filename    Optional override for file name, if you want to provide a file with a different name.
+     * @param string $mime        Optional MIME type. If empty, will try to determine the type based on extension or use `application/octet-stream`.
+     * @param bool   $inline      If set to `true` will feed the file "inline", as regular images are sent (for example).
+     * @param int    $speed_limit Download speed limit in bytes per second.
+     * @param bool   $exit        If set to `false` will not automatically exit once a file/range or a "bad" header is sent to the client. It then will return a `false` or `true` value, that you can utilize somehow.
      *
      * @return bool|int
      */
-    public static function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speedLimit = 10485760, bool $exit = true): bool|int
+    public static function download(string $file, string $filename = '', string $mime = '', bool $inline = false, int $speed_limit = 10485760, bool $exit = true): bool|int
     {
         #Sanitize speed limit
-        $speedLimit = self::speedLimit($speedLimit);
+        $speed_limit = self::speedLimit($speed_limit);
         #Some protection
         header('Access-Control-Allow-Headers: range');
         header('Access-Control-Allow-Methods: GET');
@@ -121,12 +121,12 @@ class Sharing
                 $filesize = $ranges[0]['end'] - $ranges[0]['start'] + 1;
                 header('Content-Length: '.$filesize);
                 #Limit speed to range length, if it's current speed limit is too large, so that it will be provided fully
-                if ($speedLimit > $filesize) {
-                    $speedLimit = $filesize;
+                if ($speed_limit > $filesize) {
+                    $speed_limit = $filesize;
                 }
-                $speedLimit = self::speedLimit($speedLimit);
+                $speed_limit = self::speedLimit($speed_limit);
                 #Output data
-                $result = self::streamCopy($stream, $output, $filesize, $ranges[0]['start'], $speedLimit);
+                $result = self::streamCopy($stream, $output, $filesize, $ranges[0]['start'], $speed_limit);
                 #Close file
                 fclose($stream);
                 fclose($output);
@@ -142,29 +142,29 @@ class Sharing
             }
             header('Content-Type: multipart/byteranges; boundary='.$boundary);
             #Calculate size starting with the mandatory end of the feed (delimiter)
-            $partsSize = strlen("\r\n--".$boundary."\r\n", 'UTF-8');
+            $parts_size = strlen("\r\n--".$boundary."\r\n");
             foreach ($ranges as $range) {
                 #Add content size
-                $partsSize += $range['end'] - $range['start'] + 1;
-                #Add size of supportive text
-                $partsSize += strlen("\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n", 'UTF-8');
+                $parts_size += $range['end'] - $range['start'] + 1;
+                #Add size of the supportive text
+                $parts_size += strlen("\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n");
             }
-            #Send expected size to client
-            header('Content-Length: '.$partsSize);
+            #Send expected size to the client
+            header('Content-Length: '.$parts_size);
             #Iterrate the parts
             $sent = 0;
             foreach ($ranges as $range) {
                 #Echo supportive text
                 echo "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n";
-                #Limit speed to range length, if current speed limit is too large, so that it will be provided fully
-                if ($speedLimit > $range['end'] - $range['start'] + 1) {
-                    $speedLimitMulti = $range['end'] - $range['start'] + 1;
+                #Limit speed to range length if the current speed limit is too large, so that it will be provided fully
+                if ($speed_limit > $range['end'] - $range['start'] + 1) {
+                    $speed_limit_multi = $range['end'] - $range['start'] + 1;
                 } else {
-                    $speedLimitMulti = $speedLimit;
+                    $speed_limit_multi = $speed_limit;
                 }
-                $speedLimitMulti = self::speedLimit($speedLimitMulti);
+                $speed_limit_multi = self::speedLimit($speed_limit_multi);
                 #Output data
-                $result = self::streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speedLimitMulti);
+                $result = self::streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speed_limit_multi);
                 if ($result === false) {
                     fclose($stream);
                     fclose($output);
@@ -187,7 +187,7 @@ class Sharing
         header('Content-Length: '.$filesize);
         header($_SERVER['SERVER_PROTOCOL'].' 200 OK');
         #Output data
-        $result = self::streamCopy($stream, $output, $filesize, 0, $speedLimit);
+        $result = self::streamCopy($stream, $output, $filesize, 0, $speed_limit);
         #Close the file
         fclose($stream);
         fclose($output);
@@ -204,29 +204,29 @@ class Sharing
     
     /**
      * Function to handle file uploads
-     * @param string|array $destPath      Path to save a file(s) to.
-     * @param bool         $preserveNames Whether to preserve name(s). If `false` will rename files to their hash + extension based on MIME type. Only for POST uploads.
-     * @param bool         $overwrite     Whether to overwrite existing file(s). Only for POST uploads.
-     * @param array        $allowed_mime  List of allowed MIME types to block files, that do not match it.
-     * @param bool         $intolerant    Changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array). Only for POST uploads.
-     * @param bool         $exit          If set to `false` will not automatically exit once a file/range or a "bad" header is sent to a client. It then will return a value, that you can utilize somehow.
+     * @param string|array $dest_path      Path to save a file(s) to.
+     * @param bool         $preserve_names Whether to preserve name(s). If `false` will rename files to their hash + extension based on MIME type. Only for POST uploads.
+     * @param bool         $overwrite      Whether to overwrite existing file(s). Only for POST uploads.
+     * @param array        $allowed_mime   List of allowed MIME types to block files, that do not match it.
+     * @param bool         $intolerant     Changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array). Only for POST uploads.
+     * @param bool         $exit           If set to `false` will not automatically exit once a file/range or a "bad" header is sent to a client. It then will return a value, that you can utilize somehow.
      *
      * @return int|array
      */
-    public static function upload(string|array $destPath, bool $preserveNames = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): int|array
+    public static function upload(string|array $dest_path, bool $preserve_names = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): int|array
     {
         #Set upload directory
-        if (is_writable(ini_get('upload_tmp_dir')) === true) {
-            $uploadDir = ini_get('upload_tmp_dir');
+        if (is_writable(ini_get('upload_tmp_dir'))) {
+            $upload_dir = ini_get('upload_tmp_dir');
         } else {
-            $uploadDir = sys_get_temp_dir();
+            $upload_dir = sys_get_temp_dir();
         }
         #Ensure we do not have trailing slash
-        $uploadDir = preg_replace('/(.*[^\\\\\/]+)([\\\\\/]+$)/', '$1', $uploadDir);
+        $upload_dir = preg_replace('/(.*[^\\\\\/]+)([\\\\\/]+$)/', '$1', $upload_dir);
         #Cache some PHP settings
-        $maxUpload = self:: phpMemoryToInt(ini_get('upload_max_filesize'));
-        $maxPost = self:: phpMemoryToInt(ini_get('post_max_size'));
-        $maxFiles = (int)ini_get('max_file_uploads');
+        $max_upload = self:: phpMemoryToInt(ini_get('upload_max_filesize'));
+        $max_post = self:: phpMemoryToInt(ini_get('post_max_size'));
+        $max_files = (int)ini_get('max_file_uploads');
         #Check if POST or PUT
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PUT') {
             return Headers::clientReturn(405, $exit);
@@ -254,19 +254,19 @@ class Sharing
             return Headers::clientReturn(501, $exit);
         }
         #Check that we do have some space allocated for file uploads
-        if ($maxUpload === 0 || $maxPost === 0 || $maxFiles === 0) {
+        if ($max_upload === 0 || $max_post === 0 || $max_files === 0) {
             return Headers::clientReturn(507, $exit);
         }
         #Validate destination directory
-        if (is_string($destPath)) {
-            $destPath = realpath($destPath);
-            if (!is_dir($destPath) || !is_writable($destPath)) {
+        if (is_string($dest_path)) {
+            $dest_path = realpath($dest_path);
+            if (!is_dir($dest_path) || !is_writable($dest_path)) {
                 return Headers::clientReturn(500, $exit);
             }
-        } elseif (is_array($destPath)) {
-            foreach ($destPath as $key => $path) {
-                $destPath[$key] = realpath($path);
-                if (!is_dir($destPath[$key]) || !is_writable($destPath[$key])) {
+        } elseif (is_array($dest_path)) {
+            foreach ($dest_path as $key => $path) {
+                $dest_path[$key] = realpath($path);
+                if (!is_dir($dest_path[$key]) || !is_writable($dest_path[$key])) {
                     return Headers::clientReturn(500, $exit);
                 }
             }
@@ -280,11 +280,11 @@ class Sharing
                 return Headers::clientReturn(400, $exit);
             }
             #Standardize $_FILES and also count them
-            $totalFiles = 0;
+            $total_files = 0;
             foreach ($_FILES as $field => $files) {
                 #Check if multiple files were uploaded to a field and process the values accordingly
                 if (is_array($files['name'])) {
-                    $totalFiles += count($files['name']);
+                    $total_files += count($files['name']);
                     foreach ($files['name'] as $key => $file) {
                         $_FILES[$field][$key]['name'] = $file;
                         $_FILES[$field][$key]['full_path'] = $files['full_path'][$key];
@@ -294,7 +294,7 @@ class Sharing
                         $_FILES[$field][$key]['error'] = $files['error'][$key];
                     }
                 } else {
-                    ++$totalFiles;
+                    ++$total_files;
                     $_FILES[$field][0]['name'] = $files['name'];
                     $_FILES[$field][0]['full_path'] = $files['full_path'];
                     $_FILES[$field][0]['type'] = $files['type'];
@@ -306,15 +306,15 @@ class Sharing
                 unset($_FILES[$field]['name'], $_FILES[$field]['type'], $_FILES[$field]['size'], $_FILES[$field]['tmp_name'], $_FILES[$field]['error'], $_FILES[$field]['full_path']);
             }
             #Check number of files
-            if ($totalFiles > $maxFiles) {
+            if ($total_files > $max_files) {
                 return Headers::clientReturn(413, $exit);
             }
             #Prepare array for uploaded files
-            $uploadedFiles = [];
+            $uploaded_files = [];
             #Check for any errors in files, so that we can exit before actually processing the rest
             foreach ($_FILES as $field => $files) {
-                #Check that field has a folder to copy file to
-                if (is_array($destPath) && !isset($destPath[$field])) {
+                #Check that field has a folder to copy the file to
+                if (is_array($dest_path) && !isset($dest_path[$field])) {
                     if ($intolerant) {
                         return Headers::clientReturn(501, $exit);
                     }
@@ -323,10 +323,10 @@ class Sharing
                     continue;
                 }
                 #Set destination path
-                if (is_array($destPath)) {
-                    $finalPath = $destPath[$field];
+                if (is_array($dest_path)) {
+                    $final_path = $dest_path[$field];
                 } else {
-                    $finalPath = $destPath;
+                    $final_path = $dest_path;
                 }
                 foreach ($files as $key => $file) {
                     switch ($file['error']) {
@@ -362,21 +362,21 @@ class Sharing
                             if ($intolerant) {
                                 return Headers::clientReturn(418, $exit);
                             }
-                            #Remove the file from list
+                            #Remove the file from the list
                             unset($_FILES[$field][$key]);
                             continue 2;
                     }
-                    #Check if file being referenced was, indeed, sent to us via POST
-                    if (is_uploaded_file($file['tmp_name']) === false) {
+                    #Check if the file being referenced was, indeed, sent to us via POST
+                    if (!is_uploaded_file($file['tmp_name'])) {
                         #Deny further processing. This is the only case, where we ignore $intolerant setting for security reasons
                         return Headers::clientReturn(403, $exit);
                     }
                     #Check file size
-                    if ($file['size'] > $maxUpload) {
+                    if ($file['size'] > $max_upload) {
                         if ($intolerant) {
                             return Headers::clientReturn(413, $exit);
                         }
-                        #Remove the file from list
+                        #Remove the file from the list
                         unset($_FILES[$field][$key]);
                         continue;
                     }
@@ -385,7 +385,7 @@ class Sharing
                         if ($intolerant) {
                             return Headers::clientReturn(400, $exit);
                         }
-                        #Remove the file from list
+                        #Remove the file from the list
                         unset($_FILES[$field][$key]);
                         continue;
                     }
@@ -419,7 +419,7 @@ class Sharing
                             #Set new name for the file. By default, we will be using hash of the file. Using sha3-512 since it has lower probability of collisions than md5, although we do lose some speed
                             #Hash is saved regardless, though, since it may be very useful
                             $_FILES[$field][$key]['hash'] = hash_file('sha3-512', $file['tmp_name']);
-                            if ($preserveNames) {
+                            if ($preserve_names) {
                                 $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                             } else {
                                 #Get extension (if any)
@@ -427,31 +427,31 @@ class Sharing
                                 if ($ext) {
                                     $ext = '.'.$ext;
                                 } else {
-                                    $ext = (string)pathinfo($_FILES[$field][$key]['name'])['extension'];
-                                    if (!empty($ext)) {
+                                    $ext = pathinfo($_FILES[$field][$key]['name'], PATHINFO_EXTENSION);
+                                    if (!empty($ext) && is_string($ext)) {
                                         $ext = '.'.$ext;
                                     } else {
                                         $ext = '';
                                     }
                                 }
-                                #Generate name from hash and extension from original file
+                                #Generate name from hash and extension from the original file
                                 $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['hash'].$ext;
                             }
-                            #Check if destination file already exists
-                            if (is_file($finalPath.'/'.$_FILES[$field][$key]['new_name'])) {
+                            #Check if the destination file already exists
+                            if (is_file($final_path.'/'.$_FILES[$field][$key]['new_name'])) {
                                 if ($overwrite) {
                                     #Check that it is writable
-                                    if (!is_writable($finalPath.'/'.$_FILES[$field][$key]['new_name'])) {
+                                    if (!is_writable($final_path.'/'.$_FILES[$field][$key]['new_name'])) {
                                         if ($intolerant) {
                                             return Headers::clientReturn(409, $exit);
                                         }
-                                        #Remove the file from list
+                                        #Remove the file from the list
                                         unset($_FILES[$field][$key]);
                                     }
                                 } else {
                                     #Add it to the list of successfully uploaded files if we are not preserving names, since that implies relative uniqueness of them, thus we are most likely seeing the same file
-                                    if ($preserveNames === false) {
-                                        $uploadedFiles[] = ['server_name' => $_FILES[$field][$key]['new_name'], 'server_path' => $finalPath, 'user_name' => $_FILES[$field][$key]['name'], 'size' => $file['size'], 'type' => $_FILES[$field][$key]['type'], 'hash' => $_FILES[$field][$key]['hash'], 'field' => $field];
+                                    if (!$preserve_names) {
+                                        $uploaded_files[] = ['server_name' => $_FILES[$field][$key]['new_name'], 'server_path' => $final_path, 'user_name' => $_FILES[$field][$key]['name'], 'size' => $file['size'], 'type' => $_FILES[$field][$key]['type'], 'hash' => $_FILES[$field][$key]['hash'], 'field' => $field];
                                     }
                                     #Remove the file from global list
                                     unset($_FILES[$field][$key]);
@@ -467,24 +467,24 @@ class Sharing
             }
             #Check if any files were left
             if (empty($_FILES)) {
-                if (empty($uploadedFiles)) {
+                if (empty($uploaded_files)) {
                     return Headers::clientReturn(400, $exit);
                 }
             } else {
                 #Process files and put them into an array
                 foreach ($_FILES as $field => $files) {
                     #Set destination path
-                    if (is_array($destPath)) {
-                        $finalPath = $destPath[$field];
+                    if (is_array($dest_path)) {
+                        $final_path = $dest_path[$field];
                     } else {
-                        $finalPath = $destPath;
+                        $final_path = $dest_path;
                     }
                     foreach ($files as $file) {
                         #Move file, but only if it's not already present in destination
-                        if (!is_file($finalPath.'/'.$file['new_name']) && move_uploaded_file($file['tmp_name'], $finalPath.'/'.$file['new_name']) === true) {
-                            $uploadedFiles[] = ['server_name' => $file['new_name'], 'server_path' => $finalPath, 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
+                        if (!is_file($final_path.'/'.$file['new_name']) && move_uploaded_file($file['tmp_name'], $final_path.'/'.$file['new_name'])) {
+                            $uploaded_files[] = ['server_name' => $file['new_name'], 'server_path' => $final_path, 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
                         } elseif ($intolerant) {
-                            return $uploadedFiles;
+                            return $uploaded_files;
                         }
                     }
                 }
@@ -497,11 +497,11 @@ class Sharing
             $client_size = (int)$_SERVER['CONTENT_LENGTH'];
             #Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
             set_time_limit((int)floor($client_size / 10240));
-            if ($_SERVER['CONTENT_LENGTH'] > $maxUpload) {
+            if ($_SERVER['CONTENT_LENGTH'] > $max_upload) {
                 return Headers::clientReturn(413, $exit);
             }
             #Check that destination is a string
-            if (!is_string($destPath)) {
+            if (!is_string($dest_path)) {
                 return Headers::clientReturn(500, $exit);
             }
             #Get MIME from the file (not relying on what was sent by client)
@@ -540,8 +540,8 @@ class Sharing
                 $resumable = true;
             }
             #Check if file already exists
-            if ($resumable && is_file($uploadDir.'/'.$name)) {
-                $offset = filesize($uploadDir.'/'.$name);
+            if ($resumable && is_file($upload_dir.'/'.$name)) {
+                $offset = filesize($upload_dir.'/'.$name);
             } else {
                 $offset = 0;
             }
@@ -577,10 +577,10 @@ class Sharing
                 } else {
                     #Open output stream
                     if ($offset < $client_size) {
-                        $output = fopen($uploadDir.'/'.$name, 'ab');
+                        $output = fopen($upload_dir.'/'.$name, 'ab');
                     } else {
                         #Means the file is different and we better rewrite it
-                        $output = fopen($uploadDir.'/'.$name, 'wb');
+                        $output = fopen($upload_dir.'/'.$name, 'wb');
                     }
                     #Check if stream was opened
                     if ($output === false) {
@@ -608,22 +608,22 @@ class Sharing
                 #Means the file we have is complete
                 $result = true;
             }
-            if ($result === false) {
-                if (!$resumable && file_exists($uploadDir.'/'.$name)) {
-                    unlink($uploadDir.'/'.$name);
+            if (!$result) {
+                if (!$resumable && is_file($upload_dir.'/'.$name)) {
+                    unlink($upload_dir.'/'.$name);
                 }
                 return Headers::clientReturn(500, $exit);
             }
             #Get file MIME type
             $filetype = $_SERVER['CONTENT_TYPE'] ?? 'application/octet-stream';
             if (extension_loaded('fileinfo')) {
-                $filetype = mime_content_type($uploadDir.'/'.$name);
+                $filetype = mime_content_type($upload_dir.'/'.$name);
             }
             #Check against allowed MIME types if any was set and fileinfo is loaded
             #Get MIME from file (not relying on what was sent by client)
             if (!empty($allowed_mime) && !in_array($filetype, $allowed_mime, true)) {
-                if (is_file($uploadDir.'/'.$name)) {
-                    unlink($uploadDir.'/'.$name);
+                if (is_file($upload_dir.'/'.$name)) {
+                    unlink($upload_dir.'/'.$name);
                 }
                 return Headers::clientReturn(415, $exit);
             }
@@ -633,39 +633,39 @@ class Sharing
                 $ext = 'PUT';
             }
             #Get hash
-            $hash = hash_file('sha3-512', $uploadDir.'/'.$name);
+            $hash = hash_file('sha3-512', $upload_dir.'/'.$name);
             #Set new name
-            $newName = $hash.'.'.$ext;
+            $new_name = $hash.'.'.$ext;
             #Attempt to move the file
-            if (rename($uploadDir.'/'.$name, $destPath.'/'.$newName) === false) {
+            if (!rename($upload_dir.'/'.$name, $dest_path.'/'.$new_name)) {
                 return Headers::clientReturn(500, $exit);
             }
-            #Add to array. Using array here for consistency with POST method. Field is reported as PUT to indicate the method. It's advisable not to use it for fields if you use POST method as well
-            $uploadedFiles[] = ['server_name' => $newName, 'server_path' => $destPath, 'user_name' => $name, 'size' => $client_size, 'type' => $filetype, 'hash' => $hash, 'field' => 'PUT'];
+            #Add to array. Using an array here for consistency with POST method. The field is reported as PUT to indicate the method. It's advisable not to use it for fields if you use POST method as well
+            $uploaded_files[] = ['server_name' => $new_name, 'server_path' => $dest_path, 'user_name' => $name, 'size' => $client_size, 'type' => $filetype, 'hash' => $hash, 'field' => 'PUT'];
         }
-        if (empty($uploadedFiles)) {
+        if (empty($uploaded_files)) {
             return Headers::clientReturn(500, $exit);
         }
         if ($exit) {
             #Inform client, that files were uploaded
             return Headers::clientReturn(200);
         }
-        return $uploadedFiles;
+        return $uploaded_files;
     }
     
     /**
      * Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
-     * @param resource $input     Input stream
-     * @param resource $output    Output stream
-     * @param int      $totalSize Total size of bytes to copy
-     * @param int      $offset    Offset of bytes to copy from
-     * @param int      $speed     Maximum speed of copying in bytes per second
+     * @param resource $input      Input stream
+     * @param resource $output     Output stream
+     * @param int      $total_size Total size of bytes to copy
+     * @param int      $offset     Offset of bytes to copy from
+     * @param int      $speed      Maximum speed of copying in bytes per second
      *
      * @return bool|int
      */
-    public static function streamCopy($input, $output, int $totalSize = 0, int $offset = 0, int $speed = 10485760): bool|int
+    public static function streamCopy($input, $output, int $total_size = 0, int $offset = 0, int $speed = 10485760): bool|int
     {
-        #Ignore user abort to attempt to identify when client has aborted
+        #Ignore user abort to attempt to identify when the client has aborted
         ignore_user_abort(true);
         #Check that we have resources, since PHP does not have type hinting for resources
         if (!is_resource($input) || !is_resource($output)) {
@@ -676,25 +676,25 @@ class Sharing
             return false;
         }
         #Get size if not provided
-        if ($totalSize <= 0) {
+        if ($total_size <= 0) {
             $fstat = fstat($input);
             if (is_array($fstat)) {
-                $totalSize = $fstat['size'];
+                $total_size = $fstat['size'];
             } else {
-                $totalSize = 0;
+                $total_size = 0;
             }
         }
         #Sanitize speed
         $speed = self::speedLimit($speed);
         #Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
-        set_time_limit((int)floor($totalSize / 10240));
-        #Set counter for amount of data sent
+        set_time_limit((int)floor($total_size / 10240));
+        #Set counter for the amount of data sent
         $sent = 0;
-        while ($sent < $totalSize && connection_status() === CONNECTION_NORMAL) {
+        while ($sent < $total_size && connection_status() === CONNECTION_NORMAL) {
             #Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
-            $sentStat = stream_copy_to_stream($input, $output, $speed, $offset);
-            if ($sentStat !== false) {
-                $sent += $sentStat;
+            $sent_stat = stream_copy_to_stream($input, $output, $speed, $offset);
+            if ($sent_stat !== false) {
+                $sent += $sent_stat;
             } else {
                 #Close session
                 if (session_status() === PHP_SESSION_ACTIVE) {
@@ -712,7 +712,7 @@ class Sharing
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
-        if ($sent >= $totalSize && connection_status() === CONNECTION_NORMAL) {
+        if ($sent >= $total_size && connection_status() === CONNECTION_NORMAL) {
             return $sent;
         }
         return false;
@@ -753,17 +753,18 @@ class Sharing
      */
     public static function phpMemoryToInt(string $memory): int
     {
-        #Get suffix
-        $suffix = mb_strtolower($memory[(int)mb_strlen($memory, 'UTF-8') - 1], 'UTF-8');
+        #Get suffix. Suppressing inspection, since false-positive, `mb_strlen` returns `int`
+        /** @noinspection OffsetOperationsInspection */
+        $suffix = mb_strtolower($memory[mb_strlen($memory, 'UTF-8') - 1], 'UTF-8');
         #Get int value
-        $memoryInt = (int)mb_substr($memory, 0, -1, 'UTF-8');
-        $memoryInt *= match ($suffix) {
+        $memory_int = (int)mb_substr($memory, 0, -1, 'UTF-8');
+        $memory_int *= match ($suffix) {
             'g' => 1073741824,
             'm' => 1048576,
             'k' => 1024,
             default => 1,
         };
-        return $memoryInt;
+        return $memory_int;
     }
     
     /**
@@ -791,8 +792,8 @@ class Sharing
                 } elseif (preg_match('/^\d+-$/', $range) === 1) {
                     $ranges[$key] = ['start' => (int)mb_rtrim($range, '-', 'UTF-8'), 'end' => ($size - 1)];
                 } elseif (preg_match('/^\d+-\d+$/', $range) === 1) {
-                    $tempRange = explode('-', $range);
-                    $ranges[$key] = ['start' => (int)$tempRange[0], 'end' => (int)$tempRange[1]];
+                    $temp_range = explode('-', $range);
+                    $ranges[$key] = ['start' => (int)$temp_range[0], 'end' => (int)$temp_range[1]];
                 } else {
                     #If we get here, something went incredibly wrong, so better exit
                     return [0 => false];
@@ -804,15 +805,15 @@ class Sharing
             }
             #Checking for overlaps, since as per https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html we expect non-overlapping ranges
             if (count($ranges) > 1) {
-                foreach ($ranges as $keyPrime => $rangePrime) {
-                    foreach ($ranges as $keySec => $rangeSec) {
+                foreach ($ranges as $key_prime => $range_prime) {
+                    foreach ($ranges as $key_sec => $range_sec) {
                         #Only compare pairs after current one
-                        if ($keySec > $keyPrime) {
+                        if ($key_sec > $key_prime) {
                             #If overlap in any way - exit
                             if (
-                                ($rangePrime['start'] === $rangeSec['start'] && $rangePrime['end'] === $rangeSec['end']) ||
-                                ($rangeSec['end'] >= $rangePrime['start'] && $rangeSec['end'] < $rangePrime['end']) ||
-                                ($rangeSec['start'] > $rangePrime['start'] && $rangeSec['start'] <= $rangePrime['end'])
+                                ($range_prime['start'] === $range_sec['start'] && $range_prime['end'] === $range_sec['end']) ||
+                                ($range_sec['end'] >= $range_prime['start'] && $range_sec['end'] < $range_prime['end']) ||
+                                ($range_sec['start'] > $range_prime['start'] && $range_sec['start'] <= $range_prime['end'])
                             ) {
                                 return [0 => false];
                             }
@@ -831,21 +832,21 @@ class Sharing
     
     /**
      * Function to send a file directly to browser
-     * @param string $filepath     Path to file
-     * @param array  $allowed_mime List of allowed MIME types
-     * @param string $cacheStrat   Cashing strategy (same as for `Headers::cacheControl`)
-     * @param bool   $exit         Whether to stop execution in case of errors
+     * @param string $filepath       Path to file
+     * @param array  $allowed_mime   List of allowed MIME types
+     * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)
+     * @param bool   $exit           Whether to stop execution in case of errors
      *
      * @return int
      */
-    public static function fileEcho(string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = 'month', bool $exit = true): int
+    public static function fileEcho(string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
     {
         #Check if file exists
         if (is_file($filepath)) {
             #Process MIME
             if (extension_loaded('fileinfo')) {
-                #Get MIME from file
-                $mimeType = mime_content_type($filepath);
+                #Get MIME from the file
+                $mime_type = mime_content_type($filepath);
                 if (!empty($allowed_mime)) {
                     #Sanitize provided MIME types
                     foreach ($allowed_mime as $key => $mime) {
@@ -854,34 +855,34 @@ class Sharing
                         }
                     }
                     #Check if MIME is allowed
-                    if (!empty($allowed_mime) && !in_array($mimeType, $allowed_mime, true)) {
+                    if (!empty($allowed_mime) && !in_array($mime_type, $allowed_mime, true)) {
                         return Headers::clientReturn(403, $exit);
                     }
                 }
             }
-            #While above checks actual MIME type it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
-            $extension = pathinfo($filepath)['extension'];
+            #While the above checks the actual MIME type, it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
+            $extension = pathinfo($filepath, PATHINFO_EXTENSION);
             #Set MIME from extension, of available
-            if (!empty($extension) && !empty(Common::EXTENSION_TO_MIME[$extension])) {
-                $mimeTypeAlt = Common::EXTENSION_TO_MIME[$extension];
+            if (!empty($extension) && is_string($extension) && !empty(Common::EXTENSION_TO_MIME[$extension])) {
+                $mime_type_alt = Common::EXTENSION_TO_MIME[$extension];
             }
-            #Set MIME type to stream, if it's empty
-            if (empty($mimeTypeAlt)) {
-                if (empty($mimeType)) {
-                    $mimeType = 'application/octet-stream';
+            #Set MIME type to stream if it's empty
+            if (empty($mime_type_alt)) {
+                if (empty($mime_type)) {
+                    $mime_type = 'application/octet-stream';
                 }
             } else {
-                $mimeType = $mimeTypeAlt;
+                $mime_type = $mime_type_alt;
             }
             #Send Last Modified, eTag and Cache-Control headers
             Headers::lastModified(filemtime($filepath), true);
             Headers::eTag(hash_file('sha3-512', $filepath), true);
-            Headers::cacheControl('', $cacheStrat, true);
+            Headers::cacheControl('', $cache_strategy, true);
             #Send MIME types. Add Charset to those, that are recommended to have it
-            if (preg_match('/^(text\/.*)|(image\/svg\+xml)|(application\/(.*javascript|.*json|.*xml))$/i', $mimeType) === 1) {
-                header('Content-Type: '.$mimeType.'; charset=utf-8');
+            if (preg_match('/^(text\/.*)|(image\/svg\+xml)|(application\/(.*javascript|.*json|.*xml))$/i', $mime_type) === 1) {
+                header('Content-Type: '.$mime_type.'; charset=utf-8');
             } else {
-                header('Content-Type: '.$mimeType);
+                header('Content-Type: '.$mime_type);
             }
             #Send content disposition
             header('Content-Disposition: inline; filename="'.basename($filepath).'"');
@@ -891,7 +892,7 @@ class Sharing
                 return Headers::clientReturn(500, $exit);
             }
             #Some MIME types can be zipped nicely
-            if (preg_match('/^((font|text)\/.*)|(application\/(.*javascript|.*json|.*xml|vnd\.ms-fontobject|wasm|x-font-ttf))|(image\/(bmp|svg\+xml|vnd.microsoft.icon))$/i', $mimeType) === 1) {
+            if (preg_match('/^((font|text)\/.*)|(application\/(.*javascript|.*json|.*xml|vnd\.ms-fontobject|wasm|x-font-ttf))|(image\/(bmp|svg\+xml|vnd.microsoft.icon))$/i', $mime_type) === 1) {
                 #Read the file
                 $output = fread($stream, filesize($filepath));
                 #Close stream
@@ -899,7 +900,7 @@ class Sharing
                 if ($output === false) {
                     return Headers::clientReturn(500, $exit);
                 }
-                Common::zEcho($output, $cacheStrat);
+                Common::zEcho($output, $cache_strategy);
             } else {
                 #Send size information
                 header('Content-Length: '.filesize($filepath));
@@ -932,59 +933,59 @@ class Sharing
     }
     
     /**
-     * Function to proxy-stream file from another server
-     * @param string $url        URL to proxy
-     * @param string $cacheStrat Cashing strategy (same as for `Headers::cacheControl`)
+     * Function to proxy a file from another server as a stream
+     * @param string $url            URL to proxy
+     * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)
      *
      * @return void
      */
-    #[NoReturn] public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = ''): void
+    #[NoReturn] public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = ''): void
     {
         #Get headers
-        $headersData = get_headers($url, context: stream_context_create(['http' => [
+        $headers_data = get_headers($url, context: stream_context_create(['http' => [
             'method' => 'HEAD',
             'follow_location' => 1,
             'protocol_version' => 2.0
         ]]));
         #Check that we did get headers
-        if (!is_array($headersData)) {
+        if (!is_array($headers_data)) {
             #Failed to get headers, meaning we most likely will not be able to get the content as well
             Headers::clientReturn();
         }
         #Cache-Control flag
         $cache = false;
         #Send the headers from remote server
-        foreach ($headersData as $headerValue) {
-            if (preg_match('/^Cache-Control:.*$/', $headerValue) === 1) {
+        foreach ($headers_data as $header_value) {
+            if (preg_match('/^Cache-Control:.*$/', $header_value) === 1) {
                 $cache = true;
             }
-            header($headerValue);
+            header($header_value);
         }
         #Add Cache-Control
-        if ($cache === false) {
-            Headers::cacheControl('', $cacheStrat, true);
+        if (!$cache) {
+            Headers::cacheControl('', $cache_strategy, true);
         }
         #Process lastModified and eTag to attempt to rely on client cache and not waste server resources
-        foreach ($headersData as $headerValue) {
-            if (preg_match('/^Last-Modified:.*$/', $headerValue) === 1) {
-                Headers::lastModified(strtotime(preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $headerValue)), true);
-            } elseif (preg_match('/^ETag:.*$/', $headerValue) === 1) {
-                Headers::eTag(preg_replace('/^(ETag:\s*"?)([^"]*)("?)$/', '$2', $headerValue), true);
+        foreach ($headers_data as $header_value) {
+            if (preg_match('/^Last-Modified:.*$/', $header_value) === 1) {
+                Headers::lastModified(strtotime(preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $header_value)), true);
+            } elseif (preg_match('/^ETag:.*$/', $header_value) === 1) {
+                Headers::eTag(preg_replace('/^(ETag:\s*"?)([^"]*)("?)$/', '$2', $header_value), true);
             }
         }
         #Open streams
         #Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
-        $urlOpen = fopen($url, 'rb', context: stream_context_create(['http' => [
+        $url_open = fopen($url, 'rb', context: stream_context_create(['http' => [
             'method' => 'GET',
             'follow_location' => 1,
             'protocol_version' => 2.0
         ]]));
         $output = fopen('php://output', 'wb');
         #Send contents
-        if ($urlOpen !== false && $output !== false) {
-            stream_copy_to_stream($urlOpen, $output);
+        if ($url_open !== false && $output !== false) {
+            stream_copy_to_stream($url_open, $output);
             fclose($output);
-            fclose($urlOpen);
+            fclose($url_open);
         } else {
             Headers::clientReturn();
         }

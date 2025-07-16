@@ -840,18 +840,18 @@ class Common
     ];
     
     /**
-     * Wrapper for date(), that handles strings and allows validation of result
-     * @param string|int|float|null $time       Time value
-     * @param string                $format     Expected format
-     * @param string                $validRegex Regex to use for validation
+     * Wrapper for date(), that handles strings and allows validation of the result
+     * @param string|int|float|null $time        Time value
+     * @param string                $format      Expected format
+     * @param string                $valid_regex Regex to use for validation
      *
      * @return string
      */
-    public static function valueToTime(string|int|float|null $time, string $format, string $validRegex = ''): string
+    public static function valueToTime(string|int|float|null $time, string $format, string $valid_regex = ''): string
     {
         #If we want to use a constant, but it was sent as a string
         if (str_starts_with(mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
-            $format = \constant($format);
+            $format = constant($format);
         }
         if (empty($time)) {
             $time = date($format);
@@ -865,23 +865,24 @@ class Common
             throw new \UnexpectedValueException('Time provided to `valueToTime` is neither numeric or string');
         }
         if ($format === 'c' || $format === \DATE_ATOM) {
-            $validRegex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
+            $valid_regex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
         }
-        if (!empty($validRegex) && preg_match($validRegex, $time) !== 1) {
-            throw new \UnexpectedValueException('Date provided to `feedIDGen` failed to be validated against the provided regex');
+        if (!empty($valid_regex) && preg_match($valid_regex, $time) !== 1) {
+            throw new \UnexpectedValueException('Date provided to `valueToTime` failed to be validated against the provided regex');
         }
         return $time;
     }
     
     /**
-     * Function utilizes ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
-     * @param string $string     String to echo
-     * @param string $cacheStrat Cache strategy (same as for `cacheControl` function)
-     * @param bool   $exit       Whether to stop execution after echoing or not
+     * Function uses ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
+     *
+     * @param string $string         String to echo
+     * @param string $cache_strategy Cache strategy (same as for `cacheControl` function)
+     * @param bool   $exit           Whether to stop execution after echoing or not
      *
      * @return void
      */
-    public static function zEcho(string $string, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cacheStrat = '', bool $exit = true): void
+    public static function zEcho(string $string, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = '', bool $exit = true): void
     {
         #Close session
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -910,7 +911,7 @@ class Common
                 $postfix = '-gzip';
             }
         }
-        Headers::cacheControl($string, $cacheStrat, true, $postfix);
+        Headers::cacheControl($string, $cache_strategy, true, $postfix);
         #Send header with length
         if (!headers_sent()) {
             header('Content-Length: '.strlen($string));
@@ -955,16 +956,17 @@ class Common
     }
     
     /**
-     * Function to merge CSS/JS files to reduce number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
-     * @param string|array $files      File(s) to process
-     * @param string       $type       File(s) type (`css`, `js` or `html`)
-     * @param bool         $minify     Whether to minify the output
-     * @param string       $toFile     Optional path to a file, if you want to save the result
-     * @param string       $cacheStrat Cache strategy (same as `cacheStrategy` function)
+     * Function to merge CSS/JS files to reduce the number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
+     *
+     * @param string|array $files          File(s) to process
+     * @param string       $type           File(s) type (`css`, `js` or `html`)
+     * @param bool         $minify         Whether to minify the output
+     * @param string       $to_file        Optional path to a file, if you want to save the result
+     * @param string       $cache_strategy Cache strategy (same as `cacheStrategy` function)
      *
      * @return void
      */
-    public static function reductor(string|array $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $toFile = '', string $cacheStrat = ''): void
+    public static function reductor(string|array $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $to_file = '', string $cache_strategy = ''): void
     {
         #Set content to empty string as precaution
         $content = '';
@@ -977,38 +979,38 @@ class Common
             #Convert to array
             $files = [$files];
         }
-        #Prepare array of dates
+        #Prepare the array of dates
         $dates = [];
         #Iterate array
         foreach ($files as $file) {
-            #Check if string is file
+            #Check if string is a file
             if (is_file($file)) {
                 #Check extension
-                if (strcasecmp(pathinfo($file)['extension'], $type) === 0) {
+                if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), $type) === 0) {
                     #Add date to list
                     $dates[] = filemtime($file);
                     #Add contents
                     $content .= file_get_contents($file);
                 }
             } elseif (is_dir($file)) {
-                $fileList = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
-                foreach ($fileList as $subFile) {
-                    if (strcasecmp($subFile->getExtension(), $type) === 0) {
+                $file_list = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                foreach ($file_list as $sub_file) {
+                    if (strcasecmp($sub_file->getExtension(), $type) === 0) {
                         #Add date to list
-                        $dates[] = $subFile->getMTime();
+                        $dates[] = $sub_file->getMTime();
                         #Add contents
-                        $content .= file_get_contents($subFile->getRealPath());
+                        $content .= file_get_contents($sub_file->getRealPath());
                     }
                 }
             }
         }
         #Get date if we are directly outputting the data
-        if (empty($toFile)) {
-            #Send Last Modified header and exit, if we hit browser cache
+        if (empty($to_file)) {
+            #Send Last-Modified header and exit if we hit browser cache
             Headers::lastModified(max($dates), true);
         }
         #Minify
-        if ($minify === true) {
+        if ($minify) {
             switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     $content = preg_replace(
@@ -1113,8 +1115,8 @@ class Common
                     break;
             }
         }
-        if (empty($toFile)) {
-            #Send appropriate header
+        if (empty($to_file)) {
+            #Send the appropriate header
             switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     if (!headers_list()) {
@@ -1133,9 +1135,9 @@ class Common
                     break;
             }
             #Send data to browser
-            self::zEcho($content, $cacheStrat);
+            self::zEcho($content, $cache_strategy);
         } else {
-            file_put_contents($toFile, $content);
+            file_put_contents($to_file, $content);
         }
     }
     

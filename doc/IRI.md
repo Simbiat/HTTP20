@@ -29,7 +29,7 @@ Converts IRI to URI. Returns `null` in case of failures or a string, if no obvio
 ## restoreUri
 
 ```php
-restoreUri(array $parsedUri)
+restoreUri(array $parsed_uri)
 ```
 
 Restore array from `parse_url()` function to original URL.

@@ -12,13 +12,13 @@ class Meta
 {
     /**
      * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards
-     * @param array $general   Array of general settings used by cards
-     * @param array $playerApp Array of values used for cards with types `app` or `player`
-     * @param bool  $pretty    Ff set to `true` will add new line to the end of each `meta` tag
+     * @param array $general    Array of general settings used by cards
+     * @param array $player_app Array of values used for cards with types `app` or `player`
+     * @param bool  $pretty     If set to `true` will add new line to the end of each `meta` tag
      *
      * @return string
      */
-    public static function twitter(array $general, array $playerApp = [], bool $pretty = false): string
+    public static function twitter(array $general, array $player_app = [], bool $pretty = false): string
     {
         #Check that settings are not an empty array
         if (empty($general)) {
@@ -35,9 +35,9 @@ class Meta
             $general['card'] = 'summary';
         }
         #Add main meta tag
-        $output = '<meta name="twitter:card" content="'.htmlspecialchars($general['card']).'" />';
+        $output = '<meta name="twitter:card" content="'.htmlspecialchars($general['card'], ENT_QUOTES | ENT_SUBSTITUTE).'" />';
         #Add title
-        $output .= '<meta name="twitter:title" content="'.mb_substr(htmlspecialchars($general['title']), 0, 70, 'UTF-8').'" />';
+        $output .= '<meta name="twitter:title" content="'.mb_substr(htmlspecialchars($general['title'], ENT_QUOTES | ENT_SUBSTITUTE), 0, 70, 'UTF-8').'" />';
         #Add site if not empty and valid
         if (!empty($general['site']) && preg_match('/^@?(\w){4,15}$/', $general['site']) === 1 && preg_match('/^.*(twitter|admin).*$/i', $general['site']) === 0) {
             $output .= '<meta name="twitter:site" content="'.(str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
@@ -56,7 +56,7 @@ class Meta
         }
         #Add description if not empty
         if (!empty($general['description'])) {
-            $output .= '<meta name="twitter:description" content="'.mb_substr(htmlspecialchars($general['description']), 0, 200, 'UTF-8').'" />';
+            $output .= '<meta name="twitter:description" content="'.mb_substr(htmlspecialchars($general['description'], ENT_QUOTES | ENT_SUBSTITUTE), 0, 200, 'UTF-8').'" />';
         }
         #Add images' tags, that are not use with 'app' cards
         if ($general['card'] !== 'app') {
@@ -66,50 +66,50 @@ class Meta
             }
             #Add image description
             if (!empty($general['image:alt'])) {
-                $output .= '<meta name="twitter:image:alt" content="'.mb_substr(htmlspecialchars($general['image:alt']), 0, 420, 'UTF-8').'" />';
+                $output .= '<meta name="twitter:image:alt" content="'.mb_substr(htmlspecialchars($general['image:alt'], ENT_QUOTES | ENT_SUBSTITUTE), 0, 420, 'UTF-8').'" />';
             }
         }
         #Process player tags
         if ($general['card'] === 'player') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
-            if (empty($playerApp['player']) || empty($playerApp['width']) || empty($playerApp['height']) || preg_match('/twitter:site/i', $output) !== 1 || preg_match('/twitter:image/i', $output) !== 1 || preg_match('/^\d+$/', $playerApp['width']) !== 1 || preg_match('/^\d+$/', $playerApp['height']) !== 1) {
+            if (empty($player_app['player']) || empty($player_app['width']) || empty($player_app['height']) || preg_match('/twitter:site/i', $output) !== 1 || preg_match('/twitter:image/i', $output) !== 1 || preg_match('/^\d+$/', $player_app['width']) !== 1 || preg_match('/^\d+$/', $player_app['height']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
                 trigger_error('One or more Twitter player card parameter is missing or incorrect');
                 return '';
             }
             #Add player URL
-            $output .= '<meta name="twitter:player" content="'.$playerApp['player'].'" />';
+            $output .= '<meta name="twitter:player" content="'.$player_app['player'].'" />';
             #Add width and height
-            $output .= '<meta name="twitter:player:width" content="'.$playerApp['width'].'" />';
-            $output .= '<meta name="twitter:player:height" content="'.$playerApp['height'].'" />';
+            $output .= '<meta name="twitter:player:width" content="'.$player_app['width'].'" />';
+            $output .= '<meta name="twitter:player:height" content="'.$player_app['height'].'" />';
             #Add stream
-            if (!empty($playerApp['stream'])) {
-                $output .= '<meta name="twitter:player:stream" content="'.$playerApp['stream'].'" />';
+            if (!empty($player_app['stream'])) {
+                $output .= '<meta name="twitter:player:stream" content="'.$player_app['stream'].'" />';
             }
         } elseif ($general['card'] === 'app') {
             #Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card
-            if (empty($playerApp['id:iphone']) || empty($playerApp['id:ipad']) || empty($playerApp['id:googleplay']) || preg_match('/twitter:site/i', $output) !== 1 || preg_match('/^\d+$/', $playerApp['id:iphone']) !== 1 || preg_match('/^\d+$/', $playerApp['id:ipad']) !== 1 || preg_match('/^\d+$/', $playerApp['id:googleplay']) !== 1) {
+            if (empty($player_app['id:iphone']) || empty($player_app['id:ipad']) || empty($player_app['id:googleplay']) || preg_match('/twitter:site/i', $output) !== 1 || preg_match('/^\d+$/', $player_app['id:iphone']) !== 1 || preg_match('/^\d+$/', $player_app['id:ipad']) !== 1 || preg_match('/^\d+$/', $player_app['id:googleplay']) !== 1) {
                 #Do not process if, since will be invalidated by Twitter either way
                 trigger_error('One or more Twitter app card parameter is missing or incorrect');
                 return '';
             }
             #Add IDs
-            $output .= '<meta name="twitter:app:id:ipad" content="'.$playerApp['id:ipad'].'" />';
-            $output .= '<meta name="twitter:app:id:iphone" content="'.$playerApp['id:iphone'].'" />';
-            $output .= '<meta name="twitter:app:id:googleplay" content="'.$playerApp['id:googleplay'].'" />';
+            $output .= '<meta name="twitter:app:id:ipad" content="'.$player_app['id:ipad'].'" />';
+            $output .= '<meta name="twitter:app:id:iphone" content="'.$player_app['id:iphone'].'" />';
+            $output .= '<meta name="twitter:app:id:googleplay" content="'.$player_app['id:googleplay'].'" />';
             #Add custom schemes
-            if (!empty($playerApp['url:ipad']) && preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $playerApp['url:ipad']) === 1) {
-                $output .= '<meta name="twitter:app:url:ipad" content="'.$playerApp['url:ipad'].'" />';
+            if (!empty($player_app['url:ipad']) && preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:ipad']) === 1) {
+                $output .= '<meta name="twitter:app:url:ipad" content="'.$player_app['url:ipad'].'" />';
             }
-            if (!empty($playerApp['url:iphone']) && preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $playerApp['url:iphone']) === 1) {
-                $output .= '<meta name="twitter:app:url:iphone" content="'.$playerApp['url:iphone'].'" />';
+            if (!empty($player_app['url:iphone']) && preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:iphone']) === 1) {
+                $output .= '<meta name="twitter:app:url:iphone" content="'.$player_app['url:iphone'].'" />';
             }
-            if (!empty($playerApp['url:googleplay']) && preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $playerApp['url:googleplay']) === 1) {
-                $output .= '<meta name="twitter:app:url:googleplay" content="'.$playerApp['url:googleplay'].'" />';
+            if (!empty($player_app['url:googleplay']) && preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:googleplay']) === 1) {
+                $output .= '<meta name="twitter:app:url:googleplay" content="'.$player_app['url:googleplay'].'" />';
             }
             #Add country code
-            if (!empty($playerApp['country']) && preg_match('/^A[^ABCHJKNPVY]|B[^CKPUX]|C[^BEJPQST]|D[EJKMOZ]|E[CEGHRST]|F[IJKMOR]|G[^CJKOVXZ]|H[KMNRTU]|I[DEL-OQ-T]|J[EMOP]|K[EGHIMNPRWYZ]|L[ABCIKR-VY]|M[^BIJ]|N[ACEFGILOPRUZ]|OM|P[AE-HK-NRSTWY]|QA|R[EOSUW]|S[^FPQUW]|T[^ABEIPQSUXY]|U[AGMSYZ]|V[ACEGINU]|WF|WS|YE|YT|Z[AMW]$/i', $playerApp['country']) === 1) {
-                $output .= '<meta name="twitter:app:country" content="'.$playerApp['country'].'" />';
+            if (!empty($player_app['country']) && preg_match('/^A[^ABCHJKNPVY]|B[^CKPUX]|C[^BEJPQST]|D[EJKMOZ]|E[CEGHRST]|F[IJKMOR]|G[^CJKOVXZ]|H[KMNRTU]|I[DEL-OQ-T]|J[EMOP]|K[EGHIMNPRWYZ]|L[ABCIKR-VY]|M[^BIJ]|N[ACEFGILOPRUZ]|OM|P[AE-HK-NRSTWY]|QA|R[EOSUW]|S[^FPQUW]|T[^ABEIPQSUXY]|U[AGMSYZ]|V[ACEGINU]|WF|WS|YE|YT|Z[AMW]$/i', $player_app['country']) === 1) {
+                $output .= '<meta name="twitter:app:country" content="'.$player_app['country'].'" />';
             }
         }
         #Add new lines at the end of the tags for a more readable output
@@ -128,11 +128,11 @@ class Meta
      * @param array $tasks         Array of so-called "tasks", that appear as pinned links, if pinned from IE
      * @param array $notifications Array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
      * @param bool  $xml           Whether to generate XML
-     * @param bool  $prettyDirect  If `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
+     * @param bool  $pretty_direct If `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
      *
      * @return string
      */
-    public static function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true): string
+    public static function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $pretty_direct = true): string
     {
         #Check that settings are not an empty array
         if (empty($general)) {
@@ -140,7 +140,7 @@ class Meta
             return '';
         }
         #Check name
-        if (empty($general['name']) && $xml === false) {
+        if (empty($general['name']) && !$xml) {
             #While name (application-name) is replaced by page title by default, this may not be a good idea, if some "random" page is pinned by user. You do want to have at least some control of how your website is presented on user's system.
             trigger_error('Empty name was provided for Microsoft Tile');
             return '';
@@ -205,7 +205,7 @@ class Meta
         #Prepare notification value (should lead to XML formatted like https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root)
         if (!empty($notifications)) {
             #Count elements (links)
-            $links = \count($notifications);
+            $links = count($notifications);
             #Exclude frequency
             if (isset($notifications['frequency'])) {
                 $links--;
@@ -249,16 +249,16 @@ class Meta
         #Prepare tasks
         if (!empty($tasks)) {
             #Start counter for valid tasks
-            $tasksCount = 0;
+            $tasks_count = 0;
             foreach ($tasks as $key => $task) {
                 #Skip separators
                 if ($task !== 'separator') {
                     #Validate settings
-                    if (\is_array($task) && !empty($task['name']) && is_string($task['name']) &&
+                    if (is_array($task) && !empty($task['name']) && is_string($task['name']) &&
                         !empty($task['action-uri']) && is_string($task['action-uri']) &&
                         !empty($task['icon-uri']) && is_string($task['icon-uri']) && preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
                     ) {
-                        $tasksCount++;
+                        $tasks_count++;
                         if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
                             $tasks[$key]['window-type'] = 'tab';
                         }
@@ -269,7 +269,7 @@ class Meta
                 }
             }
             #If there are no valid tasks, unset the array
-            if ($tasksCount === 0) {
+            if ($tasks_count === 0) {
                 $tasks = [];
             } else {
                 #Reset indexes for future use
@@ -285,19 +285,19 @@ class Meta
             if (!empty($general['square70x70logo']) || !empty($general['square150x150logo']) || !empty($general['wide310x150logo']) || !empty($general['square310x310logo']) || !empty($general['TileImage']) || !empty($general['TileColor'])) {
                 $output .= '<tile>';
                 if (!empty($general['square70x70logo'])) {
-                    $output .= '<square70x70logo src="'.htmlspecialchars($general['square70x70logo']).'"/>';
+                    $output .= '<square70x70logo src="'.htmlspecialchars($general['square70x70logo'], ENT_QUOTES | ENT_SUBSTITUTE).'"/>';
                 }
                 if (!empty($general['square150x150logo'])) {
-                    $output .= '<square150x150logo src="'.htmlspecialchars($general['square150x150logo']).'"/>';
+                    $output .= '<square150x150logo src="'.htmlspecialchars($general['square150x150logo'], ENT_QUOTES | ENT_SUBSTITUTE).'"/>';
                 }
                 if (!empty($general['wide310x150logo'])) {
-                    $output .= '<wide310x150logo src="'.htmlspecialchars($general['wide310x150logo']).'"/>';
+                    $output .= '<wide310x150logo src="'.htmlspecialchars($general['wide310x150logo'], ENT_QUOTES | ENT_SUBSTITUTE).'"/>';
                 }
                 if (!empty($general['square310x310logo'])) {
-                    $output .= '<square310x310logo src="'.htmlspecialchars($general['square310x310logo']).'"/>';
+                    $output .= '<square310x310logo src="'.htmlspecialchars($general['square310x310logo'], ENT_QUOTES | ENT_SUBSTITUTE).'"/>';
                 }
                 if (!empty($general['TileImage'])) {
-                    $output .= '<TileImage src="'.htmlspecialchars($general['TileImage']).'"/>';
+                    $output .= '<TileImage src="'.htmlspecialchars($general['TileImage'], ENT_QUOTES | ENT_SUBSTITUTE).'"/>';
                 }
                 if (!empty($general['TileColor'])) {
                     $output .= '<TileColor>'.$general['TileColor'].'</TileColor>';
@@ -316,14 +316,14 @@ class Meta
                 $notifications = array_values($notifications);
                 #Add URLs
                 foreach ($notifications as $key => $value) {
-                    $output .= '<polling-uri'.($key !== 0 ? $key : '').' src="'.htmlspecialchars($value).'"/>';
+                    $output .= '<polling-uri'.($key !== 0 ? $key : '').' src="'.htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE).'"/>';
                 }
                 $output .= '</notification>';
             }
             #Close XML
             $output .= '</msapplication></browserconfig>';
             #Output directly to client if parameter is true
-            if ($prettyDirect) {
+            if ($pretty_direct) {
                 if (!headers_sent()) {
                     header('Content-Type: text/xml; charset=utf-8');
                 }
@@ -335,9 +335,9 @@ class Meta
             foreach ($general as $setting => $value) {
                 #'name' is the only special case, since it uses 'application' prefix, not 'msapplication'
                 if ($setting === 'name') {
-                    $output .= '<meta name="application-name" content="'.htmlspecialchars($value).'" />';
+                    $output .= '<meta name="application-name" content="'.htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE).'" />';
                 } else {
-                    $output .= '<meta name="msapplication-'.$setting.'" content="'.htmlspecialchars($value).'" />';
+                    $output .= '<meta name="msapplication-'.$setting.'" content="'.htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE).'" />';
                 }
             }
             #Add notifications if set
@@ -348,7 +348,7 @@ class Meta
                 $notifications = array_values($notifications);
                 #Add URLs
                 foreach ($notifications as $key => $value) {
-                    $output .= 'polling-uri'.($key !== 0 ? $key : '').'='.htmlspecialchars($value).';';
+                    $output .= 'polling-uri'.($key !== 0 ? $key : '').'='.htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE).';';
                 }
                 #Close the tag
                 $output .= '" />';
@@ -359,12 +359,12 @@ class Meta
                     if ($task === 'separator') {
                         $output .= '<meta name="msapplication-task-separator" content="'.$key.'" />';
                     } else {
-                        $output .= '<meta name="msapplication-task" content="name='.htmlspecialchars($task['name']).'; action-uri='.htmlspecialchars($task['action-uri']).'; icon-uri='.htmlspecialchars($task['icon-uri']).'; window-type='.$task['window-type'].'" />';
+                        $output .= '<meta name="msapplication-task" content="name='.htmlspecialchars($task['name'], ENT_QUOTES | ENT_SUBSTITUTE).'; action-uri='.htmlspecialchars($task['action-uri'], ENT_QUOTES | ENT_SUBSTITUTE).'; icon-uri='.htmlspecialchars($task['icon-uri'], ENT_QUOTES | ENT_SUBSTITUTE).'; window-type='.$task['window-type'].'" />';
                     }
                 }
             }
             #Add new lines at the end of the tags for a more readable output
-            if ($prettyDirect) {
+            if ($pretty_direct) {
                 $output = str_replace('>', '>'."\r\n", $output);
             }
         }
@@ -372,17 +372,17 @@ class Meta
     }
     
     /**
-     * Function to generate Facebook special meta tags
-     * @param int   $appId  Facebook appID
+     * Function to generate Facebook special meta-tags
+     * @param int   $app_id Facebook appID
      * @param array $admins List of Facebook admin IDs
      *
      * @return string
      */
-    public static function facebook(int $appId, array $admins = []): string
+    public static function facebook(int $app_id, array $admins = []): string
     {
         #Add appId tag
-        $output = '<meta property="fb:app_id" content="'.$appId.'"/>';
-        #Check values of admins IDs
+        $output = '<meta property="fb:app_id" content="'.$app_id.'"/>';
+        #Check the values of admins' IDs
         foreach ($admins as $key => $admin) {
             if (is_numeric($admin)) {
                 #Convert to int

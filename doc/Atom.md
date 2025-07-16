@@ -1,7 +1,7 @@
 ## Atom
 
 ```php
-\Simbiat\http20\Atom::atom(string $title, array $entries, string $id = '', string $textType = 'text', array $feed_settings = []);
+\Simbiat\http20\Atom::atom(string $title, array $entries, string $id = '', string $text_type = 'text', array $feed_settings = []);
 ```
 
 Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.html specification.
@@ -10,7 +10,7 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
 
 `$id` - string, that will be used as `id`. It needs to be a URI, thus if it will be empty, will use `(isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']`, that is current address.
 
-`$textType` is the text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
+`$text_type` is the text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
 
 `$feed_settings` - array with optional settings for the feed. Maximum will look like this:
 

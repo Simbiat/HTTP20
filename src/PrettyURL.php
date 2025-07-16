@@ -8,7 +8,7 @@ namespace Simbiat\http20;
  */
 class PrettyURL
 {
-    private static string $urlUnsafe = '\+\*\'\(\);/\?:@=&"<>#%{}\|\\\\\^~\[]`';
+    private static string $url_unsafe = '\+\*\'\(\);/\?:@=&"<>#%{}\|\\\\\^~\[]`';
     private static array $replaces = [
         'ꭕ' => 'x',
         'ꞕ' => 'h',
@@ -5422,20 +5422,21 @@ class PrettyURL
     
     /**
      * Function transliterates lots of characters and makes a safe and pretty URL.
+     *
      * @param string $string     String to process
      * @param string $whitespace Symbol to replace whitespace with
-     * @param bool   $urlSafe    If set to `true`, some characters will be removed as well, because they can "break" the URL. Some of them are valid for a URI, but they are not good for SEO links.
+     * @param bool   $url_safe   If set to `true`, some characters will be removed as well, because they can "break" the URL. Some of them are valid for a URI, but they are not good for SEO links.
      *
      * @return string
      */
-    public static function pretty(string $string, string $whitespace = '-', bool $urlSafe = true): string
+    public static function pretty(string $string, string $whitespace = '-', bool $url_safe = true): string
     {
         $string = str_replace(array_keys(self::$replaces), self::$replaces, $string);
         $string = preg_replace('/\s+/', $whitespace, $string);
-        if ($urlSafe) {
+        if ($url_safe) {
             $string = preg_replace('[^a-zA-Z\d'.$whitespace.']', '', $string);
         } else {
-            $string = preg_replace('[^a-zA-Z\d'.self::$urlUnsafe.$whitespace.']', '', $string);
+            $string = preg_replace('[^a-zA-Z\d'.self::$url_unsafe.$whitespace.']', '', $string);
         }
         return $string;
     }

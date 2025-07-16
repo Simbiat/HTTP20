@@ -9,7 +9,7 @@ Functions, that generate sets of meta-tags, that may be useful for your website.
 ## twitter
 
 ```php
-twitter(array $general, array $playerApp = [], bool $pretty = false);
+twitter(array $general, array $player_app = [], bool $pretty = false);
 ```
 
 Function creates a set of `<meta>` tags required for Twitter Cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards). It does some validation of the values you provide to reduce chances of botching the card.
@@ -39,7 +39,7 @@ Function creates a set of `<meta>` tags required for Twitter Cards (https://deve
 ]
 ```
 
-`$playerApp` is an array of values used for cards with types 'app' or 'player'.
+`$player_app` is an array of values used for cards with types 'app' or 'player'.
 
 For player cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card) the array will look like this:
 
@@ -80,7 +80,7 @@ For app cards (https://developer.twitter.com/en/docs/twitter-for-websites/cards/
 ## msTile
 
 ```php
-msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $prettyDirect = true);
+msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $pretty_direct = true);
 ```
 
 #Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file. Based on following specification:
@@ -162,16 +162,16 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
 
 `$xml` indicates whether you want to generate XML config file. `False` by default.
 
-`$prettyDirect` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
+`$pretty_direct` if `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
 
 ## facebook
 
 ```php
-facebook(int $appId, array $admins = []);
+facebook(int $app_id, array $admins = []);
 ```
 
 Simple function to prepare a string of Facebook meta tags.
 
-`$appId` is mandatory application ID, that you want to link to the page.
+`$app_id` is mandatory application ID, that you want to link to the page.
 
 `$admins` is an optional list of admin IDs. All non-numeric values will be removed and numeric ones will be converted to integers.

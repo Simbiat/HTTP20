@@ -14,105 +14,105 @@ class HTML
 {
     #Static to count breadcrumbs in case multiple ones are created
     public static int $crumbs = 0;
-    #Static to count paginations in case multiple ones are created
+    #Static to count pagination elements in case multiple ones are created
     public static int $paginations = 0;
     #Static to count timelines in case multiple ones are created
     public static int $timelines = 0;
     
     /**
      * Function to generate timeline
-     * @param array  $items   List of timeline items
-     * @param string $format  Datetime format
-     * @param bool   $asc     Whether to use ascending or descending order
-     * @param int    $brLimit Maximum number of `<br>` elements between items
+     * @param array  $items    List of timeline items
+     * @param string $format   Datetime format
+     * @param bool   $asc      Whether to use ascending or descending order
+     * @param int    $br_limit Maximum number of `<br>` elements between items
      *
      * @return string
      */
-    public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $brLimit = 0): string
+    public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $br_limit = 0): string
     {
         if (method_exists(SandClock::class, 'seconds')) {
-            $sandClock = true;
+            $sand_clock = true;
         } else {
-            $sandClock = false;
+            $sand_clock = false;
         }
         $time = time();
         #Sanitize $items and add them to array, that will be ordered
-        $toOrder = [];
+        $to_order = [];
         $current = [];
         foreach ($items as $item) {
-            #Check that at least startTime or endTime and name or position tags are present
-            if ((empty($item['startTime']) && empty($item['endTime'])) || (empty($item['name']) && empty($item['position']))) {
+            #Check that at least start_time or end_time and name or position tags are present
+            if ((empty($item['start_time']) && empty($item['end_time'])) || (empty($item['name']) && empty($item['position']))) {
                 continue;
             }
-            if (!empty($item['endTime'])) {
-                #Ensure we have an integer time or something, that can be converted to one
-                if (is_string($item['endTime'])) {
+            if (!empty($item['end_time'])) {
+                #Ensure we have an integer time or something that can be converted to one
+                if (is_string($item['end_time'])) {
                     #Convert string
-                    $item['endTime'] = strtotime($item['endTime']);
-                    if ($item['endTime'] === false) {
+                    $item['end_time'] = strtotime($item['end_time']);
+                    if ($item['end_time'] === false) {
                         #Failed to convert, skipping item
                         continue;
                     }
-                } elseif (!is_int($item['endTime']) && !is_float($item['endTime'])) {
+                } elseif (!is_int($item['end_time']) && !is_float($item['end_time'])) {
                     #If not int or float - skip item
                     continue;
-                } elseif (is_float($item['endTime'])) {
+                } elseif (is_float($item['end_time'])) {
                     #Convert float to integer
-                    $item['endTime'] = (int)$item['endTime'];
+                    $item['end_time'] = (int)$item['end_time'];
                 }
             }
-            if (!empty($item['startTime'])) {
-                #Ensure we have an integer time or something, that can be converted to one
-                if (is_string($item['startTime'])) {
+            if (!empty($item['start_time'])) {
+                #Ensure we have an integer time or something that can be converted to one
+                if (is_string($item['start_time'])) {
                     #Convert string
-                    $item['startTime'] = strtotime($item['startTime']);
-                    if ($item['startTime'] === false) {
+                    $item['start_time'] = strtotime($item['start_time']);
+                    if ($item['start_time'] === false) {
                         #Failed to convert, skipping item
                         continue;
                     }
-                } elseif (!is_int($item['endTime']) && !is_float($item['startTime'])) {
+                } elseif (!is_int($item['end_time']) && !is_float($item['start_time'])) {
                     #If not int or float - skip item
                     continue;
-                } elseif (is_float($item['startTime'])) {
+                } elseif (is_float($item['start_time'])) {
                     #Convert float to integer
-                    $item['startTime'] = (int)$item['startTime'];
+                    $item['start_time'] = (int)$item['start_time'];
                 }
             }
-            #Check if endTime is set
-            if (!empty($item['endTime'])) {
+            #Check if end_time is set
+            if (!empty($item['end_time'])) {
                 #Add columns for sorting
-                $item['time'] = $item['endTime'];
+                $item['time'] = $item['end_time'];
                 $item['start'] = 0;
                 #Add to order as "end" item
-                $toOrder[] = $item;
+                $to_order[] = $item;
             }
-            #Check if startTime is set
-            if (!empty($item['startTime'])) {
-                #If endTime is present and its formatted version is same as formatted version of startTime - continue to next element
-                if (!empty($item['endTime']) && date($format, $item['endTime']) === date($format, $item['startTime'])) {
+            #Check if start_time is set
+            if (!empty($item['start_time'])) {
+                #If end_time is present and its formatted version is the same as a formatted version of start_time - continue to next element
+                if (!empty($item['end_time']) && date($format, $item['end_time']) === date($format, $item['start_time'])) {
                     continue;
                 }
                 #Add columns for sorting
-                $item['time'] = $item['startTime'];
+                $item['time'] = $item['start_time'];
                 $item['start'] = 1;
-                #Add to array of current items if endTime is empty
-                if (empty($item['endTime'])) {
+                #Add to the array of current items if end_time is empty
+                if (empty($item['end_time'])) {
                     $item['ended'] = false;
                     $current[] = $item;
                 } else {
                     $item['ended'] = true;
                 }
                 #Add to order as "start" item
-                $toOrder[] = $item;
+                $to_order[] = $item;
             }
         }
         #Order timeline
         if ($asc) {
-            usort($toOrder, static function ($a, $b) {
+            usort($to_order, static function ($a, $b) {
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         } else {
-            usort($toOrder, static function ($a, $b) {
+            usort($to_order, static function ($a, $b) {
                 return [$b['time'], $b['start']] <=> [$a['time'], $a['start']];
             });
         }
@@ -125,16 +125,16 @@ class HTML
         #Increase the count for crumbs
         self::$timelines++;
         #Open timeline
-        $output = '<section id="timeline_"'.self::$timelines.' class="timeline" aria-label="timeline '.self::$timelines.'">';
+        $output = '<time-line id="timeline_"'.self::$timelines.' role="complementary" aria-label="timeline '.self::$timelines.'">';
         #Add elements
-        foreach ($toOrder as $key => $item) {
+        foreach ($to_order as $key => $item) {
             #Generate id
-            $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['startTime'] : $item['endTime']));
+            $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['start_time'] : $item['end_time']));
             $output .= '<div class="timeline_block timeline_'.($item['start'] === 1 ? 'start'.($item['ended'] === false ? ' timeline_current' : '') : 'end').'" id="'.$id.'"><div class="timeline_content"><div class="timeline_time">';
             if (!empty($item['icon']) && $item['start'] === 0) {
                 $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
             }
-            $output .= '<time datetime="'.($item['start'] === 1 ? date('Y-m-d H:i:s.v', $item['startTime']) : date('Y-m-d H:i:s.v', $item['endTime'])).'">'.($item['start'] === 1 ? date($format, $item['startTime']) : date($format, $item['endTime'])).'</time>';
+            $output .= '<time datetime="'.($item['start'] === 1 ? date('Y-m-d H:i:s.v', $item['start_time']) : date('Y-m-d H:i:s.v', $item['end_time'])).'">'.($item['start'] === 1 ? date($format, $item['start_time']) : date($format, $item['end_time'])).'</time>';
             if (!empty($item['icon']) && $item['start'] === 1) {
                 $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">';
             }
@@ -150,20 +150,20 @@ class HTML
             }
             $output .= '</h3>';
             #Add time elapsed
-            if ($sandClock) {
+            if ($sand_clock) {
                 $elapsed = 0;
                 if ($item['start'] === 0) {
-                    if (!empty($item['startTime'])) {
-                        $elapsed = $item['endTime'] - $item['startTime'];
+                    if (!empty($item['start_time'])) {
+                        $elapsed = $item['end_time'] - $item['start_time'];
                     }
                 } elseif ($item['ended'] === false) {
-                    $elapsed = $time - $item['startTime'];
+                    $elapsed = $time - $item['start_time'];
                 }
                 if ($elapsed > 0) {
                     $output .= '<div class="timeline_elapsed"><b>Elapsed time: </b><time datetime="'.SandClock::seconds($elapsed, iso: true).'">'.SandClock::seconds($elapsed).'</time></div>';
                 }
             }
-            if (($asc === false && ($item['start'] === 0 || ($item['start'] === 1 && $item['ended'] === false))) || ($asc === true && $item['start'] === 1)) {
+            if ((!$asc && ($item['start'] === 0 || ($item['start'] === 1 && $item['ended'] === false))) || ($asc && $item['start'] === 1)) {
                 #Add description
                 if (!empty($item['description'])) {
                     $output .= '<div class="timeline_description">'.$item['description'].'</div>';
@@ -173,7 +173,7 @@ class HTML
                     if (is_string($item['responsibilities'])) {
                         $output .= '<div class="timeline_responsibilities"><b>Responsibilities: </b>'.$item['responsibilities'].'</div>';
                     } elseif (is_array($item['responsibilities'])) {
-                        $output .= '<div class="timeline_responsibilities"><b>Responsibilities:</b></div><ul class="timeline_responsibilitiesList">';
+                        $output .= '<div class="timeline_responsibilities"><b>Responsibilities:</b></div><ul class="timeline_responsibilities_list">';
                         foreach ($item['responsibilities'] as $responsibility) {
                             $output .= '<li>'.$responsibility.'</li>';
                         }
@@ -185,7 +185,7 @@ class HTML
                     if (is_string($item['achievements'])) {
                         $output .= '<div class="timeline_achievements"><b>Achievements: </b>'.$item['achievements'].'</div>';
                     } elseif (is_array($item['achievements'])) {
-                        $output .= '<div class="timeline_achievements"><b>Achievements:</b></div><ul class="timeline_achievementsList">';
+                        $output .= '<div class="timeline_achievements"><b>Achievements:</b></div><ul class="timeline_achievements_list">';
                         foreach ($item['achievements'] as $achievement) {
                             $output .= '<li>'.$achievement.'</li>';
                         }
@@ -195,35 +195,35 @@ class HTML
             }
             $output .= '</div></div>';
             #Check if there is a following item
-            if (!empty($toOrder[$key + 1])) {
+            if (!empty($to_order[$key + 1])) {
                 #Calculate time difference
                 if ($asc) {
-                    $brs = $toOrder[$key + 1]['time'] - $item['time'];
+                    $brs = $to_order[$key + 1]['time'] - $item['time'];
                 } else {
-                    $brs = $item['time'] - $toOrder[$key + 1]['time'];
+                    $brs = $item['time'] - $to_order[$key + 1]['time'];
                 }
                 #Convert difference to number of months
                 $brs = (int)floor($brs / 60 / 60 / 24 / 30);
                 #Limit it to 12
-                if ($brs > $brLimit) {
-                    $brs = $brLimit;
+                if ($brs > $br_limit) {
+                    $brs = $br_limit;
                 }
                 $output .= str_repeat('<br>', $brs);
             }
         }
         #Close timeline
-        $output .= '</section>';
+        $output .= '</time-line>';
         #Process current events. Doing this here, because it's less important.
         #Check if there are finished events in timeline. If there are none - do not create links to "current" ones
-        if (!empty($current) && \in_array(0, array_column($toOrder, 'start'), true)) {
-            $currentList = '<div class="timeline_shortcut"><b>Ongoing: </b>';
+        if (!empty($current) && in_array(0, array_column($to_order, 'start'), true)) {
+            $current_list = '<time-line-shortcut class="timeline_shortcut" role="directory" aria-label="Shortcuts for timeline '.self::$timelines.'"><b>Ongoing: </b>';
             foreach ($current as $item) {
                 #Generate id
-                $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['startTime']);
-                $currentList .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
+                $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['start_time']);
+                $current_list .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
             }
-            $currentList .= '</div>';
-            $output = $currentList.$output;
+            $current_list .= '</time-line-shortcut>';
+            $output = $current_list.$output;
         }
         return $output;
     }
@@ -260,24 +260,24 @@ class HTML
         #Set initial item number (position)
         $position = 1;
         #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some elements in the list. Adding 1 to avoid last element getting ID of 0.
-        $itemDepth = \count($items);
+        $item_depth = count($items);
         #Open data
-        $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$itemDepth.'" itemListOrder="ItemListUnordered">';
+        $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$item_depth.'" itemListOrder="ItemListUnordered">';
         #Open links
-        $linksArr = [];
+        $links_arr = [];
         foreach ($items as $key => $item) {
             #Add top page if links were requested and this if the first link in set. Technically, it looks like only "home" should be currently supported, but if not supported by client, the link should be silently ignored as per specification, so no worries
             if ($links && $position === 1) {
-                $linksArr[] = ['href' => $item['href'], 'rel' => 'home index top begin prefetch', 'title' => $item['name']];
+                $links_arr[] = ['href' => $item['href'], 'rel' => 'home index top begin prefetch', 'title' => $item['name']];
             }
             #Update item value to string. First element will always have its ID end with 0, because you may want to hide first element (generally home page) with CSS
-            $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '.($itemDepth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.htmlspecialchars($item['href']).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $itemDepth).'" itemprop="name">'.htmlspecialchars($item['name']).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
+            $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '.($item_depth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.htmlspecialchars($item['href']).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="name">'.htmlspecialchars($item['name']).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
             #Update counters
-            $itemDepth--;
+            $item_depth--;
             $position++;
             #Add page as "parent" to current one, if links were requested and this not the first (and only) link in set. Technically, "up" was dropped from specification, but if not supported by client, the link should be silently ignored as per specification, so no worries
-            if ($links && $itemDepth === 1 && $position !== 1) {
-                $linksArr[] = ['href' => $item['href'], 'rel' => 'up prefetch', 'title' => $item['name']];
+            if ($links && $item_depth === 1 && $position !== 1) {
+                $links_arr[] = ['href' => $item['href'], 'rel' => 'up prefetch', 'title' => $item['name']];
             }
         }
         #Implode items and add them to output
@@ -288,12 +288,12 @@ class HTML
             #Send headers, if this was requested
             if ($headers) {
                 #Send headers
-                Links::links($linksArr);
+                Links::links($links_arr);
                 #Replace array of links with prepared strings for future use, if required
-                $linksArr = Links::links($linksArr, 'head');
+                $links_arr = Links::links($links_arr, 'head');
             }
             #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
-            return ['breadcrumbs' => $output, 'links' => $linksArr];
+            return ['breadcrumbs' => $output, 'links' => $links_arr];
         }
         return $output;
     }
@@ -301,18 +301,18 @@ class HTML
     /**
      * Function to generate pagination navigation
      *
-     * @param int    $current     Current page number
-     * @param int    $total       Total page numbers
-     * @param int    $maxNumerics Maximum number of numeric links, that is those pages, that show actual numbers, and not 'First'/'Previous'/'Next'/'Last'. This number includes the current page.
-     * @param array  $nonNumerics Array of default text values to style 'First', 'Previous', 'Next' and 'Last' pages
-     * @param string $prefix      Optional prefix for the links used in `href` attribute.
-     * @param bool   $links       If set to `false`, you will get just a string of the requested pagination, but if set to `true`, this will also generate values for `rel="first prefetch"`, `rel="prev prefetch"`, `rel="next prefetch"` and `rel="last prefetch"` required for `Links()`.
-     * @param bool   $headers     If `$headers` is `true` along with `$links`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).
-     * @param string $tooltip     Attribute to use for tooltip. `title` by default.
+     * @param int    $current      Current page number
+     * @param int    $total        Total page numbers
+     * @param int    $max_numerics Maximum number of numeric links, that is those pages, that show actual numbers, and not 'First'/'Previous'/'Next'/'Last'. This number includes the current page.
+     * @param array  $non_numerics Array of default text values to style 'First', 'Previous', 'Next' and 'Last' pages
+     * @param string $prefix       Optional prefix for the links used in `href` attribute.
+     * @param bool   $links        If set to `false`, you will get just a string of the requested pagination. If set to `true`, this will also generate values for `rel="first prefetch"`, `rel="prev prefetch"`, `rel="next prefetch"` and `rel="last prefetch"` required for `Links()`.
+     * @param bool   $headers      If `$headers` is `true` along with `$links`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have a pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).
+     * @param string $tooltip      Attribute to use for tooltip. `title` by default.
      *
      * @return string|array
      */
-    public static function pagination(int $current, int $total, int $maxNumerics = 5, array $nonNumerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title'): string|array
+    public static function pagination(int $current, int $total, int $max_numerics = 5, array $non_numerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title'): string|array
     {
         #Sanitize numbers
         if ($current < 1) {
@@ -321,12 +321,12 @@ class HTML
         if ($total < 1) {
             $total = 1;
         }
-        if ($maxNumerics < 1) {
-            $maxNumerics = 1;
+        if ($max_numerics < 1) {
+            $max_numerics = 1;
         }
         #Adjust maxNumerics if it's larger than total
-        if ($maxNumerics > $total) {
-            $maxNumerics = $total;
+        if ($max_numerics > $total) {
+            $max_numerics = $total;
         }
         #If we have just one page - no reason to do the whole pagination for that. Same if our current page is more than total
         if (($current === $total && $current <= 1) || $current > $total) {
@@ -339,7 +339,7 @@ class HTML
             return '';
         }
         #Sanitize settings for non-numeric settings
-        foreach ($nonNumerics as $key => $value) {
+        foreach ($non_numerics as $key => $value) {
             #If not a string - revert text values to defaults
             if (!is_string($value)) {
                 $value = match ($key) {
@@ -363,127 +363,127 @@ class HTML
                 };
             }
             #Update value in
-            $nonNumerics[$key] = $value;
+            $non_numerics[$key] = $value;
         }
         #Increase the count for pagination
         self::$paginations++;
         #Calculate maximum number of numeric links to left/right of the current one
-        $sideNumerics = (int)floor(($maxNumerics - 1) / 2);
+        $side_numerics = (int)floor(($max_numerics - 1) / 2);
         #Calculate starting page
-        $startPage = $current - $sideNumerics;
-        if ($startPage < 1) {
-            $startPage = 1;
+        $start_page = $current - $side_numerics;
+        if ($start_page < 1) {
+            $start_page = 1;
         }
         #Calculate ending page
-        $endPage = $current + $sideNumerics;
-        if ($endPage > $total) {
-            $endPage = $total;
+        $end_page = $current + $side_numerics;
+        if ($end_page > $total) {
+            $end_page = $total;
         }
         #Adjust values so that we always have the same number of numeric pages
-        if (($endPage - $startPage) < $maxNumerics) {
+        if (($end_page - $start_page) < $max_numerics) {
             #Calculate "free" slots for links
-            $correction = $maxNumerics - (($endPage - $startPage) + 1);
+            $correction = $max_numerics - (($end_page - $start_page) + 1);
             #If we have space on the right - add to right
-            if ($endPage !== $total) {
-                $endPage += $correction;
+            if ($end_page !== $total) {
+                $end_page += $correction;
                 #If not, but we have space on the left - add to left
-            } elseif ($startPage !== 1) {
-                $startPage -= $correction;
+            } elseif ($start_page !== 1) {
+                $start_page -= $correction;
             }
             #Adjust edge cases
-            if ($startPage < 1) {
-                $startPage = 1;
+            if ($start_page < 1) {
+                $start_page = 1;
             }
-            if ($endPage > $total) {
-                $endPage = $total;
+            if ($end_page > $total) {
+                $end_page = $total;
             }
         }
-        $prevPage = $current - 1;
-        if ($prevPage < 1) {
-            $prevPage = 1;
+        $prev_page = $current - 1;
+        if ($prev_page < 1) {
+            $prev_page = 1;
         }
-        $nextPage = $current + 1;
-        if ($nextPage > $total) {
-            $nextPage = $total;
+        $next_page = $current + 1;
+        if ($next_page > $total) {
+            $next_page = $total;
         }
         #Open data
-        $output = '<nav role="navigation" aria-label="pagination '.self::$paginations.'">';
+        $output = '<pagi-nation role="navigation" aria-label="pagination '.self::$paginations.'">';
         #Open list
-        $output .= '<ol name="pagination_'.self::$paginations.'" id="ol_pagination_'.self::$paginations.'">';
-        #Add link to first page
-        if (!empty($nonNumerics['first'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_first" aria-label="'.$nonNumerics['first_text'].'"'.($current > (1 + $sideNumerics) ? ' '.$tooltip.'="'.$nonNumerics['first_text'].'"' : ' aria-disabled="true"').'>';
-            if ($current > (1 + $sideNumerics) && $total !== $maxNumerics) {
-                $output .= '<a id="a_pagination_'.self::$paginations.'_first" href="'.$prefix.'1">'.$nonNumerics['first'].'</a>';
+        $output .= '<ol name="pagination_'.self::$paginations.'" id="pagination_ol_'.self::$paginations.'">';
+        #Add a link to the first page
+        if (!empty($non_numerics['first'])) {
+            $output .= '<li class="pagination_li pagination_first" aria-label="'.$non_numerics['first_text'].'"'.($current > (1 + $side_numerics) ? ' '.$tooltip.'="'.$non_numerics['first_text'].'"' : ' aria-disabled="true"').'>';
+            if ($current > (1 + $side_numerics) && $total !== $max_numerics) {
+                $output .= '<a class="pagination_link" href="'.$prefix.'1">'.$non_numerics['first'].'</a>';
             } else {
-                $output .= '<span id="a_pagination_'.self::$paginations.'_first">'.$nonNumerics['first'].'</span>';
+                $output .= '<span class="pagination_span">'.$non_numerics['first'].'</span>';
             }
             $output .= '</li>';
         }
-        #Add link to previous page
-        if (!empty($nonNumerics['prev'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_prev" aria-label="'.str_replace('$number', (string)($prevPage), $nonNumerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.str_replace('$number', (string)($prevPage), $nonNumerics['prev_text']).'"' : ' aria-disabled="true"').'>';
-            if ($current !== 1 && $total !== $maxNumerics) {
-                $output .= '<a id="a_pagination_'.self::$paginations.'_prev" href="'.$prefix.($prevPage).'">'.$nonNumerics['prev'].'</a>';
+        #Add a link to the previous page
+        if (!empty($non_numerics['prev'])) {
+            $output .= '<li class="pagination_li pagination_prev" aria-label="'.str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"' : ' aria-disabled="true"').'>';
+            if ($current !== 1 && $total !== $max_numerics) {
+                $output .= '<a class="pagination_link" href="'.$prefix.($prev_page).'">'.$non_numerics['prev'].'</a>';
             } else {
-                $output .= '<span id="a_pagination_'.self::$paginations.'_prev">'.$nonNumerics['prev'].'</span>';
+                $output .= '<span class="pagination_span">'.$non_numerics['prev'].'</span>';
             }
             $output .= '</li>';
         }
         #Generate numeric links
-        for ($i = $startPage; $i <= $endPage; $i++) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_'.$i.'" aria-label="'.$nonNumerics['page_text'].$i.'"'.($i === $current ? ' class="pagination_currentpage" aria-current="page"' : ' '.$tooltip.'="'.$nonNumerics['page_text'].$i.'"').'>';
+        for ($i = $start_page; $i <= $end_page; $i++) {
+            $output .= '<li class="pagination_li'.($i === $current ? ' pagination_current' : '').'" aria-label="'.$non_numerics['page_text'].$i.'"'.($i === $current ? ' aria-current="page"' : ' '.$tooltip.'="'.$non_numerics['page_text'].$i.'"').'>';
             if ($i === $current) {
-                $output .= '<span id="a_pagination_'.self::$paginations.'_'.$i.'">'.$i.'</span>';
+                $output .= '<span class="pagination_span">'.$i.'</span>';
             } else {
-                $output .= '<a id="a_pagination_'.self::$paginations.'_'.$i.'" href="'.$prefix.$i.'">'.$i.'</a>';
+                $output .= '<a class="pagination_link" href="'.$prefix.$i.'">'.$i.'</a>';
             }
             $output .= '</li>';
         }
-        #Add link to next page
-        if (!empty($nonNumerics['next'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_next" aria-label="'.str_replace('$number', (string)($nextPage), $nonNumerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.str_replace('$number', (string)($nextPage), $nonNumerics['next_text']).'"' : ' aria-disabled="true"').'>';
-            if ($current !== $total && $total !== $maxNumerics) {
-                $output .= '<a id="a_pagination_'.self::$paginations.'_next" href="'.$prefix.($nextPage).'">'.$nonNumerics['next'].'</a>';
+        #Add a link to the next page
+        if (!empty($non_numerics['next'])) {
+            $output .= '<li class="pagination_li pagination_next" aria-label="'.str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"' : ' aria-disabled="true"').'>';
+            if ($current !== $total && $total !== $max_numerics) {
+                $output .= '<a class="pagination_link" href="'.$prefix.($next_page).'">'.$non_numerics['next'].'</a>';
             } else {
-                $output .= '<span id="a_pagination_'.self::$paginations.'_next">'.$nonNumerics['next'].'</span>';
+                $output .= '<span class="pagination_span">'.$non_numerics['next'].'</span>';
             }
             $output .= '</li>';
         }
-        #Add link to last page
-        if (!empty($nonNumerics['last'])) {
-            $output .= '<li id="li_pagination_'.self::$paginations.'_last" aria-label="'.str_replace('$number', (string)$total, $nonNumerics['last_text']).'"'.($current < ($total - $sideNumerics) ? ' '.$tooltip.'="'.str_replace('$number', (string)$total, $nonNumerics['last_text']).'"' : ' aria-disabled="true"').'>';
-            if ($current < ($total - $sideNumerics) && $total !== $maxNumerics) {
-                $output .= '<a id="a_pagination_'.self::$paginations.'_last" href="'.$prefix.$total.'">'.$nonNumerics['last'].'</a>';
+        #Add a link to the last page
+        if (!empty($non_numerics['last'])) {
+            $output .= '<li class="pagination_li pagination_last" aria-label="'.str_replace('$number', (string)$total, $non_numerics['last_text']).'"'.($current < ($total - $side_numerics) ? ' '.$tooltip.'="'.str_replace('$number', (string)$total, $non_numerics['last_text']).'"' : ' aria-disabled="true"').'>';
+            if ($current < ($total - $side_numerics) && $total !== $max_numerics) {
+                $output .= '<a class="pagination_link" href="'.$prefix.$total.'">'.$non_numerics['last'].'</a>';
             } else {
-                $output .= '<span id="a_pagination_'.self::$paginations.'_last">'.$nonNumerics['last'].'</span>';
+                $output .= '<span class="pagination_span">'.$non_numerics['last'].'</span>';
             }
             $output .= '</li>';
         }
         #Close list
         $output .= '</ol>';
         #Close data
-        $output .= '</nav>';
+        $output .= '</pagi-nation>';
         if ($links) {
-            #Populate array of links
-            $linksArr = [];
+            #Populate the array of links
+            $links_array = [];
             if ($current !== 1) {
-                $linksArr[] = ['href' => $prefix.'1', 'rel' => 'first prefetch', 'title' => $nonNumerics['first_text']];
-                $linksArr[] = ['href' => $prefix.($prevPage), 'rel' => 'prev prefetch', 'title' => str_replace('$number', (string)($prevPage), $nonNumerics['prev_text'])];
+                $links_array[] = ['href' => $prefix.'1', 'rel' => 'first prefetch', 'title' => $non_numerics['first_text']];
+                $links_array[] = ['href' => $prefix.($prev_page), 'rel' => 'prev prefetch', 'title' => str_replace('$number', (string)($prev_page), $non_numerics['prev_text'])];
             }
             if ($current !== $total) {
-                $linksArr[] = ['href' => $prefix.$total, 'rel' => 'last prefetch', 'title' => str_replace('$number', (string)$total, $nonNumerics['last_text'])];
-                $linksArr[] = ['href' => $prefix.($nextPage), 'rel' => 'next prefetch', 'title' => str_replace('$number', (string)($nextPage), $nonNumerics['next_text'])];
+                $links_array[] = ['href' => $prefix.$total, 'rel' => 'last prefetch', 'title' => str_replace('$number', (string)$total, $non_numerics['last_text'])];
+                $links_array[] = ['href' => $prefix.($next_page), 'rel' => 'next prefetch', 'title' => str_replace('$number', (string)($next_page), $non_numerics['next_text'])];
             }
-            #Send headers, if this was requested
+            #Send the headers if this was requested
             if ($headers) {
                 #Send headers
-                Links::links($linksArr);
-                #Replace array of links with prepared strings for future use, if required
-                $linksArr = Links::links($linksArr, 'head');
+                Links::links($links_array);
+                #Replace the array of links with prepared strings for future use, if required
+                $links_array = Links::links($links_array, 'head');
             }
-            #Return both breadcrumbs and links (so that they can be used later, for example, added to final HTML document)
-            return ['pagination' => $output, 'links' => $linksArr];
+            #Return both breadcrumbs and links (so that they can be used later, for example, added to the final HTML document)
+            return ['pagination' => $output, 'links' => $links_array];
         }
         return $output;
     }
