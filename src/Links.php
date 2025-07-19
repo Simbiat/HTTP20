@@ -214,9 +214,9 @@ class Links
         if (isset($link['crossorigin']) && (empty($link['crossorigin']) || !in_array($link['crossorigin'], ['anonymous', 'use-credentials']))) {
             $link['crossorigin'] = 'anonymous';
         }
-        #Sanitize title if set
+        #Sanitize title if it's set
         if (isset($link['title'])) {
-            $link['title'] = urldecode(htmlspecialchars($link['title']));
+            $link['title'] = \urldecode(\htmlspecialchars($link['title'], \ENT_QUOTES | \ENT_SUBSTITUTE));
         } else {
             $link['title'] = '';
         }
@@ -245,7 +245,8 @@ class Links
     {
         if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) === 0) {
             $potential_iri = IRI::parseUri($link['integrity']);
-            if (is_array($potential_iri) && !empty($potential_iri['host'])) {
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            if (\is_array($potential_iri) && !empty($potential_iri['host'])) {
                 #It looks like we have an absolute link. Assume error or malicious intent
                 return false;
             }

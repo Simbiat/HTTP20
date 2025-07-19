@@ -89,7 +89,7 @@ class HTML
             #Check if start_time is set
             if (!empty($item['start_time'])) {
                 #If end_time is present and its formatted version is the same as a formatted version of start_time - continue to next element
-                if (!empty($item['end_time']) && date($format, $item['end_time']) === date($format, $item['start_time'])) {
+                if (!empty($item['end_time']) && \date($format, $item['end_time']) === \date($format, $item['start_time'])) {
                     continue;
                 }
                 #Add columns for sorting
@@ -108,17 +108,20 @@ class HTML
         }
         #Order timeline
         if ($asc) {
-            usort($to_order, static function ($a, $b) {
+            \usort($to_order, static function ($a, $b) {
+                /** @noinspection SuspiciousBinaryOperationInspection https://github.com/kalessil/phpinspectionsea/issues/1804 */
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         } else {
-            usort($to_order, static function ($a, $b) {
+            \usort($to_order, static function ($a, $b) {
+                /** @noinspection SuspiciousBinaryOperationInspection https://github.com/kalessil/phpinspectionsea/issues/1804 */
                 return [$b['time'], $b['start']] <=> [$a['time'], $a['start']];
             });
         }
         #Order current events if any
-        if (!empty($current)) {
-            usort($current, static function ($a, $b) {
+        if (\count($current) !== 0) {
+            \usort($current, static function ($a, $b) {
+                /** @noinspection SuspiciousBinaryOperationInspection https://github.com/kalessil/phpinspectionsea/issues/1804 */
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         }
@@ -203,12 +206,12 @@ class HTML
                     $brs = $item['time'] - $to_order[$key + 1]['time'];
                 }
                 #Convert difference to number of months
-                $brs = (int)floor($brs / 60 / 60 / 24 / 30);
+                $brs = (int)\floor($brs / 2592000);
                 #Limit it to 12
                 if ($brs > $br_limit) {
                     $brs = $br_limit;
                 }
-                $output .= str_repeat('<br>', $brs);
+                $output .= \str_repeat('<br>', $brs);
             }
         }
         #Close timeline
@@ -271,7 +274,7 @@ class HTML
                 $links_arr[] = ['href' => $item['href'], 'rel' => 'home index top begin prefetch', 'title' => $item['name']];
             }
             #Update item value to string. First element will always have its ID end with 0, because you may want to hide first element (generally home page) with CSS
-            $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '.($item_depth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.htmlspecialchars($item['href']).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="name">'.htmlspecialchars($item['name']).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
+            $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '.($item_depth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.\htmlspecialchars($item['href'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="name">'.\htmlspecialchars($item['name'], \ENT_QUOTES | \ENT_SUBSTITUTE).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
             #Update counters
             $item_depth--;
             $position++;

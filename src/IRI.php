@@ -90,51 +90,67 @@ class IRI
             return null;
         }
         #If there is no scheme, then it may be a relative path, and thus in some cases it's not possible to determine if the first part (before first slash) is a domain or actual part of a path
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (empty($parsed_iri['scheme'])) {
             return null;
         }
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['scheme'] = mb_strtolower($parsed_iri['scheme'], 'UTF-8');
         #If we have a scheme but somehow lack a host - that's also abnormal
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (empty($parsed_iri['host'])) {
             return null;
         }
         #Convert host to ASCII
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $ascii_host = idn_to_ascii($parsed_iri['host']);
         #If it's false - return
         if ($ascii_host === false) {
             return null;
         }
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['host'] = mb_strtolower($ascii_host, 'UTF-8');
         #Check if a valid domain name or IP
-        if (!filter_var($ascii_host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) &&
-            !filter_var($ascii_host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+        if (!\filter_var($ascii_host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME) &&
+            !\filter_var($ascii_host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4 | \FILTER_FLAG_IPV6)) {
             return null;
         }
         #Pross user and pass if present
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['user'])) {
-            $parsed_iri['user'] = rawurlencode($parsed_iri['user']);
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            $parsed_iri['user'] = \rawurlencode($parsed_iri['user']);
         }
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['pass'])) {
-            $parsed_iri['pass'] = rawurlencode($parsed_iri['pass']);
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            $parsed_iri['pass'] = \rawurlencode($parsed_iri['pass']);
         }
         #Process the path, if present
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['path'])) {
             #Need to use explode/implode to preserve `/` symbols. Doing rawurlencode and then restoring them may restore symbols encoded in the original IRI
-            $parsed_iri['path'] = implode('/', array_map('rawurlencode', explode('/', $parsed_iri['path'])));
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            $parsed_iri['path'] = \implode('/', \array_map('rawurlencode', \explode('/', $parsed_iri['path'])));
         }
         #Process query, if present
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['query'])) {
             #"Explode" the query into an array using parse_str
-            parse_str($parsed_iri['query'], $exploded_query);
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            \parse_str($parsed_iri['query'], $exploded_query);
             #Rebuild the query to ensure we URL encode properly
-            $parsed_iri['query'] = http_build_query($exploded_query, encoding_type: PHP_QUERY_RFC3986);
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            $parsed_iri['query'] = \http_build_query($exploded_query, encoding_type: PHP_QUERY_RFC3986);
         }
         #Process fragment, if present
+        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['fragment'])) {
-            $parsed_iri['fragment'] = rawurlencode($parsed_iri['fragment']);
+            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            $parsed_iri['fragment'] = \rawurlencode($parsed_iri['fragment']);
         }
         #Validate that all components besides `query` do *not* contain characters from `iprivate` terminal
-        if (array_any($parsed_iri, static fn($value, $component) => $component !== 'query' && preg_match('/['.self::I_PRIVATE.']/u', $value) === 1)) {
+        if (\array_any($parsed_iri, static fn($value, $component) => $component !== 'query' && \preg_match('/['.self::I_PRIVATE.']/u', $value) === 1)) {
             return null;
         }
         return self::restoreUri($parsed_iri);
@@ -170,9 +186,9 @@ class IRI
     {
         #Trim first
         $uri = mb_trim($uri, null, 'UTF-8');
-        $result = preg_match('/^(?:(?<scheme>[^:\/?#]+):)?(?:\/\/(?:(?<user>[^:@\/]+)(?::(?<pass>[^:@\/]+))?@)?(?<host>[^\/?#:]*)(?::(?<port>\d+))?)?(?<path>[^?#]*)(?:\?(?<query>[^#]*))?(?:#(?<fragment>.*))?$/ui', $uri, $matches);
+        $result = \preg_match('/^(?:(?<scheme>[^:\/?#]+):)?(?:\/\/(?:(?<user>[^:@\/]+)(?::(?<pass>[^:@\/]+))?@)?(?<host>[^\/?#:]*)(?::(?<port>\d+))?)?(?<path>[^?#]*)(?:\?(?<query>[^#]*))?(?:#(?<fragment>.*))?$/ui', $uri, $matches);
         #If the match failed somehow or if the array is empty - return false
-        if ($result !== 1 || empty($matches)) {
+        if ($result !== 1 || \count($matches) === 0) {
             return false;
         }
         #Remove the numeric keys

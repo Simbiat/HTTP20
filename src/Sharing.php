@@ -677,8 +677,9 @@ class Sharing
         }
         #Get size if not provided
         if ($total_size <= 0) {
-            $fstat = fstat($input);
+            $fstat = \fstat($input);
             if (is_array($fstat)) {
+                /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
                 $total_size = $fstat['size'];
             } else {
                 $total_size = 0;
