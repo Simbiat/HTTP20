@@ -169,8 +169,8 @@ class Links
         #Set or update media type based on link. Or, at least, try to
         if (empty($link['type']) && isset($link['href'])) {
             $ext = \pathinfo($link['href'], \PATHINFO_EXTENSION);
-            if (\is_string($ext) && isset(Common::EXTENSION_TO_MIME[$ext])) {
-                $link['type'] = Common::EXTENSION_TO_MIME[$ext];
+            if (\is_string($ext) && Common::getMimeFromExtension($ext) !== null) {
+                $link['type'] = Common::getMimeFromExtension($ext);
             } else {
                 $link['type'] = '';
             }

@@ -71,7 +71,7 @@ class Sharing
         #Check if it's empty again (or was from the start)
         if (empty($mime)) {
             #If not, attempt to check if in the constant list based on extension
-            $mime = Common::EXTENSION_TO_MIME[$fileinfo['extension']] ?? 'application/octet-stream';
+            $mime = Common::getMimeFromExtension($fileinfo['extension']) ?? 'application/octet-stream';
         }
         #Get file name
         if (empty($filename)) {
@@ -423,7 +423,7 @@ class Sharing
                                 $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                             } else {
                                 #Get extension (if any)
-                                $ext = \array_search($_FILES[$field][$key]['type'], Common::EXTENSION_TO_MIME, true);
+                                $ext = Common::getExtensionFromMime($_FILES[$field][$key]['type']);
                                 if ($ext) {
                                     $ext = '.'.$ext;
                                 } else {
@@ -628,7 +628,7 @@ class Sharing
                 return Headers::clientReturn(415, $exit);
             }
             #Get extension of the file
-            $ext = \array_search($filetype, Common::EXTENSION_TO_MIME, true);
+            $ext = Common::getExtensionFromMime($filetype);
             if ($ext === false) {
                 $ext = 'PUT';
             }
@@ -864,8 +864,8 @@ class Sharing
             #While the above checks the actual MIME type, it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
             $extension = \pathinfo($filepath, \PATHINFO_EXTENSION);
             #Set MIME from extension, of available
-            if (!empty($extension) && is_string($extension) && !empty(Common::EXTENSION_TO_MIME[$extension])) {
-                $mime_type_alt = Common::EXTENSION_TO_MIME[$extension];
+            if (!empty($extension) && is_string($extension) && Common::getMimeFromExtension($extension) !== null) {
+                $mime_type_alt = Common::getMimeFromExtension($extension);
             }
             #Set MIME type to stream if it's empty
             if (empty($mime_type_alt)) {
