@@ -37,47 +37,58 @@ class Common
     public static array $extension_to_mime = [];
     
     /**
+     * Get MIME type based on extension
      * @param string $extension Extension to get MIME for
-     * @param string $mime_list Optional list extension-to-MIME map file
+     * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
      *
-     * @return string|null
+     * @return string|false
      */
-    public static function getMimeFromExtension(string $extension, string $mime_list = ''): string|null
+    public static function getMimeFromExtension(string $extension, string $mime_list = ''): string|false
     {
-        if (\preg_match('/^\s*$/u', $mime_list) === 1 || !\is_file($mime_list)) {
-            $mime_list = __DIR__.'/mime.json';
-        }
-        #Read the file with MIME types
-        if (\count(self::$extension_to_mime) === 0) {
-            try {
-                self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
-            } catch (\Throwable) {
-                return null;
-            }
-        }
-        return self::$extension_to_mime[$extension] ?? null;
+        self::loadMime($mime_list);
+        return self::$extension_to_mime[$extension] ?? false;
     }
     
     /**
+     * Get extension based on MIME type
      * @param string $mime      MIME to get an extension for
-     * @param string $mime_list Optional list extension-to-MIME map file
+     * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
      *
      * @return false|int|string
      */
     public static function getExtensionFromMime(string $mime, string $mime_list = ''): false|int|string
     {
-        if (\preg_match('/^\s*$/u', $mime_list) === 1 || !\is_file($mime_list)) {
-            $mime_list = __DIR__.'/mime.json';
+        self::loadMime($mime_list);
+        return \array_search($mime, self::$extension_to_mime, true);
+    }
+    
+    /**
+     * @param string $mime_list
+     *
+     * @return void
+     */
+    private static function loadMime(string $mime_list = ''): void
+    {
+        if (\preg_match('/^\s*$/u', $mime_list) === 1) {
+            #Check if it's a valid JSON string
+            if (json_validate($mime_list)) {
+                try {
+                    self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
+                } catch (\Throwable) {
+                    return;
+                }
+            } elseif (!\is_file($mime_list)) {
+                $mime_list = __DIR__.'/mime.json';
+            }
         }
         #Read the file with MIME types
         if (\count(self::$extension_to_mime) === 0) {
             try {
                 self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
             } catch (\Throwable) {
-                return false;
+                return;
             }
         }
-        return \array_search($mime, self::$extension_to_mime, true);
     }
     
     /**

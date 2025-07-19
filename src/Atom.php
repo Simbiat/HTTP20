@@ -60,7 +60,7 @@ class Atom
         } else {
             $feed_settings['updated'] = Common::valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
-        #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
+        #Send Last-Modified header right now, but do not exit if 304 is sent, so that a proper set of Cache-Control headers is sent as well
         Headers::lastModified(\strtotime($feed_settings['updated']));
         #Validate authors
         if (!empty($feed_settings['authors'])) {
@@ -78,7 +78,7 @@ class Atom
         if (!empty($feed_settings['categories'])) {
             self::atomElementValidator($feed_settings['categories'], 'category', 'term');
         }
-        #Generating the feed. Using DomDocument for cleaner look and strings sanitization
+        #Generating the feed. Using DomDocument for clean look and strings sanitization
         $feed = new \DomDocument('1.0', 'UTF-8');
         #We would prefer a pretty file, just in case
         $feed->preserveWhiteSpace = false;
@@ -273,7 +273,7 @@ class Atom
         $title = $element->appendChild($feed->createElement('title', $entry['title']));
         $title->setAttribute('type', $text_type);
         $element->appendChild($feed->createElement('updated', Common::valueToTime($entry['updated'], \DATE_ATOM)));
-        #Add link as alternate
+        #Add a link as alternate
         $link = $element->appendChild($feed->createElement('link'));
         $link->setAttribute('rel', 'alternate');
         $link->setAttribute('href', Common::htmlToRFC3986($entry['link']));
@@ -324,7 +324,7 @@ class Atom
             $rights = $element->appendChild($feed->createElement('rights', $entry['rights']));
             $rights->setAttribute('type', $text_type);
         }
-        #Add source
+        #Add a source
         if (!empty($entry['source_id']) || !empty($entry['source_title']) || !empty($entry['source_updated'])) {
             $source = $element->appendChild($feed->createElement('source'));
             if (!empty($entry['source_id'])) {
@@ -353,10 +353,10 @@ class Atom
         $link = \preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', Common::htmlToRFC3986($link));
         #Replace any # with /
         $link = \preg_replace('/#/m', '/', $link);
-        #Remove HTML/XML reserved characters as precaution.
+        #Remove HTML/XML reserved characters as a precaution.
         #Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
         $link = \preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
-        #Add 'tag:' to beginning and ',Y-m-d:' after domain name
+        #Add 'tag:' to beginning and a ',Y-m-d:' after domain name
         return \preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
     }
 }

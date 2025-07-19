@@ -864,7 +864,7 @@ class Sharing
             #While the above checks the actual MIME type, it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
             $extension = \pathinfo($filepath, \PATHINFO_EXTENSION);
             #Set MIME from extension, of available
-            if (!empty($extension) && is_string($extension) && Common::getMimeFromExtension($extension) !== null) {
+            if (!empty($extension) && is_string($extension) && Common::getMimeFromExtension($extension) !== false) {
                 $mime_type_alt = Common::getMimeFromExtension($extension);
             }
             #Set MIME type to stream if it's empty

@@ -89,3 +89,19 @@ forceClose();
 ```
 
 Function to force close HTTP connection. Sounds simple, but it may actually become a problem, if the client is actively sending data to you. Trick is simple, too (just flush the buffer), but using this function will help you not bother thinking about it.
+
+## getExtensionFromMime
+
+```php
+getExtensionFromMime(string $mime, string $mime_list = '');
+```
+
+Get extension based on a file MIME type. Accepts an optional path to extension-to-MIME map in JSON format or a JSON string. It should be an array where each key is an extension, and its value is a MIME type. If extension is not found returns `false`.
+
+## getMimeFromExtension
+
+```php
+getMimeFromExtension(string $extension, string $mime_list = '');
+```
+
+Get MIME based on a file extension. Accepts an optional path to extension-to-MIME map in JSON format or a JSON string. It should be an array where each key is an extension, and its value is a MIME type. If MIME is not found returns `false`.
