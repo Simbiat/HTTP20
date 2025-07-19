@@ -74,6 +74,7 @@ class Common
             if (json_validate($mime_list)) {
                 try {
                     self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
+                    return;
                 } catch (\Throwable) {
                     return;
                 }
