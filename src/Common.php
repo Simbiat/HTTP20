@@ -851,23 +851,23 @@ class Common
     {
         #If we want to use a constant, but it was sent as a string
         if (str_starts_with(mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
-            $format = constant($format);
+            $format = \constant($format);
         }
         if (empty($time)) {
-            $time = date($format);
-        } elseif (is_numeric($time)) {
+            $time = \date($format);
+        } elseif (\is_numeric($time)) {
             #Ensure we use int
-            $time = date($format, (int)$time);
+            $time = \date($format, (int)$time);
         } elseif (is_string($time)) {
             #Attempt to convert string to time
-            $time = date($format, strtotime($time));
+            $time = \date($format, \strtotime($time));
         } else {
             throw new \UnexpectedValueException('Time provided to `valueToTime` is neither numeric or string');
         }
         if ($format === 'c' || $format === \DATE_ATOM) {
             $valid_regex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
         }
-        if (!empty($valid_regex) && preg_match($valid_regex, $time) !== 1) {
+        if (!empty($valid_regex) && \preg_match($valid_regex, $time) !== 1) {
             throw new \UnexpectedValueException('Date provided to `valueToTime` failed to be validated against the provided regex');
         }
         return $time;
@@ -885,36 +885,36 @@ class Common
     public static function zEcho(string $string, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = '', bool $exit = true): void
     {
         #Close session
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close();
+        if (\session_status() === \PHP_SESSION_ACTIVE) {
+            \session_write_close();
         }
         $postfix = '';
         if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
             #Attempt brotli compression, if available and client supports it
             if (extension_loaded('brotli') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
                 #Compress string
-                $string = brotli_compress($string, 11, BROTLI_TEXT);
+                $string = \brotli_compress($string, 11, \BROTLI_TEXT);
                 #Send header with format
-                if (!headers_sent()) {
-                    header('Content-Encoding: br');
+                if (!\headers_sent()) {
+                    \header('Content-Encoding: br');
                 }
                 $postfix = '-br';
                 #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
             } elseif (extension_loaded('zlib') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
                 #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
                 #GZipping the string
-                $string = gzcompress($string, 9, FORCE_GZIP);
+                $string = \gzcompress($string, 9, \FORCE_GZIP);
                 #Send header with format
-                if (!headers_sent()) {
-                    header('Content-Encoding: gzip');
+                if (!\headers_sent()) {
+                    \header('Content-Encoding: gzip');
                 }
                 $postfix = '-gzip';
             }
         }
         Headers::cacheControl($string, $cache_strategy, true, $postfix);
         #Send header with length
-        if (!headers_sent()) {
-            header('Content-Length: '.strlen($string));
+        if (!\headers_sent()) {
+            \header('Content-Length: '.\strlen($string));
         }
         #Some HTTP methods do not support body, thus we need to ensure it's not sent.
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
@@ -950,9 +950,9 @@ class Common
     public static function htmlToRFC3986(string $string, bool $full = true): string
     {
         if ($full) {
-            return str_replace(['\'', '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
+            return \str_replace(['\'', '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
         }
-        return str_replace(['&', '<'], ['%26', '%3C'], $string);
+        return \str_replace(['&', '<'], ['%26', '%3C'], $string);
     }
     
     /**
@@ -984,22 +984,22 @@ class Common
         #Iterate array
         foreach ($files as $file) {
             #Check if string is a file
-            if (is_file($file)) {
+            if (\is_file($file)) {
                 #Check extension
-                if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), $type) === 0) {
+                if (\strcasecmp(\pathinfo($file, \PATHINFO_EXTENSION), $type) === 0) {
                     #Add date to list
-                    $dates[] = filemtime($file);
+                    $dates[] = \filemtime($file);
                     #Add contents
-                    $content .= file_get_contents($file);
+                    $content .= \file_get_contents($file);
                 }
-            } elseif (is_dir($file)) {
+            } elseif (\is_dir($file)) {
                 $file_list = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
                 foreach ($file_list as $sub_file) {
-                    if (strcasecmp($sub_file->getExtension(), $type) === 0) {
+                    if (\strcasecmp($sub_file->getExtension(), $type) === 0) {
                         #Add date to list
                         $dates[] = $sub_file->getMTime();
                         #Add contents
-                        $content .= file_get_contents($sub_file->getRealPath());
+                        $content .= \file_get_contents($sub_file->getRealPath());
                     }
                 }
             }
@@ -1007,13 +1007,13 @@ class Common
         #Get date if we are directly outputting the data
         if (empty($to_file)) {
             #Send Last-Modified header and exit if we hit browser cache
-            Headers::lastModified(max($dates), true);
+            Headers::lastModified(\max($dates), true);
         }
         #Minify
         if ($minify) {
             switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
-                    $content = preg_replace(
+                    $content = \preg_replace(
                         [
                             // Remove comment(s)
                             '#\s*("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')\s*|\s*/\*(?!!|@cc_on)(?>[\s\S]*?\*/)\s*|\s*(?<![:=])//.*(?=[\n\r]|$)|^\s*|\s*$#',
@@ -1036,7 +1036,7 @@ class Common
                         $content);
                     break;
                 case 'css':
-                    $content = preg_replace(
+                    $content = \preg_replace(
                         [
                             // Remove comment(s)
                             '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')|/\*(?!!)(?>.*?\*/)|^\s*|\s*$#s',
@@ -1076,11 +1076,11 @@ class Common
                         $content);
                     break;
                 case 'html':
-                    $content = preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
+                    $content = \preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
                         static function ($matches) {
-                            return '<'.$matches[1].preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]).$matches[3].'>';
-                        }, str_replace("\r", '', $content));
-                    $content = preg_replace(
+                            return '<'.$matches[1].\preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]).$matches[3].'>';
+                        }, \str_replace("\r", '', $content));
+                    $content = \preg_replace(
                         [
                             // t = text
                             // o = tag open
@@ -1119,25 +1119,25 @@ class Common
             #Send the appropriate header
             switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
-                    if (!headers_list()) {
-                        header('Content-Type: application/javascript; charset=utf-8');
+                    if (!\headers_list()) {
+                        \header('Content-Type: application/javascript; charset=utf-8');
                     }
                     break;
                 case 'css':
-                    if (!headers_list()) {
-                        header('Content-Type: text/css; charset=utf-8');
+                    if (!\headers_list()) {
+                        \header('Content-Type: text/css; charset=utf-8');
                     }
                     break;
                 default:
-                    if (!headers_list()) {
-                        header('Content-Type: text/html; charset=utf-8');
+                    if (!\headers_list()) {
+                        \header('Content-Type: text/html; charset=utf-8');
                     }
                     break;
             }
             #Send data to browser
             self::zEcho($content, $cache_strategy);
         } else {
-            file_put_contents($to_file, $content);
+            \file_put_contents($to_file, $content);
         }
     }
     
@@ -1150,17 +1150,17 @@ class Common
     #[NoReturn] public static function forceClose(): void
     {
         #Close session
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close();
+        if (\session_status() === \PHP_SESSION_ACTIVE) {
+            \session_write_close();
         }
         #Send header to notify, that connection was closed
-        if (!headers_sent()) {
-            header('Connection: close');
+        if (!\headers_sent()) {
+            \header('Connection: close');
         }
         #Clean output buffer and close it
-        @ob_end_clean();
+        @\ob_end_clean();
         #Clean system buffer
-        @flush();
+        @\flush();
         exit(0);
     }
 }

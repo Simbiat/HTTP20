@@ -28,10 +28,10 @@ class Sitemap
         #Validate the links if the list is not empty. I did not find any recommendations for empty sitemaps, and I do not see a technical reason to break here. If sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
         self::linksValidator($links);
         #Allow only 50000 links
-        $links = array_slice($links, 0, 50000, true);
+        $links = \array_slice($links, 0, 50000, true);
         #Generate the output string
         if (in_array($format, ['text', 'txt'])) {
-            $output = implode("\r\n", array_column($links, 'loc'));
+            $output = \implode("\r\n", \array_column($links, 'loc'));
         } else {
             #Set initial output
             $output = match ($format) {
@@ -71,17 +71,17 @@ class Sitemap
         }
         #Output directly if the flag is set to true
         if ($direct_output) {
-            if (!headers_sent()) {
+            if (!\headers_sent()) {
                 switch ($format) {
                     case 'html':
-                        header('Content-Type: text/html; charset=utf-8');
+                        \header('Content-Type: text/html; charset=utf-8');
                         break;
                     case 'text':
                     case 'txt':
-                        header('Content-Type: text/plain; charset=utf-8');
+                        \header('Content-Type: text/plain; charset=utf-8');
                         break;
                     default:
-                        header('Content-Type: application/xml; charset=utf-8');
+                        \header('Content-Type: application/xml; charset=utf-8');
                         break;
                 }
             }
@@ -102,14 +102,14 @@ class Sitemap
         if (empty($links)) {
             throw new \UnexpectedValueException('Empty array of links provided');
         }
-        $first = $links[array_key_first($links)];
+        $first = $links[\array_key_first($links)];
         #Check if 'loc' is set
         if (!isset($first['loc'])) {
             throw new \UnexpectedValueException('No `loc` value provided for first link');
         }
         #Parse the URL
         $first = IRI::parseUri($first['loc']);
-        if (!is_array($first)) {
+        if (!\is_array($first)) {
             throw new \UnexpectedValueException('Failed to parse `loc` element as URL');
         }
         #Check that scheme and host are present
@@ -119,11 +119,11 @@ class Sitemap
         #Build base URL
         $first = $first['scheme'].'://'.(empty($first['user']) ? '' : $first['user'].(empty($first['pass']) ? '' : ':'.$first['pass']).'@').$first['host'].(empty($first['port']) ? '' : ':'.$first['port']);
         #Get counts of `loc` values
-        $value_counts = array_count_values(array_column($links, 'loc'));
+        $value_counts = \array_count_values(\array_column($links, 'loc'));
         #Get max value of lastmod
-        $max_date = array_map('\intval', array_column($links, 'lastmod'));
+        $max_date = \array_map('\intval', \array_column($links, 'lastmod'));
         if (!empty($max_date)) {
-            $max_date = max($max_date);
+            $max_date = \max($max_date);
         } else {
             $max_date = 0;
         }
@@ -150,27 +150,27 @@ class Sitemap
             $links[$key]['loc'] = Common::htmlToRFC3986($link['loc']);
             #Sanitize name (used only for HTML format
             if (isset($link['name'])) {
-                $links[$key]['name'] = htmlspecialchars($link['name'], ENT_QUOTES | ENT_SUBSTITUTE);
+                $links[$key]['name'] = \htmlspecialchars($link['name'], \ENT_QUOTES | \ENT_SUBSTITUTE);
             } else {
-                $links[$key]['name'] = htmlspecialchars($links[$key]['loc'], ENT_QUOTES | ENT_SUBSTITUTE);
+                $links[$key]['name'] = \htmlspecialchars($links[$key]['loc'], \ENT_QUOTES | \ENT_SUBSTITUTE);
             }
             #Convert lastmod
             if (isset($link['lastmod'])) {
                 $links[$key]['lastmod'] = Common::valueToTime($link['lastmod'], \DATE_ATOM);
             }
             #Unset invalid changefreq
-            if (isset($link['changefreq']) && preg_match('/^(always|hourly|daily|weekly|monthly|yearly|never)$/i', $link['changefreq']) !== 1) {
+            if (isset($link['changefreq']) && \preg_match('/^(always|hourly|daily|weekly|monthly|yearly|never)$/i', $link['changefreq']) !== 1) {
                 unset($links[$key]['changefreq']);
             }
             if (isset($link['priority'])) {
-                if (is_numeric($link['priority'])) {
+                if (\is_numeric($link['priority'])) {
                     $link['priority'] = (float)$link['priority'];
                     if ($link['priority'] > 1.0) {
                         $links[$key]['priority'] = '1.0';
                     } elseif ($link['priority'] < 0.0) {
                         $links[$key]['priority'] = '0.0';
                     } else {
-                        $links[$key]['priority'] = number_format($link['priority'], 1);
+                        $links[$key]['priority'] = \number_format($link['priority'], 1);
                     }
                 } else {
                     unset($links[$key]['priority']);

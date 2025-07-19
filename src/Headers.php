@@ -201,7 +201,7 @@ class Headers
      */
     public static function security(#[ExpectedValues(['strict', 'mild', 'loose'])] string $strat = 'strict', array $allow_origins = [], array $expose_headers = [], array $allow_headers = [], array $allow_methods = []): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             #Default list of allowed methods, limited to only "simple" ones
             $default_methods = self::SAFE_METHODS;
             #Sanitize the custom methods
@@ -215,72 +215,72 @@ class Headers
                 $allow_methods = $default_methods;
             }
             #Send the header. More on methods - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
-            header('Access-Control-Allow-Methods: '.implode(', ', $allow_methods));
-            header('Allow: '.implode(', ', $allow_methods));
+            \header('Access-Control-Allow-Methods: '.\implode(', ', $allow_methods));
+            \header('Allow: '.\implode(', ', $allow_methods));
             #Handle the wrong type of method from the client
             if ((isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) && !in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allow_methods, true)) || (isset($_SERVER['REQUEST_METHOD']) && !in_array($_SERVER['REQUEST_METHOD'], $allow_methods, true))) {
                 self::clientReturn(405);
             }
             #Sanitize Origins list
             foreach ($allow_origins as $key => $origin) {
-                if (preg_match('/'.self::ORIGIN_REGEX.'/i', $origin) !== 1) {
+                if (\preg_match('/'.self::ORIGIN_REGEX.'/i', $origin) !== 1) {
                     unset($allow_origins[$key]);
                 }
             }
             #Check that list is still not empty; otherwise, we assume that access from all origins is allowed (akin to *)
             if (!empty($allow_origins)) {
-                if (isset($_SERVER['HTTP_ORIGIN']) && preg_match('/'.self::ORIGIN_REGEX.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allow_origins, true)) {
+                if (isset($_SERVER['HTTP_ORIGIN']) && \preg_match('/'.self::ORIGIN_REGEX.'/i', $_SERVER['HTTP_ORIGIN']) === 1 && in_array($_SERVER['HTTP_ORIGIN'], $allow_origins, true)) {
                     #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers if any were sent
-                    header('Vary: Origin', false);
+                    \header('Vary: Origin', false);
                     #Send actual headers
-                    header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
-                    header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+                    \header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
+                    \header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
                 } else {
                     #Send proper header denying access and stop processing
                     self::clientReturn(403);
                 }
             } else {
                 #Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
-                header('Vary: Origin', false);
+                \header('Vary: Origin', false);
                 #Send actual headers
-                header('Access-Control-Allow-Origin: *');
-                header('Timing-Allow-Origin: '.(isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].':'.$_SERVER['SERVER_PORT']);
+                \header('Access-Control-Allow-Origin: *');
+                \header('Timing-Allow-Origin: '.(isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].':'.$_SERVER['SERVER_PORT']);
             }
             #HSTS and force HTTPS
-            header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+            \header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
             #Set caching value for CORS
-            header('Access-Control-Max-Age: 86400');
+            \header('Access-Control-Max-Age: 86400');
             #Allows credentials to be shared to front-end JS. By itself this should not be a security issue, but it may ease of use for 3rd-party parser in some cases if you are using cookies.
-            header('Access-Control-Allow-Credentials: true');
+            \header('Access-Control-Allow-Credentials: true');
             #Allow headers sent from server, normally restricted by CORS
             #Keep a default list, that includes those originally allowed by CORS and those present in this class as self::EXPOSED_HEADERS
             #Send the list
-            header('Access-Control-Expose-Headers: '.implode(', ', array_unique(array_merge(self::EXPOSED_HEADERS, $expose_headers))));
+            \header('Access-Control-Expose-Headers: '.\implode(', ', \array_unique(\array_merge(self::EXPOSED_HEADERS, $expose_headers))));
             #Allow headers, that can change server state, but are normally restricted by CORS
             if (!empty($allow_headers)) {
-                header('Access-Control-Allow-Headers: '.implode(', ', array_unique(array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allow_headers))));
+                \header('Access-Control-Allow-Headers: '.\implode(', ', \array_unique(\array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allow_headers))));
             }
             #Set CORS strategy
             switch (mb_strtolower($strat, 'UTF-8')) {
                 case 'mild':
-                    header('Cross-Origin-Embedder-Policy: unsafe-none');
-                    header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
-                    header('Cross-Origin-Resource-Policy: same-site');
-                    header('Referrer-Policy: strict-origin');
+                    \header('Cross-Origin-Embedder-Policy: unsafe-none');
+                    \header('Cross-Origin-Embedder-Policy: same-origin-allow-popups');
+                    \header('Cross-Origin-Resource-Policy: same-site');
+                    \header('Referrer-Policy: strict-origin');
                     break;
                 case 'loose':
-                    header('Cross-Origin-Embedder-Policy: unsafe-none');
-                    header('Cross-Origin-Opener-Policy: unsafe-none');
-                    header('Cross-Origin-Resource-Policy: cross-origin');
-                    header('Referrer-Policy: strict-origin-when-cross-origin');
+                    \header('Cross-Origin-Embedder-Policy: unsafe-none');
+                    \header('Cross-Origin-Opener-Policy: unsafe-none');
+                    \header('Cross-Origin-Resource-Policy: cross-origin');
+                    \header('Referrer-Policy: strict-origin-when-cross-origin');
                     break;
                 #Make 'strict' default value, but also allow explicit specification
                 case 'strict':
                 default:
-                    header('Cross-Origin-Embedder-Policy: require-corp');
-                    header('Cross-Origin-Opener-Policy: same-origin');
-                    header('Cross-Origin-Resource-Policy: same-origin');
-                    header('Referrer-Policy: no-referrer');
+                    \header('Cross-Origin-Embedder-Policy: require-corp');
+                    \header('Cross-Origin-Opener-Policy: same-origin');
+                    \header('Cross-Origin-Resource-Policy: same-origin');
+                    \header('Referrer-Policy: no-referrer');
                     break;
             }
         }
@@ -296,7 +296,7 @@ class Headers
      */
     public static function contentPolicy(array $csp_directives = [], bool $report_only = false, bool $report_uri = false): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             #Set defaults directives for CSP
             $default_directives = self::SECURE_DIRECTIVES;
             #Apply custom directives
@@ -317,7 +317,7 @@ class Headers
                             break;
                         case 'trusted-types':
                             #Validate the value we have
-                            if (preg_match('/^\'none\'|((([a-z0-9-#=_\/@.%]+) ?)+( ?\'allow-duplicates\')?)$/i', $value) === 1) {
+                            if (\preg_match('/^\'none\'|((([a-z0-9-#=_\/@.%]+) ?)+( ?\'allow-duplicates\')?)$/i', $value) === 1) {
                                 $default_directives['trusted-types'] = $value;
                             } else {
                                 #Ignore the value entirely
@@ -326,7 +326,7 @@ class Headers
                             break;
                         case 'plugin-types':
                             #Validate the value we have
-                            if (preg_match('/^(('.Common::MIME_REGEX.') ?)+$/i', $value) === 1) {
+                            if (\preg_match('/^(('.Common::MIME_REGEX.') ?)+$/i', $value) === 1) {
                                 $default_directives['plugin-types'] = $value;
                             } else {
                                 #Ignore the value entirely
@@ -346,7 +346,7 @@ class Headers
                             break;
                         default:
                             #Validate the value
-                            if (isset($default_directives[$directive]) && preg_match('/^(?<nonorigin>(?<standard>\'(none|self|\*)\'))|(\'self\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::ORIGIN_REGEX.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?)+$/i', $value) === 1) {
+                            if (isset($default_directives[$directive]) && \preg_match('/^(?<nonorigin>(?<standard>\'(none|self|\*)\'))|(\'self\' ?)?(\'strict-dynamic\' ?)?(\'report-sample\' ?)?(((?<origin>'.self::ORIGIN_REGEX.')|(?<nonce>\'nonce-(?<base64>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|(?<hash>\'sha(256|384|512)-(?<base64_2>(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4}))\')|((?<justscheme>[a-zA-Z][a-zA-Z0-9+.-]+):))(?<delimiter> )?)+$/i', $value) === 1) {
                                 #Check if it's script or style source
                                 #If it's not 'none' - add 'report-sample'
                                 if ($value !== '\'none\'' && in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])) {
@@ -378,9 +378,9 @@ class Headers
             }
             #If the report is set also send Content-Security-Policy-Report-Only header
             if (!$report_only) {
-                header('Content-Security-Policy: upgrade-insecure-requests; '.mb_trim($csp_line, null, 'UTF-8'));
+                \header('Content-Security-Policy: upgrade-insecure-requests; '.mb_trim($csp_line, null, 'UTF-8'));
             } elseif (!empty($default_directives['report-to'])) {
-                header('Content-Security-Policy-Report-Only: '.mb_trim($csp_line, null, 'UTF-8'));
+                \header('Content-Security-Policy-Report-Only: '.mb_trim($csp_line, null, 'UTF-8'));
             }
         }
     }
@@ -406,22 +406,22 @@ class Headers
         #Check if Sec-Fetch was passed at all (older browsers or bots may not use it). Process it only if it's present.
         if (isset($_SERVER['HTTP_SEC_FETCH_SITE']) && in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::FETCH_SITE, true)) {
             #Setting defaults
-            $site = array_intersect($site, self::FETCH_SITE);
+            $site = \array_intersect($site, self::FETCH_SITE);
             if (empty($site)) {
                 #Allow everything
                 $site = self::FETCH_SITE;
             }
-            $mode = array_intersect($mode, self::FETCH_MODE);
+            $mode = \array_intersect($mode, self::FETCH_MODE);
             if (empty($mode)) {
                 #Allow all modes
                 $mode = self::FETCH_MODE;
             }
-            $user = array_intersect($user, self::FETCH_USER);
+            $user = \array_intersect($user, self::FETCH_USER);
             if (empty($user)) {
                 #Allow only actions triggered by user activation
                 $user = ['?1'];
             }
-            $dest = array_intersect($dest, self::FETCH_DESTINATIONS);
+            $dest = \array_intersect($dest, self::FETCH_DESTINATIONS);
             if (empty($dest)) {
                 $dest = [
                     #Allow navigation (including from frames)
@@ -466,15 +466,15 @@ class Headers
                     $content_type = $_SERVER['CONTENT_TYPE'];
                 }
                 #Check if we have already sent our own content-type header
-                foreach (headers_list() as $header) {
+                foreach (\headers_list() as $header) {
                     if (str_starts_with($header, 'Content-type:') === true) {
                         #Get MIME
-                        $content_type = preg_replace('/^(Content-type:\s*)('.Common::MIME_REGEX.')$/', '$2', $header);
+                        $content_type = \preg_replace('/^(Content-type:\s*)('.Common::MIME_REGEX.')$/', '$2', $header);
                         break;
                     }
                 }
                 #If MIME is found, and it matches CSV, audio, image or video - reject
-                if (!empty($content_type) && preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $content_type) === 1) {
+                if (!empty($content_type) && \preg_match('/(text\/csv)|((audio|image|video)\/[-+\w.]+)/', $content_type) === 1) {
                     $bad_request = true;
                 }
             }
@@ -497,24 +497,24 @@ class Headers
      */
     public static function performance(int $keepalive = 0, array $client_hints = []): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             #Prevent content type sniffing (determining the file type by content, not by extension or header)
-            header('X-Content-Type-Options: nosniff');
+            \header('X-Content-Type-Options: nosniff');
             #Allow DNS prefetch for some performance improvement on the client side
-            header('X-DNS-Prefetch-Control: on');
+            \header('X-DNS-Prefetch-Control: on');
             #Keep-alive connection if not using HTTP2.0 (which prohibits it). Setting the maximum number of connections as timeout power 1000. If a human is opening the pages, it's unlike they will be opening more than 1 page per second, and it's unlikely that any page will have more than 1000 files linked to same server. If it does - some optimization may be required.
             if ($keepalive > 0 && (str_starts_with($_SERVER['SERVER_PROTOCOL'], 'HTTP/1') || str_starts_with($_SERVER['SERVER_PROTOCOL'], 'HTTP/0'))) {
-                header('Connection: Keep-Alive');
-                header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive * 1000));
+                \header('Connection: Keep-Alive');
+                \header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive * 1000));
             }
             if (!empty($client_hints)) {
                 #Implode client hints
-                $client_hints_new = implode(', ', $client_hints);
+                $client_hints_new = \implode(', ', $client_hints);
                 #Notify, that we support Client Hints: https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
                 #Logic for processing them should be done outside this function, though
-                header('Accept-CH: '.$client_hints_new);
+                \header('Accept-CH: '.$client_hints_new);
                 #Instruct cache to vary depending on client hints
-                header('Vary: '.$client_hints_new, false);
+                \header('Vary: '.$client_hints_new, false);
             }
         }
     }
@@ -546,7 +546,7 @@ class Headers
      */
     public static function features(array $features = [], bool $force_check = true, bool $permissions = false): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             if ($permissions) {
                 $defaults = self::PERMISSIONS_DEFAULT;
             } else {
@@ -558,7 +558,7 @@ class Headers
                 $allow_list = mb_strtolower(mb_trim($allow_list, null, 'UTF-8'), 'UTF-8');
                 #If validation is enforced, validate the feature and value provided
                 /** @noinspection OffsetOperationsInspection */
-                if (!$force_check || (isset($defaults[$feature]) && preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d+(\.\d+)?\))?)|(\'self\' ?)?(?<origin>'.self::ORIGIN_REGEX.'(?<setting_o>\(\d+(\.\d+)?\))?(?<delimiter> )?)+$/i', $allow_list) === 1)) {
+                if (!$force_check || (isset($defaults[$feature]) && \preg_match('/^(?<nonorigin>(?<standard>\*|\'none\')(?<setting>\(\d+(\.\d+)?\))?)|(\'self\' ?)?(?<origin>'.self::ORIGIN_REGEX.'(?<setting_o>\(\d+(\.\d+)?\))?(?<delimiter> )?)+$/i', $allow_list) === 1)) {
                     #Update value
                     /** @noinspection OffsetOperationsInspection */
                     $defaults[$feature] = $allow_list;
@@ -574,9 +574,9 @@ class Headers
                 }
             }
             if ($permissions) {
-                header('Permissions-Policy: '.mb_rtrim(mb_trim($header_line, null, 'UTF-8'), ',', 'UTF-8'));
+                \header('Permissions-Policy: '.mb_rtrim(mb_trim($header_line, null, 'UTF-8'), ',', 'UTF-8'));
             } else {
-                header('Feature-Policy: '.mb_trim($header_line, null, 'UTF-8'));
+                \header('Feature-Policy: '.mb_trim($header_line, null, 'UTF-8'));
             }
         }
     }
@@ -590,21 +590,21 @@ class Headers
      */
     public static function lastModified(int|string|float $mod_time = 0, bool $exit = false): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             #In case it's not numeric, replace with 0
-            if (is_numeric($mod_time)) {
+            if (\is_numeric($mod_time)) {
                 $mod_time = (int)$mod_time;
             } else {
                 $mod_time = 0;
             }
             if ($mod_time <= 0) {
                 #Get the freshest modification time of all PHP files using PHP's getlastmod time
-                $mod_time = max(max(array_map('filemtime', array_filter(get_included_files(), 'is_file')), getlastmod()));
+                $mod_time = \max(\max(\array_map('\filemtime', \array_filter(\get_included_files(), '\is_file')), \getlastmod()));
             }
             #Send header
-            header('Last-Modified: '.gmdate(\DATE_RFC7231, $mod_time));
+            \header('Last-Modified: '.\gmdate(\DATE_RFC7231, $mod_time));
             #Set the flag to false for now
-            if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime(mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, null, 'UTF-8')) >= $mod_time) {
+            if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && \strtotime(mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, null, 'UTF-8')) >= $mod_time) {
                 #If content has not been modified - return 304
                 self::clientReturn(304, $exit);
             }
@@ -623,43 +623,43 @@ class Headers
      */
     public static function cacheControl(#[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $string = 'hour', string $cache_strategy = '', bool $exit = false, string $postfix = ''): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             #Send headers related to cache based on strategy selected
             #Some strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
             switch (mb_strtolower($cache_strategy, 'UTF-8')) {
                 case 'aggressive':
-                    header('Cache-Control: max-age=31536000, immutable, no-transform');
+                    \header('Cache-Control: max-age=31536000, immutable, no-transform');
                     break;
                 case 'private':
-                    header('Cache-Control: private, no-cache, no-transform');
+                    \header('Cache-Control: private, no-cache, no-transform');
                     break;
                 case 'none':
-                    header('Cache-Control: no-cache, no-store, no-transform');
+                    \header('Cache-Control: no-cache, no-store, no-transform');
                     break;
                 case 'live':
-                    header('Cache-Control: no-cache, no-transform');
+                    \header('Cache-Control: no-cache, no-transform');
                     break;
                 case 'month':
                     #28 days to be more precise
-                    header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+                    \header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
                     break;
                 case 'week':
-                    header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
+                    \header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
                     break;
                 case 'day':
-                    header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
+                    \header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
                     break;
                 #Make 'hour' default value, but also allow explicit specification
                 case 'hour':
                 default:
-                    header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
+                    \header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
                     break;
             }
             #Ensure that caching works properly in case the client did not support compression, but now does or vice-versa and in case data-saving mode was requested by client at any point.
-            header('Vary: Save-Data, Accept-Encoding', false);
+            \header('Vary: Save-Data, Accept-Encoding', false);
             #Set ETag
             if (!empty($string)) {
-                self::eTag(hash('sha3-512', $string).$postfix, $exit);
+                self::eTag(\hash('sha3-512', $string).$postfix, $exit);
             }
         }
     }
@@ -673,9 +673,9 @@ class Headers
      */
     public static function eTag(string $etag, bool $exit = false): void
     {
-        if (!headers_sent()) {
+        if (!\headers_sent()) {
             #Send ETag for caching purposes
-            header('ETag: '.$etag);
+            \header('ETag: '.$etag);
             #Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since ideally you will have some text to output first, but it can still save some time on client side
             if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && mb_trim($_SERVER['HTTP_IF_NONE_MATCH'], null, 'UTF-8') === $etag) {
                 #If content has not been modified - return 304
@@ -698,7 +698,7 @@ class Headers
     public static function clientReturn(string|int $code = 500, bool $exit = true): int
     {
         #Generate response
-        if (is_numeric($code)) {
+        if (\is_numeric($code)) {
             #Enforce string for convenience
             $code = (int)$code;
             if (isset(self::HTTP_CODES[$code])) {
@@ -711,13 +711,13 @@ class Headers
             $response = $code;
         }
         #If response does not comply with HTTP standard - replace it with 500
-        if (preg_match('/^([12345]\d{2})( .+)$/', $response) !== 1) {
+        if (\preg_match('/^([12345]\d{2})( .+)$/', $response) !== 1) {
             $response = '500 Internal Server Error';
         }
-        $numeric_code = (int)preg_replace('/^([123]\d{2})( .+)$/', '$1', $response);
+        $numeric_code = (int)\preg_replace('/^([123]\d{2})( .+)$/', '$1', $response);
         #Send response header
-        if (!headers_sent()) {
-            header($_SERVER['SERVER_PROTOCOL'].' '.$response);
+        if (!\headers_sent()) {
+            \header($_SERVER['SERVER_PROTOCOL'].' '.$response);
         }
         if ($exit) {
             Common::forceClose();
@@ -758,8 +758,8 @@ class Headers
         #Validate URI. Not checking the scheme since it may be a valid use-case to redirect to something besides HTTPS
         if (IRI::isValidIri($new_uri)) {
             #Send Location header, indicating new URL to be used
-            if (!headers_sent()) {
-                header('Location: '.$new_uri);
+            if (!\headers_sent()) {
+                \header('Location: '.$new_uri);
             }
         } else {
             #Update code to 500, since something must have gone wrong
@@ -784,9 +784,9 @@ class Headers
             $acceptable = [];
             foreach ($supported as $mime) {
                 #Split MIME
-                $mime = explode('/', $mime);
+                $mime = \explode('/', $mime);
                 #Attempt to get priority for supported MIME type (with optional subtype)
-                if (preg_match('/.*('.$mime[0].'\/('.$mime[1].'|\*))(;q=((0\.[0-9])|[0-1])(?>\s*(,|$)))?.*/m', $_SERVER['HTTP_ACCEPT'], $matches) === 1) {
+                if (\preg_match('/.*('.$mime[0].'\/('.$mime[1].'|\*))(;q=((0\.[0-9])|[0-1])(?>\s*(,|$)))?.*/m', $_SERVER['HTTP_ACCEPT'], $matches) === 1) {
                     #Add to array
                     if (!isset($matches[4]) || $matches[4] === '') {
                         $acceptable[$mime[0].'/'.$mime[1]] = 1.0;
@@ -798,7 +798,7 @@ class Headers
             #Check if any of the supported types are acceptable
             if (empty($acceptable)) {
                 #If not - check if */* is supported
-                if (preg_match('/\*\/\*/', $_SERVER['HTTP_ACCEPT']) === 1) {
+                if (\preg_match('/\*\/\*/', $_SERVER['HTTP_ACCEPT']) === 1) {
                     #Consider as no limitation
                     return true;
                 }
@@ -807,7 +807,7 @@ class Headers
                 return false;
             }
             #Get the one with the highest priority and return its value
-            return array_keys($acceptable, max($acceptable))[0];
+            return \array_keys($acceptable, \max($acceptable))[0];
         }
         #Consider as no limitation
         return true;
@@ -823,10 +823,10 @@ class Headers
         #Get Content-Type
         $content_type = $_SERVER['CONTENT_TYPE'] ?? '';
         #Exit if not one of the supported methods or wrong content-type
-        if (!in_array($method, ['PUT', 'DELETE', 'PATCH']) || preg_match('/(^application\/x-www-form-urlencoded$)|(^multipart\/form-data; boundary=.*$)/ui', $content_type) !== 1) {
+        if (!in_array($method, ['PUT', 'DELETE', 'PATCH']) || \preg_match('/(^application\/x-www-form-urlencoded$)|(^multipart\/form-data; boundary=.*$)/ui', $content_type) !== 1) {
             return;
         }
-        $parsed_data = request_parse_body();
+        $parsed_data = \request_parse_body();
         self::${'_'.mb_strtoupper($method, 'UTF-8')} = $parsed_data[0];
         self::$_FILES = $parsed_data[1];
     }

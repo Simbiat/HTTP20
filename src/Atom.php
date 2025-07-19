@@ -51,17 +51,17 @@ class Atom
         }
         #Check time
         if (empty($feed_settings['updated'])) {
-            $dates = array_merge(array_column($entries, 'updated'), array_column($entries, 'published'));
+            $dates = \array_merge(\array_column($entries, 'updated'), \array_column($entries, 'published'));
             if (empty($dates)) {
-                $feed_settings['updated'] = Common::valueToTime(time(), \DATE_ATOM);
+                $feed_settings['updated'] = Common::valueToTime(\time(), \DATE_ATOM);
             } else {
-                $feed_settings['updated'] = Common::valueToTime(max($dates), \DATE_ATOM);
+                $feed_settings['updated'] = Common::valueToTime(\max($dates), \DATE_ATOM);
             }
         } else {
             $feed_settings['updated'] = Common::valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
         #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
-        Headers::lastModified(strtotime($feed_settings['updated']));
+        Headers::lastModified(\strtotime($feed_settings['updated']));
         #Validate authors
         if (!empty($feed_settings['authors'])) {
             self::atomElementValidator($feed_settings['authors']);
@@ -150,8 +150,8 @@ class Atom
         }
         $feed->normalizeDocument();
         #Output
-        if (!headers_sent()) {
-            header('Content-type: application/atom+xml;charset=utf-8');
+        if (!\headers_sent()) {
+            \header('Content-type: application/atom+xml;charset=utf-8');
         }
         Common::zEcho($feed->saveXML(), 'hour');
     }
@@ -175,7 +175,7 @@ class Atom
                 unset($elements[$key]);
                 continue;
             }
-            if (!is_string($element_to_val[$element_name])) {
+            if (!\is_string($element_to_val[$element_name])) {
                 unset($elements[$key]);
                 continue;
             }
@@ -350,13 +350,13 @@ class Atom
     {
         $date = Common::valueToTime(null, 'Y-m-d', '/^\d{4}-\d{2}-\d{2}$/i');
         #Remove URI protocol (if any)
-        $link = preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', Common::htmlToRFC3986($link));
+        $link = \preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', Common::htmlToRFC3986($link));
         #Replace any # with /
-        $link = preg_replace('/#/m', '/', $link);
+        $link = \preg_replace('/#/m', '/', $link);
         #Remove HTML/XML reserved characters as precaution.
         #Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
-        $link = preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
+        $link = \preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
         #Add 'tag:' to beginning and ',Y-m-d:' after domain name
-        return preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
+        return \preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
     }
 }

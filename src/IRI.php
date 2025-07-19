@@ -56,7 +56,7 @@ class IRI
             if (is_string($scheme)) {
                 $scheme = [$scheme];
             }
-            if (preg_match('/^('.implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
+            if (\preg_match('/^('.\implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
                 return false;
             }
         }
@@ -79,7 +79,7 @@ class IRI
             return null;
         }
         #Early check for characters unsupported as per RFC 8820 and 3987. Using respective groups for maintainability, plus adding a `%` sign (for URL encoding)
-        if (preg_match('/^[%'.self::UCS_CHAR.self::I_PRIVATE.self::GEN_DELIMITERS.self::SUB_DELIMITERS.self::UNRESERVED.']+$/u', $iri) !== 1) {
+        if (\preg_match('/^[%'.self::UCS_CHAR.self::I_PRIVATE.self::GEN_DELIMITERS.self::SUB_DELIMITERS.self::UNRESERVED.']+$/u', $iri) !== 1) {
             return null;
         }
         #Ensure only valid UTF-8 characters are present
@@ -131,7 +131,7 @@ class IRI
         if (!empty($parsed_iri['path'])) {
             #Need to use explode/implode to preserve `/` symbols. Doing rawurlencode and then restoring them may restore symbols encoded in the original IRI
             /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-            $parsed_iri['path'] = \implode('/', \array_map('rawurlencode', \explode('/', $parsed_iri['path'])));
+            $parsed_iri['path'] = \implode('/', \array_map('\rawurlencode', \explode('/', $parsed_iri['path'])));
         }
         #Process query, if present
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
@@ -141,7 +141,7 @@ class IRI
             \parse_str($parsed_iri['query'], $exploded_query);
             #Rebuild the query to ensure we URL encode properly
             /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-            $parsed_iri['query'] = \http_build_query($exploded_query, encoding_type: PHP_QUERY_RFC3986);
+            $parsed_iri['query'] = \http_build_query($exploded_query, encoding_type: \PHP_QUERY_RFC3986);
         }
         #Process fragment, if present
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
@@ -216,7 +216,7 @@ class IRI
         }
         #Supressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does
         /** @noinspection ImplodeMissUseInspection */
-        return implode('&', $pairs);
+        return \implode('&', $pairs);
     }
     
     /**
@@ -228,6 +228,6 @@ class IRI
     public static function toRFC3986(string $string): string
     {
         #It is important to have the `%` symbol first in the list, because otherwise the `%` in all replacements will also be replaced, and the result will require double decoding
-        return str_replace(['%', ':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '='], ['%25', '%3A', '%2F', '%3F', '%23', '%5B', '%5D', '%40', '%21', '%24', '%26', '%27', '%28', '%29', '%2A', '%2B', '%2C', '%3B', '%3D'], $string);
+        return \str_replace(['%', ':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '='], ['%25', '%3A', '%2F', '%3F', '%23', '%5B', '%5D', '%40', '%21', '%24', '%26', '%27', '%28', '%29', '%2A', '%2B', '%2C', '%3B', '%3D'], $string);
     }
 }

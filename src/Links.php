@@ -45,7 +45,7 @@ class Links
     public function __construct()
     {
         #Check if Save-Data is on
-        if (isset($_SERVER['HTTP_SAVE_DATA']) && preg_match('/^on$/i', $_SERVER['HTTP_SAVE_DATA']) === 1) {
+        if (isset($_SERVER['HTTP_SAVE_DATA']) && \preg_match('/^on$/i', $_SERVER['HTTP_SAVE_DATA']) === 1) {
             self::$save_data = true;
         } else {
             self::$save_data = false;
@@ -70,7 +70,7 @@ class Links
         $links_to_send = [];
         foreach ($links as $link) {
             #Check that element is an array;
-            if (!is_array($link)) {
+            if (!\is_array($link)) {
                 continue;
             }
             self::disablePreload($link);
@@ -96,12 +96,12 @@ class Links
             return '';
         }
         if ($type === 'header') {
-            if (!headers_sent()) {
-                header('Link: '.preg_replace('/[\r\n]/i', '', implode(', ', $links_to_send)), false);
+            if (!\headers_sent()) {
+                \header('Link: '.\preg_replace('/[\r\n]/i', '', \implode(', ', $links_to_send)), false);
             }
             return '';
         }
-        return implode("\r\n", $links_to_send);
+        return \implode("\r\n", $links_to_send);
     }
     
     /**
@@ -163,30 +163,30 @@ class Links
     private static function processTypeProperty(array &$link): bool
     {
         #Empty MIME type if it does ont confirm with the standard
-        if (isset($link['type']) && preg_match('/'.Common::MIME_REGEX.'/', $link['type']) !== 1) {
+        if (isset($link['type']) && \preg_match('/'.Common::MIME_REGEX.'/', $link['type']) !== 1) {
             $link['type'] = '';
         }
         #Set or update media type based on link. Or, at least, try to
         if (empty($link['type']) && isset($link['href'])) {
-            $ext = pathinfo($link['href'], PATHINFO_EXTENSION);
-            if (is_string($ext) && isset(Common::EXTENSION_TO_MIME[$ext])) {
+            $ext = \pathinfo($link['href'], \PATHINFO_EXTENSION);
+            if (\is_string($ext) && isset(Common::EXTENSION_TO_MIME[$ext])) {
                 $link['type'] = Common::EXTENSION_TO_MIME[$ext];
             } else {
                 $link['type'] = '';
             }
         }
-        if (preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
+        if (\preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
             #Force 'as' for stylesheet
-            if ((!empty($link['type']) && preg_match('/^text\/css(;.*)?$/i', $link['type']) === 1) || (!empty($link['rel']) && preg_match('/^.*(stylesheet).*$/i', $link['rel']) === 1)) {
+            if ((!empty($link['type']) && \preg_match('/^text\/css(;.*)?$/i', $link['type']) === 1) || (!empty($link['rel']) && \preg_match('/^.*(stylesheet).*$/i', $link['rel']) === 1)) {
                 $link['as'] = 'style';
             }
             #Force 'as' for JS
-            if ((!empty($link['type']) && preg_match('/^application\/javascript(;.*)?$/i', $link['type']) === 1)) {
+            if ((!empty($link['type']) && \preg_match('/^application\/javascript(;.*)?$/i', $link['type']) === 1)) {
                 $link['as'] = 'script';
             }
         }
         #If type is defined, check it corresponds to 'as'. If not - do not process, assume error or malicious intent
-        return !(!empty($link['type']) && !empty($link['as']) && preg_match('/^(audio|image|video|font)$/i', $link['as']) === 1 && preg_match('/^'.$link['as'].'\/.*$/i', $link['type']) !== 1);
+        return !(!empty($link['type']) && !empty($link['as']) && \preg_match('/^(audio|image|video|font)$/i', $link['as']) === 1 && \preg_match('/^'.$link['as'].'\/.*$/i', $link['type']) !== 1);
     }
     
     /**
@@ -199,15 +199,15 @@ class Links
     private static function cleanLink(array &$link, #[ExpectedValues(['header', 'head', 'body'])] string $type): bool
     {
         #referrerpolicy is allowed to have limited set of values
-        if (isset($link['referrerpolicy']) && preg_match('/^(no-referrer|no-referrer-when-downgrade|strict-origin|strict-origin-when-cross-origin|same-origin|origin|origin-when-cross-origin|unsafe-url)$/i', $link['(referrerpolicy']) !== 1) {
+        if (isset($link['referrerpolicy']) && \preg_match('/^(no-referrer|no-referrer-when-downgrade|strict-origin|strict-origin-when-cross-origin|same-origin|origin|origin-when-cross-origin|unsafe-url)$/i', $link['(referrerpolicy']) !== 1) {
             unset($link['referrerpolicy']);
         }
         #Remove hreflang, if it's a wrong language value
-        if (isset($link['hreflang']) && preg_match(Common::LANGUAGE_TAG_REGEX, $link['hreflang']) !== 1) {
+        if (isset($link['hreflang']) && \preg_match(Common::LANGUAGE_TAG_REGEX, $link['hreflang']) !== 1) {
             unset($link['hreflang']);
         }
         #Remove sizes if wrong format
-        if (isset($link['sizes']) && preg_match('/((any|[1-9]\d+[xX][1-9]\d+)( |$))+$/i', $link['sizes']) !== 1) {
+        if (isset($link['sizes']) && \preg_match('/((any|[1-9]\d+[xX][1-9]\d+)( |$))+$/i', $link['sizes']) !== 1) {
             unset($link['sizes']);
         }
         #Sanitize crossorigin, if set
@@ -221,7 +221,7 @@ class Links
             $link['title'] = '';
         }
         #Validate title*, which is valid only for HTTP header
-        if (isset($link['title*']) && ($type !== 'header' || preg_match('/'.Common::LANGUAGE_ENC_REGEX.'.*/i', $link['title*']) !== 1)) {
+        if (isset($link['title*']) && ($type !== 'header' || \preg_match('/'.Common::LANGUAGE_ENC_REGEX.'.*/i', $link['title*']) !== 1)) {
             unset($link['title*']);
         }
         #If integrity is set, validate if it's a valid value
@@ -229,7 +229,7 @@ class Links
             return false;
         }
         #If integrity is set, check that rel type is of proper type, otherwise remove it
-        if (isset($link['integrity'], $link['rel']) && preg_match('/^(alternate )?.*(modulepreload|preload|stylesheet).*$/i', $link['rel']) !== 1) {
+        if (isset($link['integrity'], $link['rel']) && \preg_match('/^(alternate )?.*(modulepreload|preload|stylesheet).*$/i', $link['rel']) !== 1) {
             unset($link['integrity']);
         }
         return true;
@@ -243,7 +243,7 @@ class Links
      */
     private static function processIntegrity(array &$link): bool
     {
-        if (preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) === 0) {
+        if (\preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/', $link['integrity']) === 0) {
             $potential_iri = IRI::parseUri($link['integrity']);
             /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             if (\is_array($potential_iri) && !empty($potential_iri['host'])) {
@@ -251,19 +251,19 @@ class Links
                 return false;
             }
             #If not valid, check if it's a file and generate hash
-            if (is_file($link['integrity'])) {
+            if (\is_file($link['integrity'])) {
                 #Attempt to get the actual MIME type while we're at it
-                if (!isset($link['type']) && extension_loaded('fileinfo')) {
-                    $link['type'] = mime_content_type(realpath($link['integrity']));
+                if (!isset($link['type']) && \extension_loaded('fileinfo')) {
+                    $link['type'] = \mime_content_type(\realpath($link['integrity']));
                 }
                 #Get the size of the image if the file is an image
-                if (!isset($link['sizes']) && isset($link['type']) && preg_match('/^image\/.*$/i', $link['type']) === 1) {
+                if (!isset($link['sizes']) && isset($link['type']) && \preg_match('/^image\/.*$/i', $link['type']) === 1) {
                     $size = self::getImageSize($link);
                     #Set tags if we were able to get size
                     if (!empty($size)) {
-                        if (isset($link['rel']) && preg_match('/^(alternate )?.*(icon|apple-touch-icon|apple-touch-icon-precomposed).*$/i', $link['rel']) === 1) {
+                        if (isset($link['rel']) && \preg_match('/^(alternate )?.*(icon|apple-touch-icon|apple-touch-icon-precomposed).*$/i', $link['rel']) === 1) {
                             $link['sizes'] = $size;
-                        } elseif (preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) === 1) {
+                        } elseif (\preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) === 1) {
                             $link['imagesizes'] = $size;
                             #Sanitize 'as' attribute
                             if (isset($link['as']) && $link['as'] !== 'image') {
@@ -271,15 +271,15 @@ class Links
                                 return false;
                             }
                             #Set 'as' attribute if rel is "preload"
-                            if (isset($link['rel']) && preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
+                            if (isset($link['rel']) && \preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) === 1) {
                                 $link['as'] = 'image';
                             }
                         }
                     }
                 }
                 #Get hash if we have a script or style
-                if (isset($link['type']) && preg_match('/^(application\/javascript|text\/css)$/i', $link['type']) === 1) {
-                    $link['integrity'] = 'sha512-'.base64_encode(hash_file('sha512', realpath($link['integrity'])));
+                if (isset($link['type']) && \preg_match('/^(application\/javascript|text\/css)$/i', $link['type']) === 1) {
+                    $link['integrity'] = 'sha512-'.\base64_encode(\hash_file('sha512', \realpath($link['integrity'])));
                 } else {
                     unset($link['integrity']);
                 }
@@ -299,10 +299,10 @@ class Links
     private static function getImageSize(array $link): string
     {
         #Set to 'any' if it's SVG
-        if (preg_match('/^image\/svg+xml$/i', $link['type']) === 1) {
+        if (\preg_match('/^image\/svg+xml$/i', $link['type']) === 1) {
             $size = 'any';
         } else {
-            $size = getimagesize(realpath($link['integrity']));
+            $size = \getimagesize(\realpath($link['integrity']));
             if ($size !== false) {
                 $size = $size[0].'x'.$size[1];
                 #Unset it if it's empty
@@ -339,16 +339,16 @@ class Links
             return false;
         }
         #imagesrcset is an image candidate with width descriptor, we need imagesizes as well
-        if (isset($link['imagesrcset']) && !isset($link['imagesizes']) && preg_match('/ \d+w(,|$)/', $link['imagesrcset']) === 1) {
+        if (isset($link['imagesrcset']) && !isset($link['imagesizes']) && \preg_match('/ \d+w(,|$)/', $link['imagesrcset']) === 1) {
             return false;
         }
         if (isset($link['as'])) {
             #as is allowed to have limited set of values (as per https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content).
-            if ((preg_match(self::AS_VALUES, $link['as']) !== 1)) {
+            if ((\preg_match(self::AS_VALUES, $link['as']) !== 1)) {
                 return false;
             }
             #Also check that crossorigin is set, if as=fetch
-            if (!isset($link['crossorigin']) && preg_match('/^fetch$/i', $link['as']) === 1) {
+            if (!isset($link['crossorigin']) && \preg_match('/^fetch$/i', $link['as']) === 1) {
                 return false;
             }
         }
@@ -367,38 +367,38 @@ class Links
     {
         if ($strict) {
             #Check that rel is valid
-            if (preg_match(self::VALID_REL, $link['rel']) !== 1) {
+            if (\preg_match(self::VALID_REL, $link['rel']) !== 1) {
                 return false;
             }
             #If crossorigin or referrerpolicy is set, check that rel type is an external resource
             if (
                 (isset($link['crossorigin']) || isset($link['referrerpolicy'])) &&
-                preg_match(self::EXTERNAL_RESOURCES, $link['rel']) !== 1
+                \preg_match(self::EXTERNAL_RESOURCES, $link['rel']) !== 1
             ) {
                 return false;
             }
         }
         #If we are using "body", check that rel is body-ok one
-        if ($type === 'body' && preg_match(self::ALLOWED_IN_BODY, $link['rel']) !== 1) {
+        if ($type === 'body' && \preg_match(self::ALLOWED_IN_BODY, $link['rel']) !== 1) {
             return false;
         }
         #imagesrcset and imagesizes are allowed only for preload with as=image
         if (
             (isset($link['imagesrcset']) || isset($link['imagesizes'])) &&
-            (!isset($link['as']) || $link['as'] !== 'image' || preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) !== 1)
+            (!isset($link['as']) || $link['as'] !== 'image' || \preg_match('/^(alternate )?.*preload.*$/i', $link['rel']) !== 1)
         ) {
             return false;
         }
         #sizes attribute should be set only if rel is icon of apple-touch-icon
-        if (isset($link['sizes']) && preg_match('/^(alternate )?.*(icon|apple-touch-icon|apple-touch-icon-precomposed).*$/i', $link['rel']) !== 1) {
+        if (isset($link['sizes']) && \preg_match('/^(alternate )?.*(icon|apple-touch-icon|apple-touch-icon-precomposed).*$/i', $link['rel']) !== 1) {
             return false;
         }
         #as is allowed only for preload
-        if (isset($link['as']) && preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) !== 1) {
+        if (isset($link['as']) && \preg_match('/^(alternate )?.*(modulepreload|preload|prefetch).*$/i', $link['rel']) !== 1) {
             return false;
         }
         #color is allowed only for mask-icon
-        if (isset($link['color']) && preg_match('/^(alternate )?.*mask-icon.*$/i', $link['rel']) !== 1) {
+        if (isset($link['color']) && \preg_match('/^(alternate )?.*mask-icon.*$/i', $link['rel']) !== 1) {
             return false;
         }
         return true;
@@ -412,10 +412,10 @@ class Links
      */
     private static function disablePreload(array &$link): void
     {
-        if (self::$save_data && isset($link['rel']) && preg_match(self::PRELOAD_REL, $link['rel']) === 1) {
-            $link['rel'] = preg_replace(self::PRELOAD_REL, '', $link['rel']);
+        if (self::$save_data && isset($link['rel']) && \preg_match(self::PRELOAD_REL, $link['rel']) === 1) {
+            $link['rel'] = \preg_replace(self::PRELOAD_REL, '', $link['rel']);
             #Replace multiple whitespaces with single space and trim
-            $link['rel'] = mb_trim(preg_replace('/\s{2,}/', ' ', $link['rel']), null, 'UTF-8');
+            $link['rel'] = mb_trim(\preg_replace('/\s{2,}/', ' ', $link['rel']), null, 'UTF-8');
             #Unset rel if it's empty
             if (empty($link['rel'])) {
                 unset($link['rel']);

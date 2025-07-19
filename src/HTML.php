@@ -30,12 +30,12 @@ class HTML
      */
     public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $br_limit = 0): string
     {
-        if (method_exists(SandClock::class, 'seconds')) {
+        if (\method_exists(SandClock::class, 'seconds')) {
             $sand_clock = true;
         } else {
             $sand_clock = false;
         }
-        $time = time();
+        $time = \time();
         #Sanitize $items and add them to array, that will be ordered
         $to_order = [];
         $current = [];
@@ -48,7 +48,7 @@ class HTML
                 #Ensure we have an integer time or something that can be converted to one
                 if (is_string($item['end_time'])) {
                     #Convert string
-                    $item['end_time'] = strtotime($item['end_time']);
+                    $item['end_time'] = \strtotime($item['end_time']);
                     if ($item['end_time'] === false) {
                         #Failed to convert, skipping item
                         continue;
@@ -65,7 +65,7 @@ class HTML
                 #Ensure we have an integer time or something that can be converted to one
                 if (is_string($item['start_time'])) {
                     #Convert string
-                    $item['start_time'] = strtotime($item['start_time']);
+                    $item['start_time'] = \strtotime($item['start_time']);
                     if ($item['start_time'] === false) {
                         #Failed to convert, skipping item
                         continue;
@@ -137,7 +137,7 @@ class HTML
             if (!empty($item['icon']) && $item['start'] === 0) {
                 $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
             }
-            $output .= '<time datetime="'.($item['start'] === 1 ? date('Y-m-d H:i:s.v', $item['start_time']) : date('Y-m-d H:i:s.v', $item['end_time'])).'">'.($item['start'] === 1 ? date($format, $item['start_time']) : date($format, $item['end_time'])).'</time>';
+            $output .= '<time datetime="'.($item['start'] === 1 ? \date('Y-m-d H:i:s.v', $item['start_time']) : \date('Y-m-d H:i:s.v', $item['end_time'])).'">'.($item['start'] === 1 ? \date($format, $item['start_time']) : \date($format, $item['end_time'])).'</time>';
             if (!empty($item['icon']) && $item['start'] === 1) {
                 $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">';
             }
@@ -218,7 +218,7 @@ class HTML
         $output .= '</time-line>';
         #Process current events. Doing this here, because it's less important.
         #Check if there are finished events in timeline. If there are none - do not create links to "current" ones
-        if (!empty($current) && in_array(0, array_column($to_order, 'start'), true)) {
+        if (!empty($current) && \in_array(0, \array_column($to_order, 'start'), true)) {
             $current_list = '<time-line-shortcut class="timeline_shortcut" role="directory" aria-label="Shortcuts for timeline '.self::$timelines.'"><b>Ongoing: </b>';
             foreach ($current as $item) {
                 #Generate id
@@ -249,7 +249,7 @@ class HTML
         }
         #Register error, by do not stop further processing
         if (empty($items)) {
-            trigger_error('No valid items found for breadcrumbs');
+            \trigger_error('No valid items found for breadcrumbs');
             if ($links) {
                 if ($headers) {
                     return ['breadcrumbs' => '', 'links' => ''];
@@ -263,7 +263,7 @@ class HTML
         #Set initial item number (position)
         $position = 1;
         #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some elements in the list. Adding 1 to avoid last element getting ID of 0.
-        $item_depth = count($items);
+        $item_depth = \count($items);
         #Open data
         $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$item_depth.'" itemListOrder="ItemListUnordered">';
         #Open links
@@ -284,7 +284,7 @@ class HTML
             }
         }
         #Implode items and add them to output
-        $output .= implode('', $items);
+        $output .= \implode('', $items);
         #Close data
         $output .= '</ol></nav>';
         if ($links) {
@@ -371,7 +371,7 @@ class HTML
         #Increase the count for pagination
         self::$paginations++;
         #Calculate maximum number of numeric links to left/right of the current one
-        $side_numerics = (int)floor(($max_numerics - 1) / 2);
+        $side_numerics = (int)\floor(($max_numerics - 1) / 2);
         #Calculate starting page
         $start_page = $current - $side_numerics;
         if ($start_page < 1) {
@@ -425,7 +425,7 @@ class HTML
         }
         #Add a link to the previous page
         if (!empty($non_numerics['prev'])) {
-            $output .= '<li class="pagination_li pagination_prev" aria-label="'.str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"' : ' aria-disabled="true"').'>';
+            $output .= '<li class="pagination_li pagination_prev" aria-label="'.\str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.\str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"' : ' aria-disabled="true"').'>';
             if ($current !== 1 && $total !== $max_numerics) {
                 $output .= '<a class="pagination_link" href="'.$prefix.($prev_page).'">'.$non_numerics['prev'].'</a>';
             } else {
@@ -445,7 +445,7 @@ class HTML
         }
         #Add a link to the next page
         if (!empty($non_numerics['next'])) {
-            $output .= '<li class="pagination_li pagination_next" aria-label="'.str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"' : ' aria-disabled="true"').'>';
+            $output .= '<li class="pagination_li pagination_next" aria-label="'.\str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.\str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"' : ' aria-disabled="true"').'>';
             if ($current !== $total && $total !== $max_numerics) {
                 $output .= '<a class="pagination_link" href="'.$prefix.($next_page).'">'.$non_numerics['next'].'</a>';
             } else {
@@ -455,7 +455,7 @@ class HTML
         }
         #Add a link to the last page
         if (!empty($non_numerics['last'])) {
-            $output .= '<li class="pagination_li pagination_last" aria-label="'.str_replace('$number', (string)$total, $non_numerics['last_text']).'"'.($current < ($total - $side_numerics) ? ' '.$tooltip.'="'.str_replace('$number', (string)$total, $non_numerics['last_text']).'"' : ' aria-disabled="true"').'>';
+            $output .= '<li class="pagination_li pagination_last" aria-label="'.\str_replace('$number', (string)$total, $non_numerics['last_text']).'"'.($current < ($total - $side_numerics) ? ' '.$tooltip.'="'.\str_replace('$number', (string)$total, $non_numerics['last_text']).'"' : ' aria-disabled="true"').'>';
             if ($current < ($total - $side_numerics) && $total !== $max_numerics) {
                 $output .= '<a class="pagination_link" href="'.$prefix.$total.'">'.$non_numerics['last'].'</a>';
             } else {
@@ -472,11 +472,11 @@ class HTML
             $links_array = [];
             if ($current !== 1) {
                 $links_array[] = ['href' => $prefix.'1', 'rel' => 'first prefetch', 'title' => $non_numerics['first_text']];
-                $links_array[] = ['href' => $prefix.($prev_page), 'rel' => 'prev prefetch', 'title' => str_replace('$number', (string)($prev_page), $non_numerics['prev_text'])];
+                $links_array[] = ['href' => $prefix.($prev_page), 'rel' => 'prev prefetch', 'title' => \str_replace('$number', (string)($prev_page), $non_numerics['prev_text'])];
             }
             if ($current !== $total) {
-                $links_array[] = ['href' => $prefix.$total, 'rel' => 'last prefetch', 'title' => str_replace('$number', (string)$total, $non_numerics['last_text'])];
-                $links_array[] = ['href' => $prefix.($next_page), 'rel' => 'next prefetch', 'title' => str_replace('$number', (string)($next_page), $non_numerics['next_text'])];
+                $links_array[] = ['href' => $prefix.$total, 'rel' => 'last prefetch', 'title' => \str_replace('$number', (string)$total, $non_numerics['last_text'])];
+                $links_array[] = ['href' => $prefix.($next_page), 'rel' => 'next prefetch', 'title' => \str_replace('$number', (string)($next_page), $non_numerics['next_text'])];
             }
             #Send the headers if this was requested
             if ($headers) {

@@ -49,7 +49,7 @@ class RSS
                         unset($entries[$key]);
                         continue;
                     }
-                    if (is_numeric($entry['enclosure_length'])) {
+                    if (\is_numeric($entry['enclosure_length'])) {
                         unset($entries[$key]);
                         continue;
                     }
@@ -64,11 +64,11 @@ class RSS
         }
         #Check time
         if (empty($feed_settings['pubDate'])) {
-            $dates = array_column($entries, 'pubDate');
+            $dates = \array_column($entries, 'pubDate');
             if (empty($dates)) {
-                $feed_settings['pubDate'] = Common::valueToTime(time(), \DATE_RSS);
+                $feed_settings['pubDate'] = Common::valueToTime(\time(), \DATE_RSS);
             } else {
-                $feed_settings['pubDate'] = Common::valueToTime(max($dates), \DATE_RSS);
+                $feed_settings['pubDate'] = Common::valueToTime(\max($dates), \DATE_RSS);
             }
         } else {
             $feed_settings['pubDate'] = Common::valueToTime($feed_settings['pubDate'], \DATE_RSS);
@@ -79,7 +79,7 @@ class RSS
             $feed_settings['lastBuildDate'] = Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         }
         #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
-        Headers::lastModified(max(strtotime($feed_settings['pubDate']), strtotime($feed_settings['lastBuildDate'])));
+        Headers::lastModified(\max(\strtotime($feed_settings['pubDate']), \strtotime($feed_settings['lastBuildDate'])));
         #Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
@@ -88,7 +88,7 @@ class RSS
             }
         }
         #Check TTL
-        if (!empty($feed_settings['ttl']) && !is_numeric($feed_settings['ttl'])) {
+        if (!empty($feed_settings['ttl']) && !\is_numeric($feed_settings['ttl'])) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('`ttl` provided in settings for the feed is not numeric');
         }
@@ -99,7 +99,7 @@ class RSS
                 throw new \UnexpectedValueException('`url` property for `image` tag is missing in settings for the feed');
             }
             if (!empty($feed_settings['image']['width'])) {
-                if (!is_numeric($feed_settings['image']['width'])) {
+                if (!\is_numeric($feed_settings['image']['width'])) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
@@ -109,7 +109,7 @@ class RSS
                 }
             }
             if (!empty($feed_settings['image']['height'])) {
-                if (!is_numeric($feed_settings['image']['height'])) {
+                if (!\is_numeric($feed_settings['image']['height'])) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
@@ -122,7 +122,7 @@ class RSS
         #Check skipHours
         if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
             foreach ($feed_settings['skipHours'] as $hour) {
-                if (!is_numeric($hour)) {
+                if (!\is_numeric($hour)) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
@@ -135,7 +135,7 @@ class RSS
         #Check skipDays
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
-                if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
+                if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
                 }
@@ -172,10 +172,10 @@ class RSS
         if (!empty($feed_settings['copyright'])) {
             $root->appendChild($feed->createElement('copyright', $feed_settings['copyright']));
         }
-        if (!empty($feed_settings['managingEditor']) && filter_var($feed_settings['managingEditor'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
+        if (!empty($feed_settings['managingEditor']) && \filter_var($feed_settings['managingEditor'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)) {
             $root->appendChild($feed->createElement('managingEditor', $feed_settings['managingEditor']));
         }
-        if (!empty($feed_settings['webMaster']) && filter_var($feed_settings['webMaster'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
+        if (!empty($feed_settings['webMaster']) && \filter_var($feed_settings['webMaster'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)) {
             $root->appendChild($feed->createElement('webMaster', $feed_settings['webMaster']));
         }
         #Add cloud details (rssCloud)
@@ -236,8 +236,8 @@ class RSS
         }
         $feed->normalizeDocument();
         #Output
-        if (!headers_sent()) {
-            header('Content-type: application/rss+xml;charset=utf-8');
+        if (!\headers_sent()) {
+            \header('Content-type: application/rss+xml;charset=utf-8');
         }
         Common::zEcho($feed->saveXML(), 'hour');
     }
@@ -267,7 +267,7 @@ class RSS
         if (!empty($entry['description'])) {
             $element->appendChild($feed->createElement('description', $entry['description']));
         }
-        if (!empty($feed_settings['author']) && filter_var($feed_settings['author'], FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)) {
+        if (!empty($feed_settings['author']) && \filter_var($feed_settings['author'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)) {
             $element->appendChild($feed->createElement('author', $feed_settings['author']));
         }
         if (!empty($entry['category'])) {
