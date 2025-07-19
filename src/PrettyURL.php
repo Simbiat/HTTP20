@@ -5431,12 +5431,12 @@ class PrettyURL
      */
     public static function pretty(string $string, string $whitespace = '-', bool $url_safe = true): string
     {
-        $string = \\str_replace(\\array_keys(self::$replaces), self::$replaces, $string);
-        $string = \\preg_replace('/\s+/', $whitespace, $string);
+        $string = \str_replace(\array_keys(self::$replaces), self::$replaces, $string);
+        $string = \preg_replace('/\s+/', $whitespace, $string);
         if ($url_safe) {
-            $string = \\preg_replace('[^a-zA-Z\d'.$whitespace.']', '', $string);
+            $string = \preg_replace('[^a-zA-Z\d'.$whitespace.']', '', $string);
         } else {
-            $string = \\preg_replace('[^a-zA-Z\d'.self::$url_unsafe.$whitespace.']', '', $string);
+            $string = \preg_replace('[^a-zA-Z\d'.self::$url_unsafe.$whitespace.']', '', $string);
         }
         return $string;
     }
