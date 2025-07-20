@@ -23,13 +23,11 @@
     "require": {
         "php": "^8.4",
         "ext-intl": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "simbiat/pretty-url": "^2"
     },
     "suggest": {
         "simbiat/filename-sanitizer": "Small class to replace common characters that are restiricted in filenames."
-    },
-    "replace": {
-        "simbiat/prettyurl": "^1.2.0+20210129"
     },
     "autoload": {
         "psr-4": {

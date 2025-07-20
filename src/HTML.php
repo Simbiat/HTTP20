@@ -132,7 +132,7 @@ class HTML
         #Add elements
         foreach ($to_order as $key => $item) {
             #Generate id
-            $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['start_time'] : $item['end_time']));
+            $id = \Simbiat\HTTP\PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).($item['start'] === 1 ? $item['start_time'] : $item['end_time']));
             $output .= '<div class="timeline_block timeline_'.($item['start'] === 1 ? 'start'.($item['ended'] === false ? ' timeline_current' : '') : 'end').'" id="'.$id.'"><div class="timeline_content"><div class="timeline_time">';
             if (!empty($item['icon']) && $item['start'] === 0) {
                 $output .= '<img loading="lazy" class="timeline_icon" src="'.$item['icon'].'" alt="'.$item['name'].'">';
@@ -222,7 +222,7 @@ class HTML
             $current_list = '<time-line-shortcut class="timeline_shortcut" role="directory" aria-label="Shortcuts for timeline '.self::$timelines.'"><b>Ongoing: </b>';
             foreach ($current as $item) {
                 #Generate id
-                $id = PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['start_time']);
+                $id = \Simbiat\HTTP\PrettyURL::pretty((empty($item['name']) ? '' : $item['name']).(empty($item['position']) ? '' : $item['position']).$item['start_time']);
                 $current_list .= '<a href="#'.$id.'">'.(empty($item['icon']) ? '' : '<img loading="lazy" class="timeline_icon_current" src="'.$item['icon'].'" alt="'.($item['name'] ?? $item['position']).'">').($item['position'] ?? $item['name']).'</a>';
             }
             $current_list .= '</time-line-shortcut>';

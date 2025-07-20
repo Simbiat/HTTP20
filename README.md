@@ -9,7 +9,6 @@ _Notice:_ While some functions (like `zEcho` or different `Headers`) can replace
     * [Atom](doc/Atom.md)
     * [RSS](doc/RSS.md)
     * [Sitemap](doc/Sitemap.md)
-    * [PrettyURL](doc/PrettyURL.md)
     * [Sharing](doc/Sharing.md)
         + [download](doc/Sharing.md#download)
         + [upload](doc/Sharing.md#upload)
