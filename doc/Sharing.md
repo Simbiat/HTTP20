@@ -50,7 +50,7 @@ Function to handle uploads. It's not fancy as https://tus.io/, but if you need h
 
 - Send proper headers both in positive and negative situations
 - Support both POST and PUT methods
-- Sanitize filenames if you have https://github.com/Simbiat/filename-sanitizer (PUT supports names from `Content-disposition` header)
+- Sanitize filenames (PUT supports names from `Content-disposition` header)
 - Do not actually save the files with those names: hash them instead
 - Sanitized names are not discarded: they are returned as one of the values of the array, after the upload
 - MIME type of the files is determined after upload is completed

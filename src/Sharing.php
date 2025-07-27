@@ -5,8 +5,8 @@ namespace Simbiat\http20;
 
 use JetBrains\PhpStorm\ExpectedValues;
 use JetBrains\PhpStorm\NoReturn;
-use Simbiat\SafeFileName;
 
+use Simbiat\Translit\Convert;
 use function is_array, count, is_string, in_array, extension_loaded, is_resource, strlen, ini_get;
 
 /**
@@ -244,7 +244,7 @@ class Sharing
             }
         }
         #Cache filename sanitizer
-        if (\method_exists(SafeFileName::class, 'sanitize')) {
+        if (\method_exists(Convert::class, 'safeFileName')) {
             $safe_filename = true;
         } else {
             $safe_filename = false;
@@ -407,7 +407,7 @@ class Sharing
                     }
                     #Sanitize name
                     if (isset($_FILES[$field][$key]) && $safe_filename !== false) {
-                        $_FILES[$field][$key]['name'] = \basename(SafeFileName::sanitize($file['name']));
+                        $_FILES[$field][$key]['name'] = \basename(Convert::safeFileName($file['name']));
                         #If name is empty or name is too long, do not process it
                         if (empty($_FILES[$field][$key]['name']) || mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
                             if ($intolerant) {
@@ -525,7 +525,7 @@ class Sharing
             }
             #Sanitize the name
             if (!empty($name) && $safe_filename) {
-                $name = \basename(SafeFileName::sanitize($name));
+                $name = \basename(Convert::safeFileName($name));
             }
             if (empty($name)) {
                 #Generate random name. Using 64 to be consistent with sha3-512 hash
