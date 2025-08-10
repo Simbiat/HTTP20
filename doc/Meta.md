@@ -33,7 +33,7 @@ Function creates a set of `<meta>` tags required for Twitter Cards (https://deve
   #Description of the page
   'description' => 'Twitter card',
   #Link to the image. Needs to be an absolute HTTPS URL. Mandatory for player cards
-  'image' => 'https://www.simbiat.dev/frontend/images/favicons/simbiat.png',
+  'image' => 'https://www.simbiat.eu/frontend/images/favicons/simbiat.png',
   #Description for the image
   'image:alt' => 'Just an image',
 ]
@@ -45,13 +45,13 @@ For player cards (https://developer.twitter.com/en/docs/twitter-for-websites/car
 
 ```php
   #Mandatory URL to a frame of the player
-  'player' => 'https://www.simbiat.dev/iframe',
+  'player' => 'https://www.simbiat.eu/iframe',
   #Mandatory width of a player in pixel
   'width' => '100',
   #Mandatory height of a player in pixel
   'height' => '100',
   #Optional URL to raw stream of the audio/video
-  'stream' => 'https://www.simbiat.dev/iframe/mp3.mp3',
+  'stream' => 'https://www.simbiat.eu/iframe/mp3.mp3',
 ]
 ```
 
@@ -97,25 +97,25 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   #Optional tooltip. If not set will be set to the name. Not used by XML config.
   'tooltip' => 'Simbiat Software',
   #Starting URL. Generally should by your home page. If not set will use values of the address the value is being requested from. Not used by XML config.
-  'starturl' => 'https://www.simbiat.dev',
+  'starturl' => 'https://www.simbiat.eu',
   #Size of the window. If not set or invalid will be set to minimum values of 800x600. Not used by XML config.
   'window' => 'width=800;height=600',
   #Two values that allow "tasks" using subdomains of your main domain (starturl). Unclear what the difference is. Defaults to true. Not used by XML config.
   'allowDomainApiCalls' => 'true',
   'allowDomainMetaTags' => 'true',
   #Badge details. Link should lead to XML file formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/badgeschema/schema-root
-  'badge' => 'frequency=30;polling-uri=https://www.simbiat.dev/mstilebadge.xml',
+  'badge' => 'frequency=30;polling-uri=https://www.simbiat.eu/mstilebadge.xml',
   #Optional color for navigation buttons (used only by IE). Not used by XML config.
   'navbutton-color' => '#000000',
   #Optional tile color. There have been reports that after some update Win10 disregards it.
   'TileColor' => '#000000',
   #Paths to images of various sizes. It looks like Win10 may not be using them, instead relying on other icons referenced in you your code (`<link>` elements, `webmanifest` file) or there may be some condition to utilize them.
-  'square150x150logo' => 'https://www.simbiat.dev/frontend/images/favicons/mstile-150x150.png',
-  'square310x310logo' => 'https://www.simbiat.dev/frontend/images/favicons/mstile-310x310.png',
-  'square70x70logo' => 'https://www.simbiat.dev/frontend/images/favicons/mstile-70x70.png',
-  'wide310x150logo' => 'https://www.simbiat.dev/frontend/images/favicons/mstile-310x150.png',
+  'square150x150logo' => 'https://www.simbiat.eu/frontend/images/favicons/mstile-150x150.png',
+  'square310x310logo' => 'https://www.simbiat.eu/frontend/images/favicons/mstile-310x310.png',
+  'square70x70logo' => 'https://www.simbiat.eu/frontend/images/favicons/mstile-70x70.png',
+  'wide310x150logo' => 'https://www.simbiat.eu/frontend/images/favicons/mstile-310x150.png',
   #Image for the tile. Unclear what is the difference from the ones above, especially, since specification states, that 150x150 is recommended. Yet somewhere long ago I had encountered a different recommendation for this image: 144x144.
-  'TileImage' => 'https://www.simbiat.dev/frontend/images/favicons/mstile-144x144.png',
+  'TileImage' => 'https://www.simbiat.eu/frontend/images/favicons/mstile-144x144.png',
 ]
 ```
 
@@ -128,9 +128,9 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
     #Name to show on the menu
     'name' => 'FFXIV Tracker',
     #URL to the page referenced by this "task"
-    'action-uri' => 'https://www.simbiat.dev/fftracker/',
+    'action-uri' => 'https://www.simbiat.eu/fftracker/',
     #It's icon. Seems to be mandatory.
-    'icon-uri' => 'https://www.simbiat.dev/frontend/images/service/fftracker_icon.png',
+    'icon-uri' => 'https://www.simbiat.eu/frontend/images/service/fftracker_icon.png',
     #Optional type of window to open in (tab, self or window). Defaults to tab.
     'window-type' => 'tab',
   ],
@@ -139,8 +139,8 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
   #Another task
   'nth' => [
     'name' => 'BICs Tracker',
-    'action-uri' => 'https://www.simbiat.dev/bic/',
-    'icon-uri' => 'https://www.simbiat.dev/frontend/images/service/bic_icon.png',
+    'action-uri' => 'https://www.simbiat.eu/bic/',
+    'icon-uri' => 'https://www.simbiat.eu/frontend/images/service/bic_icon.png',
     'window-type' => 'tab',
   ],
 ]
@@ -151,8 +151,8 @@ msTile(array $general, array $tasks = [], array $notifications = [], bool $xml =
 ```php
 [
   #List of up to 5 links
-  'https://www.simbiat.dev/notification.xml',
-  'https://www.simbiat.dev/notification2.xml',
+  'https://www.simbiat.eu/notification.xml',
+  'https://www.simbiat.eu/notification2.xml',
   #Optional frequency for refreshing the data. Defaults to 1440
   'frequency' => '30',
   #Optional cycle type (as per specification). Defaults to 0 or 1 based on number of links

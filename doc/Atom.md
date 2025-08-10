@@ -21,15 +21,15 @@ Function to generate Atom feed as per https://validator.w3.org/feed/docs/atom.ht
   'authors' => [
     [
       'name' => 'Dmitrii Kustov',
-      'email' => 'support@simbiat.dev',
-      'uri' => 'https://www.simbiat.dev/',
+      'email' => 'support@simbiat.eu',
+      'uri' => 'https://www.simbiat.eu/',
     ]
   ],
   'contributors' => [
     [
       'name' => 'Dmitrii Kustov',
-      'email' => 'support@simbiat.dev',
-      'uri' => 'https://www.simbiat.dev/',
+      'email' => 'support@simbiat.eu',
+      'uri' => 'https://www.simbiat.eu/',
     ]
   ],
   'icon' => '/frontend/images/favicons/simbiat.png',
@@ -65,11 +65,11 @@ For details on elements above (what they mean, recommendations, etc.), please, r
   'updated' => '2021-01-08 20:00',
   'link' => 'https://google.com',
   'author_name' => 'Dmitrii Kustov',
-  'author_email' => 'support@simbiat.dev',
-  'author_uri' => 'https://www.simbiat.dev/',
+  'author_email' => 'support@simbiat.eu',
+  'author_uri' => 'https://www.simbiat.eu/',
   'contributor_name' => 'Dmitrii Kustov',
-  'contributor_email' => 'support@simbiat.dev',
-  'contributor_uri' => 'https://www.simbiat.dev/',
+  'contributor_email' => 'support@simbiat.eu',
+  'contributor_uri' => 'https://www.simbiat.eu/',
   'content' => 'Just google it',
   'summary' => 'Search',
   'category' => 'Example',

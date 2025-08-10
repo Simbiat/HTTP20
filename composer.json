@@ -15,8 +15,8 @@
     "authors": [
         {
             "name": "Dmitrii Kustov",
-            "email": "support@simbiat.dev",
-            "homepage": "https://www.simbiat.dev",
+            "email": "support@simbiat.eu",
+            "homepage": "https://www.simbiat.eu",
             "role": "Developer"
         }
     ],
@@ -24,10 +24,7 @@
         "php": "^8.4",
         "ext-intl": "*",
         "ext-mbstring": "*",
-        "simbiat/pretty-url": "^2"
-    },
-    "suggest": {
-        "simbiat/filename-sanitizer": "Small class to replace common characters that are restiricted in filenames."
+        "simbiat/translit": "^2"
     },
     "autoload": {
         "psr-4": {
