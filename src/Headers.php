@@ -513,8 +513,8 @@ class Headers
                 #Notify, that we support Client Hints: https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
                 #Logic for processing them should be done outside this function, though
                 \header('Accept-CH: '.$client_hints_new);
-                #Instruct cache to vary depending on client hints
-                \header('Vary: '.$client_hints_new, false);
+                #Instruct cache to vary depending on client hints (and Origin to help with CORS https://portswigger.net/research/exploiting-cors-misconfigurations-for-bitcoins-and-bounties)
+                \header('Vary: Origin, '.$client_hints_new, false);
             }
         }
     }
@@ -656,7 +656,8 @@ class Headers
                     break;
             }
             #Ensure that caching works properly in case the client did not support compression, but now does or vice-versa and in case data-saving mode was requested by client at any point.
-            \header('Vary: Save-Data, Accept-Encoding', false);
+            #Origin is added to help with CORS https://portswigger.net/research/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
+            \header('Vary: Origin, Save-Data, Accept-Encoding', false);
             #Set ETag
             if (!empty($string)) {
                 self::eTag(\hash('sha3-512', $string).$postfix, $exit);
