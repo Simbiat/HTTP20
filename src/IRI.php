@@ -177,7 +177,7 @@ class IRI
     }
     
     /**
-     * Alternative to `parse_url()`. UTF-8 safe, supports URIs without a scheme (and without `//`)
+     * Alternative to `parse_url()`. UTF-8 safe, supports URIs and IRIs without a scheme (and without `//`)
      * @param string $uri
      *
      * @return array|false
