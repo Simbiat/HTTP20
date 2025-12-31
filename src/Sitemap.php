@@ -98,11 +98,11 @@ class Sitemap
      */
     private static function linksValidator(array &$links): void
     {
-        #Get first element of the array to use it as base for next. Need to use array_key_first, because we may get an associative array
+        #Get first element of the array to use it as base for next. Need to use array_last, because we may get an associative array
         if (empty($links)) {
             throw new \UnexpectedValueException('Empty array of links provided');
         }
-        $first = $links[\array_key_first($links)];
+        $first = \array_last($links);
         #Check if 'loc' is set
         if (!isset($first['loc'])) {
             throw new \UnexpectedValueException('No `loc` value provided for first link');

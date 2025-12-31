@@ -21,7 +21,7 @@
         }
     ],
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "ext-intl": "*",
         "ext-mbstring": "*",
         "simbiat/translit": "^2"
