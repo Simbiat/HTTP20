@@ -760,6 +760,8 @@ class Headers
         if (IRI::isValidIri($new_uri)) {
             #Send Location header, indicating new URL to be used
             if (!\headers_sent()) {
+                #Send a custom header to clearly identify that redirect was from code
+                \header('X-Redirect-Source: PHP');
                 \header('Location: '.$new_uri);
             }
         } else {
