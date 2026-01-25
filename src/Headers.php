@@ -17,25 +17,25 @@ class Headers
      * @var array
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    public static array $_PUT = [];
+    private(set) static array $_PUT = [];
     /**
      * Same as `$_POST`, but for DELETE
      * @var array
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    public static array $_DELETE = [];
+    private(set) static array $_DELETE = [];
     /**
      * Same as `$_POST`, but for PATCH
      * @var array
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    public static array $_PATCH = [];
+    private(set) static array $_PATCH = [];
     /**
      * Same as `$_FILES`, but gotten from PUT, PATCH or DELETE requests
      * @var array
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    public static array $_FILES = [];
+    private(set) static array $_FILES = [];
     
     /**
      * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)

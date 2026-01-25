@@ -14,11 +14,11 @@ use function is_int, is_float, is_string, is_array;
 class HTML
 {
     #Static to count breadcrumbs in case multiple ones are created
-    public static int $crumbs = 0;
+    private(set) static int $crumbs = 0;
     #Static to count pagination elements in case multiple ones are created
-    public static int $paginations = 0;
+    private(set) static int $paginations = 0;
     #Static to count timelines in case multiple ones are created
-    public static int $timelines = 0;
+    private(set) static int $timelines = 0;
     
     /**
      * Function to generate timeline
