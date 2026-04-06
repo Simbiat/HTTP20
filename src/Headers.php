@@ -591,7 +591,7 @@ class Headers
     public static function lastModified(int|string|float $mod_time = 0, bool $exit = false): void
     {
         if (!\headers_sent()) {
-            #In case it's not numeric, replace with 0
+            #In case it's not numeric, replace it with 0
             if (\is_numeric($mod_time)) {
                 $mod_time = (int)$mod_time;
             } else {
@@ -602,7 +602,8 @@ class Headers
                 $mod_time = \max(\max(\array_map('\filemtime', \array_filter(\get_included_files(), '\is_file')), \getlastmod()));
             }
             #Send header
-            \header('Last-Modified: '.\gmdate(\DATE_RFC7231, $mod_time));
+            #TODO Use Sand-Clock here for proper time handling.
+            \header('Last-Modified: '.\gmdate('D, d M Y H:i:s \G\M\T', $mod_time));
             #Set the flag to false for now
             if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && \strtotime(mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, null, 'UTF-8')) >= $mod_time) {
                 #If content has not been modified - return 304
