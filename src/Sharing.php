@@ -6,7 +6,7 @@ namespace Simbiat\http20;
 use JetBrains\PhpStorm\ExpectedValues;
 use JetBrains\PhpStorm\NoReturn;
 
-use Simbiat\Translit\Convert;
+use Simbiat\StringHelpers\Convert;
 use function is_array, count, is_string, in_array, extension_loaded, is_resource, strlen, ini_get;
 
 /**

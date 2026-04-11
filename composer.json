@@ -24,7 +24,7 @@
         "php": "^8.5",
         "ext-intl": "*",
         "ext-mbstring": "*",
-        "simbiat/translit": "^2"
+        "simbiat/stringhelpers": "^2.0"
     },
     "autoload": {
         "psr-4": {

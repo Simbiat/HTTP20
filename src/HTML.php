@@ -5,7 +5,7 @@ namespace Simbiat\http20;
 
 use Simbiat\SandClock;
 
-use Simbiat\Translit\Convert;
+use Simbiat\StringHelpers\Convert;
 use function is_int, is_float, is_string, is_array;
 
 /**
