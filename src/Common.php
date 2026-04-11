@@ -5,6 +5,7 @@ namespace Simbiat\http20;
 
 use JetBrains\PhpStorm\ExpectedValues;
 use JetBrains\PhpStorm\NoReturn;
+use Simbiat\StringHelpers\Sanitize;
 use function in_array, is_string, extension_loaded;
 
 /**
@@ -69,7 +70,7 @@ class Common
      */
     private static function loadMime(string $mime_list = ''): void
     {
-        if (\preg_match('/^\s*$/u', $mime_list) === 1) {
+        if (Sanitize::whiteString($mime_list)) {
             #Check if it's a valid JSON string
             if (json_validate($mime_list)) {
                 try {
