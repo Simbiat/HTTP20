@@ -233,6 +233,7 @@ class HTML
     }
     
     /**
+     * #TODO: need support for other formats supported by Google https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
      * Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList
      * @param array $items   List of items
      * @param bool  $links   If set to `false`, you will get just a string of the requested breadcrumbs, but if set to `true`, this will also generate values for `rel="home index top begin prefetch"` and `rel="up prefetch"` required for `Links()`.
