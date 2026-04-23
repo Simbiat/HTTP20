@@ -834,4 +834,22 @@ class Headers
         self::${'_'.mb_strtoupper($method, 'UTF-8')} = $parsed_data[0];
         self::$_FILES = $parsed_data[1];
     }
+    
+    /**
+     * Check if a DNT header was sent and was set to 1
+     * @return bool
+     */
+    public static function isDNT(): bool
+    {
+        return \array_key_exists('HTTP_DNT', $_SERVER) && $_SERVER['HTTP_DNT'] === '1';
+    }
+    
+    /**
+     * Check if a Sec-GPC header was sent and was set to 1
+     * @return bool
+     */
+    public static function isGPC(): bool
+    {
+        return \array_key_exists('HTTP_SEC_GPC', $_SERVER) && $_SERVER['HTTP_SEC_GPC'] === '1';
+    }
 }

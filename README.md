@@ -31,6 +31,8 @@ _Notice:_ While some functions (like `zEcho` or different `Headers`) can replace
         + [redirect](doc/Headers.md#redirect)
         + [notAccept](doc/Headers.md#notaccept)
         + [multiPartFormParse](doc/Headers.md#multiPartFormParse)
+        + [isDNT](doc/Headers.md#isdnt)
+        + [isGPC](doc/Headers.md#isgpc)
     * [Links](doc/Links.md)
     * [Meta](doc/Meta.md)
         + [twitter](doc/Meta.md#twitter)

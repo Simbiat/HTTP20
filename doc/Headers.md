@@ -10,6 +10,8 @@
 - [redirect](#redirect)
 - [notAccept](#notaccept)
 - [multiPartFormParse](#multiPartFormParse)
+- [isDNT](#isdnt)
+- [isGPC](#isgpc)
 
 # Headers
 
@@ -227,3 +229,19 @@ This function parses `multipart/form-data` data for PUT, DELETE and PATCH method
 The same logic can technically be used for POST as well, but PHP already parses it into native `$_POST`, so need to cover it.
 
 Other HTTP verbs are not supposed to be accompanied by form data like this.
+
+## isDNT
+
+```php
+isDNT()
+```
+
+Returns `true` if `DNT` header was sent by client and was set to `1`.
+
+## isGPC
+
+```php
+isGPC()
+```
+
+Returns `true` if `Sec-GPC` header was sent by client and was set to `1`.
