@@ -28,7 +28,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Simbiat\\http20\\": "src/"
+            "Simbiat\\http20\\": ""
         }
     },
     "support": {
