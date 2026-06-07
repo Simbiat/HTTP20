@@ -268,7 +268,7 @@ class HTML
         #Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some elements in the list. Adding 1 to avoid last element getting ID of 0.
         $item_depth = \count($items);
         #Open data
-        $output = '<nav role="navigation" aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$item_depth.'" itemListOrder="ItemListUnordered">';
+        $output = '<nav aria-label="breadcrumb '.self::$crumbs.'"><ol name="breadcrumbs_'.self::$crumbs.'" id="ol_breadcrumbs_'.self::$crumbs.'" itemscope itemtype="https://schema.org/BreadcrumbList" numberOfItems="'.$item_depth.'" itemListOrder="ItemListUnordered">';
         #Open links
         $links_arr = [];
         foreach ($items as $key => $item) {
