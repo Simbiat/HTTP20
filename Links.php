@@ -110,7 +110,7 @@ class Links
             }
             if (\array_key_exists('rel', $link) && \preg_match(self::EXTERNAL_RESOURCES, $link['rel']) === 1) {
                 if (!\array_key_exists('referrerpolicy', $link)) {
-                    $link['referrerpolicy'] = 'strict-origin-when-cross-origin';
+                    $link['referrerpolicy'] = 'no-referrer';
                 }
                 if (!\array_key_exists('fetchpriority', $link)) {
                     $link['fetchpriority'] = 'auto';
