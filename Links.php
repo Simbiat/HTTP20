@@ -124,9 +124,9 @@ class Links
             }
             #Generate element as string
             if ($type === 'header') {
-                $links_to_send[] = self::generateHeader($link);
+                $links_to_send[] = \preg_replace('/[\r\n\p{C}]/uir', '', self::generateHeader($link));
             } else {
-                $links_to_send[] = self::generateTag($link);
+                $links_to_send[] = \preg_replace('/[\r\n\p{C}]/uir', '', self::generateTag($link));
             }
         }
         if (\count($links_to_send) === 0) {
@@ -134,7 +134,7 @@ class Links
         }
         if ($type === 'header') {
             if (!\headers_sent()) {
-                \header('Link: '.\preg_replace('/[\r\n]/uir', '', \implode(', ', $links_to_send)), false);
+                \header('Link: '.\implode(', ', $links_to_send), false);
             }
             return '';
         }
