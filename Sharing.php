@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Simbiat\http20;
 
 use JetBrains\PhpStorm\ExpectedValues;
+use JetBrains\PhpStorm\FileReference;
 use JetBrains\PhpStorm\NoReturn;
 
 use Simbiat\StringHelpers\Convert;
@@ -840,7 +841,7 @@ class Sharing
      *
      * @return int
      */
-    public static function fileEcho(string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
+    public static function fileEcho(#[FileReference] string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
     {
         #Check if file exists
         if (\is_file($filepath)) {
