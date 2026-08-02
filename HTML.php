@@ -420,7 +420,7 @@ class HTML
         if (!empty($non_numerics['first'])) {
             $output .= '<li class="pagination_li pagination_first" aria-label="'.$non_numerics['first_text'].'"'.($current > (1 + $side_numerics) ? ' '.$tooltip.'="'.$non_numerics['first_text'].'"' : ' aria-disabled="true"').'>';
             if ($current > (1 + $side_numerics) && $total !== $max_numerics) {
-                $output .= '<a class="pagination_link" href="'.$prefix.'1">'.$non_numerics['first'].'</a>';
+                $output .= '<a class="pagination_link" href="'.$prefix.'1"><span class="pagination_span">'.$non_numerics['first'].'</span></a>';
             } else {
                 $output .= '<span class="pagination_span">'.$non_numerics['first'].'</span>';
             }
@@ -430,7 +430,7 @@ class HTML
         if (!empty($non_numerics['prev'])) {
             $output .= '<li class="pagination_li pagination_prev" aria-label="'.\str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.\str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"' : ' aria-disabled="true"').'>';
             if ($current !== 1 && $total !== $max_numerics) {
-                $output .= '<a class="pagination_link" href="'.$prefix.($prev_page).'">'.$non_numerics['prev'].'</a>';
+                $output .= '<a class="pagination_link" href="'.$prefix.($prev_page).'"><span class="pagination_span">'.$non_numerics['prev'].'</span></a>';
             } else {
                 $output .= '<span class="pagination_span">'.$non_numerics['prev'].'</span>';
             }
@@ -442,7 +442,7 @@ class HTML
             if ($i === $current) {
                 $output .= '<span class="pagination_span">'.$i.'</span>';
             } else {
-                $output .= '<a class="pagination_link" href="'.$prefix.$i.'">'.$i.'</a>';
+                $output .= '<a class="pagination_link" href="'.$prefix.$i.'"><span class="pagination_span">'.$i.'</span></a>';
             }
             $output .= '</li>';
         }
@@ -450,7 +450,7 @@ class HTML
         if (!empty($non_numerics['next'])) {
             $output .= '<li class="pagination_li pagination_next" aria-label="'.\str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.\str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"' : ' aria-disabled="true"').'>';
             if ($current !== $total && $total !== $max_numerics) {
-                $output .= '<a class="pagination_link" href="'.$prefix.($next_page).'">'.$non_numerics['next'].'</a>';
+                $output .= '<a class="pagination_link" href="'.$prefix.($next_page).'"><span class="pagination_span">'.$non_numerics['next'].'</span></a>';
             } else {
                 $output .= '<span class="pagination_span">'.$non_numerics['next'].'</span>';
             }
@@ -460,7 +460,7 @@ class HTML
         if (!empty($non_numerics['last'])) {
             $output .= '<li class="pagination_li pagination_last" aria-label="'.\str_replace('$number', (string)$total, $non_numerics['last_text']).'"'.($current < ($total - $side_numerics) ? ' '.$tooltip.'="'.\str_replace('$number', (string)$total, $non_numerics['last_text']).'"' : ' aria-disabled="true"').'>';
             if ($current < ($total - $side_numerics) && $total !== $max_numerics) {
-                $output .= '<a class="pagination_link" href="'.$prefix.$total.'">'.$non_numerics['last'].'</a>';
+                $output .= '<a class="pagination_link" href="'.$prefix.$total.'"><span class="pagination_span">'.$non_numerics['last'].'</span></a>';
             } else {
                 $output .= '<span class="pagination_span">'.$non_numerics['last'].'</span>';
             }
