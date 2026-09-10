@@ -19,7 +19,7 @@ class HTML
     private(set) static int $paginations = 0;
     #Static to count timelines in case multiple ones are created
     private(set) static int $timelines = 0;
-    
+
     /**
      * Function to generate timeline
      * @param array  $items    List of timeline items
@@ -110,19 +110,16 @@ class HTML
         #Order timeline
         if ($asc) {
             \usort($to_order, static function ($a, $b) {
-                /** @noinspection SuspiciousBinaryOperationInspection https://github.com/kalessil/phpinspectionsea/issues/1804 */
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         } else {
             \usort($to_order, static function ($a, $b) {
-                /** @noinspection SuspiciousBinaryOperationInspection https://github.com/kalessil/phpinspectionsea/issues/1804 */
                 return [$b['time'], $b['start']] <=> [$a['time'], $a['start']];
             });
         }
         #Order current events if any
         if (\count($current) !== 0) {
             \usort($current, static function ($a, $b) {
-                /** @noinspection SuspiciousBinaryOperationInspection https://github.com/kalessil/phpinspectionsea/issues/1804 */
                 return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
             });
         }
@@ -231,7 +228,7 @@ class HTML
         }
         return $output;
     }
-    
+
     /**
      * #TODO: need support for other formats supported by Google https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
      * #TODO: need to validate that we have valid links
@@ -303,7 +300,7 @@ class HTML
         }
         return $output;
     }
-    
+
     /**
      * Function to generate pagination navigation
      *
