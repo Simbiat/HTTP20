@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Simbiat\http20;
 
@@ -36,7 +37,7 @@ class Common
      * @var array
      */
     public static array $extension_to_mime = [];
-    
+
     /**
      * Get MIME type based on extension
      * @param string $extension Extension to get MIME for
@@ -49,7 +50,7 @@ class Common
         self::loadMime($mime_list);
         return self::$extension_to_mime[$extension] ?? false;
     }
-    
+
     /**
      * Get extension based on MIME type
      * @param string $mime      MIME to get an extension for
@@ -62,7 +63,7 @@ class Common
         self::loadMime($mime_list);
         return \array_search($mime, self::$extension_to_mime, true);
     }
-    
+
     /**
      * @param string $mime_list
      *
@@ -71,7 +72,7 @@ class Common
     private static function loadMime(string $mime_list = ''): void
     {
         if (Sanitize::whiteString($mime_list)) {
-            #Check if it's a valid JSON string
+            // Check if it's a valid JSON string
             if (json_validate($mime_list)) {
                 try {
                     self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
@@ -83,7 +84,7 @@ class Common
                 $mime_list = __DIR__.'/mime.json';
             }
         }
-        #Read the file with MIME types
+        // Read the file with MIME types
         if (\count(self::$extension_to_mime) === 0) {
             try {
                 self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
@@ -92,7 +93,7 @@ class Common
             }
         }
     }
-    
+
     /**
      * Wrapper for date(), that handles strings and allows validation of the result
      * @param string|int|float|null $time        Time value
@@ -103,17 +104,17 @@ class Common
      */
     public static function valueToTime(string|int|float|null $time, string $format, string $valid_regex = ''): string
     {
-        #If we want to use a constant, but it was sent as a string
+        // If we want to use a constant, but it was sent as a string
         if (str_starts_with(mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
             $format = \constant($format);
         }
         if (empty($time)) {
             $time = \date($format);
         } elseif (\is_numeric($time)) {
-            #Ensure we use int
+            // Ensure we use int
             $time = \date($format, (int)$time);
         } elseif (is_string($time)) {
-            #Attempt to convert string to time
+            // Attempt to convert string to time
             $time = \date($format, \strtotime($time));
         } else {
             throw new \UnexpectedValueException('Time provided to `valueToTime` is neither numeric or string');
@@ -126,7 +127,7 @@ class Common
         }
         return $time;
     }
-    
+
     /**
      * Function uses ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
      *
@@ -138,27 +139,27 @@ class Common
      */
     public static function zEcho(string $string, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = '', bool $exit = true): void
     {
-        #Close session
+        // Close session
         if (\session_status() === \PHP_SESSION_ACTIVE) {
             \session_write_close();
         }
         $postfix = '';
         if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
-            #Attempt brotli compression, if available and client supports it
+            // Attempt brotli compression, if available and client supports it
             if (extension_loaded('brotli') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
-                #Compress string
+                // Compress string
                 $string = \brotli_compress($string, 11, \BROTLI_TEXT);
-                #Send header with format
+                // Send header with format
                 if (!\headers_sent()) {
                     \header('Content-Encoding: br');
                 }
                 $postfix = '-br';
-                #Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
+                // Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
             } elseif (extension_loaded('zlib') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
-                #It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
-                #GZipping the string
+                // It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
+                // GZipping the string
                 $string = \gzcompress($string, 9, \FORCE_GZIP);
-                #Send header with format
+                // Send header with format
                 if (!\headers_sent()) {
                     \header('Content-Encoding: gzip');
                 }
@@ -166,21 +167,21 @@ class Common
             }
         }
         Headers::cacheControl($string, $cache_strategy, true, $postfix);
-        #Send header with length
+        // Send header with length
         if (!\headers_sent()) {
             \header('Content-Length: '.\strlen($string));
         }
-        #Some HTTP methods do not support body, thus we need to ensure it's not sent.
+        // Some HTTP methods do not support body, thus we need to ensure it's not sent.
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
         if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])) {
-            #Send the output
+            // Send the output
             echo $string;
         }
         if ($exit) {
             exit(0);
         }
     }
-    
+
     /**
      * Function to check if string is a valid language code
      * @param string $string
@@ -193,7 +194,7 @@ class Common
             ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk']
         );
     }
-    
+
     /**
      * Function does the same as `rawurlencode`, but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use `htmlentities`, but otherwise break HTML/XML
      * @param string $string String to encode
@@ -208,7 +209,7 @@ class Common
         }
         return \str_replace(['&', '<'], ['%26', '%3C'], $string);
     }
-    
+
     /**
      * Function to merge CSS/JS files to reduce the number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
      *
@@ -222,48 +223,48 @@ class Common
      */
     public static function reductor(string|array $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $to_file = '', string $cache_strategy = ''): void
     {
-        #Set content to empty string as precaution
+        // Set content to empty string as precaution
         $content = '';
-        #Check if empty value was sent
+        // Check if empty value was sent
         if (empty($files)) {
             throw new \UnexpectedValueException('Empty set of files provided to `reductor` function');
         }
-        #Check if a string
+        // Check if a string
         if (is_string($files)) {
-            #Convert to array
+            // Convert to array
             $files = [$files];
         }
-        #Prepare the array of dates
+        // Prepare the array of dates
         $dates = [];
-        #Iterate array
+        // Iterate array
         foreach ($files as $file) {
-            #Check if string is a file
+            // Check if string is a file
             if (\is_file($file)) {
-                #Check extension
+                // Check extension
                 if (\strcasecmp(\pathinfo($file, \PATHINFO_EXTENSION), $type) === 0) {
-                    #Add date to list
+                    // Add date to list
                     $dates[] = \filemtime($file);
-                    #Add contents
+                    // Add contents
                     $content .= \file_get_contents($file);
                 }
             } elseif (\is_dir($file)) {
                 $file_list = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
                 foreach ($file_list as $sub_file) {
                     if (\strcasecmp($sub_file->getExtension(), $type) === 0) {
-                        #Add date to list
+                        // Add date to list
                         $dates[] = $sub_file->getMTime();
-                        #Add contents
+                        // Add contents
                         $content .= \file_get_contents($sub_file->getRealPath());
                     }
                 }
             }
         }
-        #Get date if we are directly outputting the data
+        // Get date if we are directly outputting the data
         if (empty($to_file)) {
-            #Send Last-Modified header and exit if we hit browser cache
+            // Send Last-Modified header and exit if we hit browser cache
             Headers::lastModified(\max($dates), true);
         }
-        #Minify
+        // Minify
         if ($minify) {
             switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
@@ -370,7 +371,7 @@ class Common
             }
         }
         if (empty($to_file)) {
-            #Send the appropriate header
+            // Send the appropriate header
             switch (mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     if (!\headers_list()) {
@@ -388,13 +389,13 @@ class Common
                     }
                     break;
             }
-            #Send data to browser
+            // Send data to browser
             self::zEcho($content, $cache_strategy);
         } else {
             \file_put_contents($to_file, $content);
         }
     }
-    
+
     /**
      * Function to force close HTTP connection. Possible notices from `ob_end_clean` and `flush` are suppressed, since I do not see a good alternative to this, when closing connection, which may be closed in a non-planned way.
      *
@@ -403,17 +404,17 @@ class Common
      */
     #[NoReturn] public static function forceClose(): void
     {
-        #Close session
+        // Close session
         if (\session_status() === \PHP_SESSION_ACTIVE) {
             \session_write_close();
         }
-        #Send header to notify, that connection was closed
+        // Send header to notify, that connection was closed
         if (!\headers_sent()) {
             \header('Connection: close');
         }
-        #Clean output buffer and close it
+        // Clean output buffer and close it
         @\ob_end_clean();
-        #Clean system buffer
+        // Clean system buffer
         @\flush();
         exit(0);
     }

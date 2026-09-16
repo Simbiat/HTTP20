@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Simbiat\http20;
 
@@ -25,22 +26,22 @@ class Atom
      */
     public static function atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $text_type = 'text', array $feed_settings = []): void
     {
-        #Validate title
+        // Validate title
         if (empty($title)) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         }
         $feed_settings['title'] = $title;
-        #validate text type
+        // validate text type
         if (!in_array(mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'])) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
-        #Validate content
+        // Validate content
         if (!empty($entries)) {
             self::atomElementValidator($entries, 'entry', 'link');
         }
-        #Check id
+        // Check id
         if (empty($id)) {
             $feed_settings['id'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } elseif (IRI::isValidIri($id, 'https')) {
@@ -49,7 +50,7 @@ class Atom
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('$id provided is not a valid URI');
         }
-        #Check time
+        // Check time
         if (empty($feed_settings['updated'])) {
             $dates = \array_merge(\array_column($entries, 'updated'), \array_column($entries, 'published'));
             if (empty($dates)) {
@@ -60,51 +61,51 @@ class Atom
         } else {
             $feed_settings['updated'] = Common::valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
-        #Send Last-Modified header right now, but do not exit if 304 is sent, so that a proper set of Cache-Control headers is sent as well
+        // Send Last-Modified header right now, but do not exit if 304 is sent, so that a proper set of Cache-Control headers is sent as well
         Headers::lastModified(\strtotime($feed_settings['updated']));
-        #Validate authors
+        // Validate authors
         if (!empty($feed_settings['authors'])) {
             self::atomElementValidator($feed_settings['authors']);
         }
-        #Validate contributors
+        // Validate contributors
         if (!empty($feed_settings['contributors'])) {
             self::atomElementValidator($feed_settings['contributors'], 'contributor');
         }
-        #Validate links
+        // Validate links
         if (!empty($feed_settings['links'])) {
             self::atomElementValidator($feed_settings['links'], 'link', 'href');
         }
-        #Validate categories
+        // Validate categories
         if (!empty($feed_settings['categories'])) {
             self::atomElementValidator($feed_settings['categories'], 'category', 'term');
         }
-        #Generating the feed. Using DomDocument for clean look and strings sanitization
+        // Generating the feed. Using DomDocument for clean look and strings sanitization
         $feed = new \DomDocument('1.0', 'UTF-8');
-        #We would prefer a pretty file, just in case
+        // We would prefer a pretty file, just in case
         $feed->preserveWhiteSpace = false;
         $feed->formatOutput = true;
         $feed->substituteEntities = false;
-        #Create root element
+        // Create root element
         $root = $feed->appendChild($feed->createElement('feed'));
         $root->setAttribute('xmlns', 'https://www.w3.org/2005/Atom');
-        #Add global mandatory feed tags
+        // Add global mandatory feed tags
         $title_dom = $root->appendChild($feed->createElement('title', $feed_settings['title']));
         $title_dom->setAttribute('type', $text_type);
         $root->appendChild($feed->createElement('updated', $feed_settings['updated']));
         $root->appendChild($feed->createElement('id', $feed_settings['id']));
-        #Add recommended feed tags
-        #Add link tag
+        // Add recommended feed tags
+        // Add link tag
         $link = $root->appendChild($feed->createElement('link'));
         $link->setAttribute('rel', 'self');
         $link->setAttribute('href', $feed_settings['id']);
-        #Add any extra links
+        // Add any extra links
         if (!empty($feed_settings['links'])) {
             foreach ($feed_settings['links'] as $link) {
                 $link_elem = $root->appendChild($feed->createElement('link'));
                 self::atomAddAttributes($link_elem, $link, ['href', 'rel', 'type', 'hreflang', 'title', 'length']);
             }
         }
-        #Add persons
+        // Add persons
         if (!empty($feed_settings['authors'])) {
             foreach ($feed_settings['authors'] as $person) {
                 $author = $root->appendChild($feed->createElement('author'));
@@ -117,7 +118,7 @@ class Atom
                 self::atomAddSubElements($contributor, $feed, $person);
             }
         }
-        #Add optional feed tags
+        // Add optional feed tags
         if (!empty($feed_settings['subtitle'])) {
             $subtitle = $root->appendChild($feed->createElement('subtitle', $feed_settings['subtitle']));
             $subtitle->setAttribute('type', $text_type);
@@ -138,10 +139,10 @@ class Atom
                 self::atomAddAttributes($category, $cat, ['term', 'scheme', 'label']);
             }
         }
-        #Add generator referencing the library itself
+        // Add generator referencing the library itself
         $generator = $root->appendChild($feed->createElement('generator', 'Simbiat/http20'));
         $generator->setAttribute('uri', 'https://github.com/Simbiat/http20');
-        #Add actual entries in the feed
+        // Add actual entries in the feed
         if (!empty($entries)) {
             foreach ($entries as $entry) {
                 $element = $root->appendChild($feed->createElement('entry'));
@@ -149,13 +150,13 @@ class Atom
             }
         }
         $feed->normalizeDocument();
-        #Output
+        // Output
         if (!\headers_sent()) {
             \header('Content-type: application/atom+xml;charset=utf-8');
         }
         Common::zEcho($feed->saveXML(), 'hour');
     }
-    
+
     /**
      * Helper function to validate some elements
      * @param array  $elements     Array of elements to validate
@@ -204,7 +205,7 @@ class Atom
             }
         }
     }
-    
+
     /**
      * Helper function to add sub elements
      * @param \DOMNode     $element Node to process
@@ -226,7 +227,7 @@ class Atom
             }
         }
     }
-    
+
     /**
      * Helper function to add attributes
      * @param \DOMElement $element    Node to process
@@ -251,7 +252,7 @@ class Atom
             }
         }
     }
-    
+
     /**
      * Helper function to add actual entries
      * @param \DOMNode     $element   Node to process
@@ -264,7 +265,7 @@ class Atom
      */
     private static function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $text_type): void
     {
-        #Adding mandatory tags
+        // Adding mandatory tags
         if (empty($entry['id'])) {
             $element->appendChild($feed->createElement('id', self::atomIDGen($entry['link'])));
         } else {
@@ -273,12 +274,12 @@ class Atom
         $title = $element->appendChild($feed->createElement('title', $entry['title']));
         $title->setAttribute('type', $text_type);
         $element->appendChild($feed->createElement('updated', Common::valueToTime($entry['updated'], \DATE_ATOM)));
-        #Add a link as alternate
+        // Add a link as alternate
         $link = $element->appendChild($feed->createElement('link'));
         $link->setAttribute('rel', 'alternate');
         $link->setAttribute('href', Common::htmlToRFC3986($entry['link']));
-        #Adding recommended tags
-        #Add persons
+        // Adding recommended tags
+        // Add persons
         if (!empty($entry['author_name']) || !empty($entry['author_email']) || !empty($entry['author_uri'])) {
             $author = $element->appendChild($feed->createElement('author'));
             if (!empty($entry['author_name'])) {
@@ -310,7 +311,7 @@ class Atom
             $summary = $element->appendChild($feed->createElement('summary', $entry['summary']));
             $summary->setAttribute('type', $text_type);
         }
-        #Add optional tags
+        // Add optional tags
         if (!empty($entry['category'])) {
             $category = $element->appendChild($feed->createElement('category'));
             $category->setAttribute('term', $entry['category']);
@@ -324,7 +325,7 @@ class Atom
             $rights = $element->appendChild($feed->createElement('rights', $entry['rights']));
             $rights->setAttribute('type', $text_type);
         }
-        #Add a source
+        // Add a source
         if (!empty($entry['source_id']) || !empty($entry['source_title']) || !empty($entry['source_updated'])) {
             $source = $element->appendChild($feed->createElement('source'));
             if (!empty($entry['source_id'])) {
@@ -339,7 +340,7 @@ class Atom
             }
         }
     }
-    
+
     /**
      * Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
      * @param string $link
@@ -349,14 +350,14 @@ class Atom
     private static function atomIDGen(string $link): string
     {
         $date = Common::valueToTime(null, 'Y-m-d', '/^\d{4}-\d{2}-\d{2}$/i');
-        #Remove URI protocol (if any)
+        // Remove URI protocol (if any)
         $link = \preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', Common::htmlToRFC3986($link));
-        #Replace any # with /
+        // Replace any # with /
         $link = \preg_replace('/#/m', '/', $link);
-        #Remove HTML/XML reserved characters as a precaution.
-        #Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
+        // Remove HTML/XML reserved characters as a precaution.
+        // Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
         $link = \preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
-        #Add 'tag:' to beginning and a ',Y-m-d:' after domain name
+        // Add 'tag:' to beginning and a ',Y-m-d:' after domain name
         return \preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
     }
 }

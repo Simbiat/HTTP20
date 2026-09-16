@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Simbiat\http20;
 
@@ -22,13 +23,13 @@ class RSS
      */
     public static function rss(string $title, array $entries, string $feed_link = '', array $feed_settings = []): void
     {
-        #Validate title
+        // Validate title
         if (empty($title)) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         }
         $feed_settings['title'] = $title;
-        #Check the feed link
+        // Check the feed link
         if (empty($feed_link)) {
             $feed_settings['link'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } elseif (IRI::isValidIri($feed_link, 'https')) {
@@ -37,7 +38,7 @@ class RSS
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('`feed_link` provided is not a valid URI');
         }
-        #Validate content
+        // Validate content
         if (!empty($entries)) {
             foreach ($entries as $key => $entry) {
                 if (empty($entry['title']) && empty($entry['description'])) {
@@ -54,7 +55,7 @@ class RSS
                         continue;
                     }
                 }
-                #Add <source> data
+                // Add <source> data
                 $entries[$key]['source_url'] = $feed_settings['link'];
                 $entries[$key]['source_title'] = $feed_settings['title'];
             }
@@ -62,7 +63,7 @@ class RSS
         if (empty($feed_settings['description'])) {
             $feed_settings['description'] = $feed_settings['title'];
         }
-        #Check time
+        // Check time
         if (empty($feed_settings['pubDate'])) {
             $dates = \array_column($entries, 'pubDate');
             if (empty($dates)) {
@@ -78,21 +79,21 @@ class RSS
         } else {
             $feed_settings['lastBuildDate'] = Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         }
-        #Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
+        // Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
         Headers::lastModified(\max(\strtotime($feed_settings['pubDate']), \strtotime($feed_settings['lastBuildDate'])));
-        #Check cloud
+        // Check cloud
         if (!empty($feed_settings['cloud'])) {
             if (empty($feed_settings['cloud']['domain']) || empty($feed_settings['cloud']['port']) || empty($feed_settings['cloud']['path']) || empty($feed_settings['cloud']['registerProcedure']) || empty($feed_settings['cloud']['protocol'])) {
                 Headers::clientReturn(500, false);
                 throw new \UnexpectedValueException('One or more attributes required for `cloud` tag are missing in settings for the feed');
             }
         }
-        #Check TTL
+        // Check TTL
         if (!empty($feed_settings['ttl']) && !\is_numeric($feed_settings['ttl'])) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('`ttl` provided in settings for the feed is not numeric');
         }
-        #Check image
+        // Check image
         if (!empty($feed_settings['image'])) {
             if (empty($feed_settings['image']['url'])) {
                 Headers::clientReturn(500, false);
@@ -119,7 +120,7 @@ class RSS
                 }
             }
         }
-        #Check skipHours
+        // Check skipHours
         if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
             foreach ($feed_settings['skipHours'] as $hour) {
                 if (!\is_numeric($hour)) {
@@ -132,7 +133,7 @@ class RSS
                 }
             }
         }
-        #Check skipDays
+        // Check skipDays
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
                 if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
@@ -141,29 +142,29 @@ class RSS
                 }
             }
         }
-        #Generating the feed. Using DomDocument for cleaner look and strings sanitization
+        // Generating the feed. Using DomDocument for cleaner look and strings sanitization
         $feed = new \DomDocument('1.0', 'UTF-8');
-        #We would prefer a pretty file, just in case
+        // We would prefer a pretty file, just in case
         $feed->preserveWhiteSpace = false;
         $feed->formatOutput = true;
         $feed->substituteEntities = false;
-        #Add version
+        // Add version
         $version = $feed->appendChild($feed->createElement('rss'));
         $version->setAttribute('version', '2.0');
         $version->setAttribute('xmlns:atom', 'https://www.w3.org/2005/Atom');
-        #Create root element
+        // Create root element
         $root = $version->appendChild($feed->createElement('channel'));
-        #Add atom:link
+        // Add atom:link
         $atom = $feed->createElement('atom:link');
         $atom->setAttribute('href', Common::htmlToRFC3986($feed_settings['link']));
         $atom->setAttribute('rel', 'self');
         $atom->setAttribute('type', 'application/rss+xml');
         $root->appendChild($atom);
-        #Add global mandatory feed tags
+        // Add global mandatory feed tags
         $root->appendChild($feed->createElement('title', $feed_settings['title']));
         $root->appendChild($feed->createElement('link', Common::htmlToRFC3986($feed_settings['link'])));
         $root->appendChild($feed->createElement('description', $feed_settings['description']));
-        #Add optional feed tags
+        // Add optional feed tags
         $root->appendChild($feed->createElement('pubDate', $feed_settings['pubDate']));
         $root->appendChild($feed->createElement('lastBuildDate', $feed_settings['lastBuildDate']));
         if (!empty($feed_settings['language']) && Common::langCodeCheck($feed_settings['language'])) {
@@ -178,7 +179,7 @@ class RSS
         if (!empty($feed_settings['webMaster']) && \filter_var($feed_settings['webMaster'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)) {
             $root->appendChild($feed->createElement('webMaster', $feed_settings['webMaster']));
         }
-        #Add cloud details (rssCloud)
+        // Add cloud details (rssCloud)
         if (!empty($feed_settings['cloud'])) {
             $cloud = $feed->createElement('cloud');
             $cloud->setAttribute('domain', $feed_settings['cloud']['domain']);
@@ -191,13 +192,13 @@ class RSS
         if (!empty($feed_settings['ttl'])) {
             $root->appendChild($feed->createElement('ttl', (string)(int)$feed_settings['ttl']));
         }
-        #Add categories
+        // Add categories
         if (!empty($feed_settings['categories']) && is_array($feed_settings['categories'])) {
             foreach ($feed_settings['categories'] as $cat) {
                 $root->appendChild($feed->createElement('category', $cat));
             }
         }
-        #Add image
+        // Add image
         if (!empty($feed_settings['image'])) {
             $image = $root->appendChild($feed->createElement('image'));
             $image->appendChild($feed->createElement('url', Common::htmlToRFC3986($feed_settings['image']['url'])));
@@ -210,24 +211,24 @@ class RSS
                 $image->appendChild($feed->createElement('height', (string)(int)$feed_settings['image']['height']));
             }
         }
-        #Add skipDays
+        // Add skipDays
         if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
             $skip_days = $root->appendChild($feed->createElement('skipDays'));
             foreach ($feed_settings['skipDays'] as $day) {
                 $skip_days->appendChild($feed->createElement('day', $day));
             }
         }
-        #Add skipHours
+        // Add skipHours
         if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
             $skip_hours = $root->appendChild($feed->createElement('skipHours'));
             foreach ($feed_settings['skipHours'] as $hour) {
                 $skip_hours->appendChild($feed->createElement('hour', $hour));
             }
         }
-        #Add generator referencing the library itself
+        // Add generator referencing the library itself
         $root->appendChild($feed->createElement('generator', 'Simbiat/http20, https://github.com/Simbiat/http20'));
         $root->appendChild($feed->createElement('docs', 'https://www.rssboard.org/rss-specification'));
-        #Add actual entries in the feed
+        // Add actual entries in the feed
         if (!empty($entries)) {
             foreach ($entries as $entry) {
                 $element = $root->appendChild($feed->createElement('item'));
@@ -235,13 +236,13 @@ class RSS
             }
         }
         $feed->normalizeDocument();
-        #Output
+        // Output
         if (!\headers_sent()) {
             \header('Content-type: application/rss+xml;charset=utf-8');
         }
         Common::zEcho($feed->saveXML(), 'hour');
     }
-    
+
     /**
      * Helper function to add actual entries
      * @param \DOMNode     $element Node to process
