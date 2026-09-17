@@ -104,7 +104,7 @@ class RSS
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
-                if ((int)$feed_settings['image']['width'] > 144) {
+                if ((int) $feed_settings['image']['width'] > 144) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`width` property for `image` tag is more than 144 in settings for the feed');
                 }
@@ -114,27 +114,27 @@ class RSS
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
-                if ((int)$feed_settings['image']['height'] > 400) {
+                if ((int) $feed_settings['image']['height'] > 400) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('`height` property for `image` tag is more than 400 in settings for the feed');
                 }
             }
         }
         // Check skipHours
-        if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
+        if (!empty($feed_settings['skipHours']) && \is_array($feed_settings['skipHours'])) {
             foreach ($feed_settings['skipHours'] as $hour) {
                 if (!\is_numeric($hour)) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
-                if ((int)$hour < 0 || (int)$hour > 23) {
+                if ((int) $hour < 0 || (int) $hour > 23) {
                     Headers::clientReturn(500, false);
                     throw new \UnexpectedValueException('Hour property for `skipHours` tag is outside of 0-23 range in settings for the feed');
                 }
             }
         }
         // Check skipDays
-        if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
+        if (!empty($feed_settings['skipDays']) && \is_array($feed_settings['skipDays'])) {
             foreach ($feed_settings['skipDays'] as $day) {
                 if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
                     Headers::clientReturn(500, false);
@@ -168,7 +168,7 @@ class RSS
         $root->appendChild($feed->createElement('pubDate', $feed_settings['pubDate']));
         $root->appendChild($feed->createElement('lastBuildDate', $feed_settings['lastBuildDate']));
         if (!empty($feed_settings['language']) && Common::langCodeCheck($feed_settings['language'])) {
-            $root->appendChild($feed->createElement('language', mb_strtolower($feed_settings['language'], 'UTF-8')));
+            $root->appendChild($feed->createElement('language', \mb_strtolower($feed_settings['language'], 'UTF-8')));
         }
         if (!empty($feed_settings['copyright'])) {
             $root->appendChild($feed->createElement('copyright', $feed_settings['copyright']));
@@ -190,10 +190,10 @@ class RSS
             $root->appendChild($cloud);
         }
         if (!empty($feed_settings['ttl'])) {
-            $root->appendChild($feed->createElement('ttl', (string)(int)$feed_settings['ttl']));
+            $root->appendChild($feed->createElement('ttl', (string) (int) $feed_settings['ttl']));
         }
         // Add categories
-        if (!empty($feed_settings['categories']) && is_array($feed_settings['categories'])) {
+        if (!empty($feed_settings['categories']) && \is_array($feed_settings['categories'])) {
             foreach ($feed_settings['categories'] as $cat) {
                 $root->appendChild($feed->createElement('category', $cat));
             }
@@ -205,21 +205,21 @@ class RSS
             $image->appendChild($feed->createElement('title', $feed_settings['title']));
             $image->appendChild($feed->createElement('link', Common::htmlToRFC3986($feed_settings['link'])));
             if (!empty($feed_settings['image']['width'])) {
-                $image->appendChild($feed->createElement('width', (string)(int)$feed_settings['image']['width']));
+                $image->appendChild($feed->createElement('width', (string) (int) $feed_settings['image']['width']));
             }
             if (!empty($feed_settings['image']['height'])) {
-                $image->appendChild($feed->createElement('height', (string)(int)$feed_settings['image']['height']));
+                $image->appendChild($feed->createElement('height', (string) (int) $feed_settings['image']['height']));
             }
         }
         // Add skipDays
-        if (!empty($feed_settings['skipDays']) && is_array($feed_settings['skipDays'])) {
+        if (!empty($feed_settings['skipDays']) && \is_array($feed_settings['skipDays'])) {
             $skip_days = $root->appendChild($feed->createElement('skipDays'));
             foreach ($feed_settings['skipDays'] as $day) {
                 $skip_days->appendChild($feed->createElement('day', $day));
             }
         }
         // Add skipHours
-        if (!empty($feed_settings['skipHours']) && is_array($feed_settings['skipHours'])) {
+        if (!empty($feed_settings['skipHours']) && \is_array($feed_settings['skipHours'])) {
             $skip_hours = $root->appendChild($feed->createElement('skipHours'));
             foreach ($feed_settings['skipHours'] as $hour) {
                 $skip_hours->appendChild($feed->createElement('hour', $hour));
@@ -283,7 +283,7 @@ class RSS
         if (!empty($entry['enclosure_url'])) {
             $enclosure = $element->appendChild($feed->createElement('enclosure'));
             $enclosure->setAttribute('url', $entry['enclosure_url']);
-            $enclosure->setAttribute('length', (string)(int)$entry['enclosure_length']);
+            $enclosure->setAttribute('length', (string) (int) $entry['enclosure_length']);
             $enclosure->setAttribute('type', $entry['enclosure_type']);
         }
     }

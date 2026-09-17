@@ -88,7 +88,7 @@ class Links
         foreach ($links as $link) {
             self::disablePreload($link);
             // Replace multiple whitespaces with single space and trim
-            $link['rel'] = mb_trim(\preg_replace('/\s{2,}/u', ' ', $link['rel'] ?? ''), null, 'UTF-8');
+            $link['rel'] = \mb_trim(\preg_replace('/\s{2,}/u', ' ', $link['rel'] ?? ''), null, 'UTF-8');
             // Unset rel if it's empty
             if (Sanitize::whiteString($link['rel'])) {
                 unset($link['rel']);
@@ -257,11 +257,11 @@ class Links
     private static function cleanLink(array &$link, #[ExpectedValues(['header', 'head', 'body'])] string $type): bool
     {
         // referrerpolicy is allowed to have limited set of values with `strict-origin-when-cross-origin` being default
-        if (\array_key_exists('referrerpolicy', $link) && !\in_array(mb_strtolower($link['referrerpolicy'], 'UTF-8'), self::REFERRER_POLICY, true)) {
+        if (\array_key_exists('referrerpolicy', $link) && !\in_array(\mb_strtolower($link['referrerpolicy'], 'UTF-8'), self::REFERRER_POLICY, true)) {
             $link['referrerpolicy'] = 'strict-origin-when-cross-origin';
         }
         // `fetchpriority` is allowed to have limited set of values with `auto` being default
-        if (\array_key_exists('fetchpriority', $link) && !\in_array(mb_strtolower($link['fetchpriority'], 'UTF-8'), self::FETCH_PRIORITY, true)) {
+        if (\array_key_exists('fetchpriority', $link) && !\in_array(\mb_strtolower($link['fetchpriority'], 'UTF-8'), self::FETCH_PRIORITY, true)) {
             $link['fetchpriority'] = 'auto';
         }
         // Remove `hreflang`, if it's a wrong language value
@@ -273,7 +273,7 @@ class Links
             unset($link['sizes']);
         }
         // Sanitize `crossorigin`, if set
-        if (\array_key_exists('crossorigin', $link) && (empty($link['crossorigin']) || !\in_array(mb_strtolower($link['crossorigin'], 'UTF-8'), ['anonymous', 'use-credentials'], true))) {
+        if (\array_key_exists('crossorigin', $link) && (empty($link['crossorigin']) || !\in_array(\mb_strtolower($link['crossorigin'], 'UTF-8'), ['anonymous', 'use-credentials'], true))) {
             $link['crossorigin'] = 'anonymous';
         }
         // Sanitize `title` if it's set
@@ -320,7 +320,7 @@ class Links
         }
         // Remove unsupported attributes
         foreach ($link as $attribute => $value) {
-            if (!\in_array(mb_strtolower($attribute, 'UTF-8'), self::ALLOWED_ATTRIBUTES, true)) {
+            if (!\in_array(\mb_strtolower($attribute, 'UTF-8'), self::ALLOWED_ATTRIBUTES, true)) {
                 unset($link[$attribute]);
             }
         }
@@ -434,7 +434,7 @@ class Links
             return false;
         }
         // Validate `blocking` value
-        if (isset($link['rel'], $link['blocking']) && mb_strtolower($link['blocking'], 'UTF-8') !== 'render') {
+        if (isset($link['rel'], $link['blocking']) && \mb_strtolower($link['blocking'], 'UTF-8') !== 'render') {
             return false;
         }
         // `imagesrcset` is an image candidate with width descriptor, we need imagesizes as well
@@ -449,10 +449,10 @@ class Links
             if ((\preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) !== 1)) {
                 return false;
             }
-            if ((\preg_match('/((^| )(preload)( |$))+/uir', $link['rel']) === 1) && !\in_array(mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_PRELOAD, true)) {
+            if ((\preg_match('/((^| )(preload)( |$))+/uir', $link['rel']) === 1) && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_PRELOAD, true)) {
                 return false;
             }
-            if ((\preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1) && !\in_array(mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_MODULEPRELOAD, true)) {
+            if ((\preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1) && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_MODULEPRELOAD, true)) {
                 return false;
             }
         }

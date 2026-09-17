@@ -54,7 +54,7 @@ class IRI
     {
         // Validate scheme, if provided
         if (!empty($scheme)) {
-            if (is_string($scheme)) {
+            if (\is_string($scheme)) {
                 $scheme = [$scheme];
             }
             if (\preg_match('/^('.\implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
@@ -76,7 +76,7 @@ class IRI
     public static function iriToUri(string $iri): ?string
     {
         // Check that UTF-8 is used
-        if (!mb_check_encoding($iri, 'UTF-8')) {
+        if (!\mb_check_encoding($iri, 'UTF-8')) {
             return null;
         }
         // Early check for characters unsupported as per RFC 8820 and 3987. Using respective groups for maintainability, plus adding a `%` sign (for URL encoding)
@@ -84,10 +84,10 @@ class IRI
             return null;
         }
         // Ensure only valid UTF-8 characters are present
-        $iri = mb_scrub($iri, 'UTF-8');
+        $iri = \mb_scrub($iri, 'UTF-8');
         // Try parsing the IRI first
         $parsed_iri = self::parseUri($iri);
-        if (!is_array($parsed_iri)) {
+        if (!\is_array($parsed_iri)) {
             return null;
         }
         // If there is no scheme, then it may be a relative path, and thus in some cases it's not possible to determine if the first part (before first slash) is a domain or actual part of a path
@@ -96,7 +96,7 @@ class IRI
             return null;
         }
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-        $parsed_iri['scheme'] = mb_strtolower($parsed_iri['scheme'], 'UTF-8');
+        $parsed_iri['scheme'] = \mb_strtolower($parsed_iri['scheme'], 'UTF-8');
         // If we have a scheme but somehow lack a host - that's also abnormal
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (empty($parsed_iri['host'])) {
@@ -104,13 +104,13 @@ class IRI
         }
         // Convert host to ASCII
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-        $ascii_host = idn_to_ascii($parsed_iri['host']);
+        $ascii_host = \idn_to_ascii($parsed_iri['host']);
         // If it's false - return
         if ($ascii_host === false) {
             return null;
         }
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-        $parsed_iri['host'] = mb_strtolower($ascii_host, 'UTF-8');
+        $parsed_iri['host'] = \mb_strtolower($ascii_host, 'UTF-8');
         // Check if a valid domain name or IP
         if (!\filter_var($ascii_host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME) &&
             !\filter_var($ascii_host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4 | \FILTER_FLAG_IPV6)) {
@@ -186,7 +186,7 @@ class IRI
     public static function parseUri(string $uri): array|false
     {
         // Trim first
-        $uri = mb_trim($uri, null, 'UTF-8');
+        $uri = \mb_trim($uri, null, 'UTF-8');
         $result = \preg_match('/^(?:(?<scheme>[^:\/?#]+):)?(?:\/\/(?:(?<user>[^:@\/]+)(?::(?<pass>[^:@\/]+))?@)?(?<host>[^\/?#:]*)(?::(?<port>\d+))?)?(?<path>[^?#]*)(?:\?(?<query>[^#]*))?(?:#(?<fragment>.*))?$/ui', $uri, $matches);
         // If the match failed somehow or if the array is empty - return false
         if ($result !== 1 || \count($matches) === 0) {
@@ -194,7 +194,7 @@ class IRI
         }
         // Remove the numeric keys
         foreach ($matches as $key => $value) {
-            if (is_int($key)) {
+            if (\is_int($key)) {
                 unset($matches[$key]);
             }
         }

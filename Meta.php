@@ -32,16 +32,16 @@ class Meta
             return '';
         }
         // If card type is not set or is unsupported - use 'summary'
-        if (empty($general['card']) || !in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'])) {
+        if (empty($general['card']) || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'])) {
             $general['card'] = 'summary';
         }
         // Add main meta tag
         $output = '<meta name="twitter:card" content="'.\htmlspecialchars($general['card'], \ENT_QUOTES | \ENT_SUBSTITUTE).'" />';
         // Add title
-        $output .= '<meta name="twitter:title" content="'.mb_substr(\htmlspecialchars($general['title'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 70, 'UTF-8').'" />';
+        $output .= '<meta name="twitter:title" content="'.\mb_substr(\htmlspecialchars($general['title'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 70, 'UTF-8').'" />';
         // Add site if not empty and valid
         if (!empty($general['site']) && \preg_match('/^@?(\w){4,15}$/', $general['site']) === 1 && \preg_match('/^.*(twitter|admin).*$/i', $general['site']) === 0) {
-            $output .= '<meta name="twitter:site" content="'.(str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
+            $output .= '<meta name="twitter:site" content="'.(\str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
         }
         // Add site:id if not empty and valid
         if (!empty($general['site:id']) && \preg_match('/^\d+$/', $general['site:id']) === 1) {
@@ -49,7 +49,7 @@ class Meta
         }
         // Add creator if not empty and valid
         if (!empty($general['creator']) && \preg_match('/^@?(\w){4,15}$/', $general['creator']) === 1 && \preg_match('/^.*(twitter|admin).*$/i', $general['creator']) === 0) {
-            $output .= '<meta name="twitter:creator" content="'.(str_starts_with($general['creator'], '@') ? '' : '@').$general['creator'].'" />';
+            $output .= '<meta name="twitter:creator" content="'.(\str_starts_with($general['creator'], '@') ? '' : '@').$general['creator'].'" />';
         }
         // Add creator:id if not empty and valid
         if (!empty($general['creator:id']) && \preg_match('/^\d+$/', $general['creator:id']) === 1) {
@@ -57,7 +57,7 @@ class Meta
         }
         // Add description if not empty
         if (!empty($general['description'])) {
-            $output .= '<meta name="twitter:description" content="'.mb_substr(\htmlspecialchars($general['description'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 200, 'UTF-8').'" />';
+            $output .= '<meta name="twitter:description" content="'.\mb_substr(\htmlspecialchars($general['description'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 200, 'UTF-8').'" />';
         }
         // Add images' tags, that are not use with 'app' cards
         if ($general['card'] !== 'app') {
@@ -67,7 +67,7 @@ class Meta
             }
             // Add image description
             if (!empty($general['image:alt'])) {
-                $output .= '<meta name="twitter:image:alt" content="'.mb_substr(\htmlspecialchars($general['image:alt'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 420, 'UTF-8').'" />';
+                $output .= '<meta name="twitter:image:alt" content="'.\mb_substr(\htmlspecialchars($general['image:alt'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 420, 'UTF-8').'" />';
             }
         }
         // Process player tags
@@ -160,14 +160,14 @@ class Meta
         }
         // If allowDomainApiCalls is not set, set it to true by default
         if (isset($general['allowDomainApiCalls'])) {
-            $general['allowDomainApiCalls'] = (bool)$general['allowDomainApiCalls'];
+            $general['allowDomainApiCalls'] = (bool) $general['allowDomainApiCalls'];
             $general['allowDomainApiCalls'] = ($general['allowDomainApiCalls'] ? 'true' : 'false');
         } else {
             $general['allowDomainApiCalls'] = 'true';
         }
         // If allowDomainApiCalls is not set, set it to true by default
         if (isset($general['allowDomainMetaTags'])) {
-            $general['allowDomainMetaTags'] = (bool)$general['allowDomainMetaTags'];
+            $general['allowDomainMetaTags'] = (bool) $general['allowDomainMetaTags'];
             $general['allowDomainMetaTags'] = ($general['allowDomainMetaTags'] ? 'true' : 'false');
         } else {
             $general['allowDomainMetaTags'] = 'true';
@@ -220,7 +220,7 @@ class Meta
                     $links = 0;
                     foreach ($notifications as $key => $value) {
                         // Skip frequency and cycle
-                        if (!in_array($key, ['frequency', 'cycle'])) {
+                        if (!\in_array($key, ['frequency', 'cycle'])) {
                             // Remove any extra links
                             if ($links > 5) {
                                 unset($notifications[$key]);
@@ -255,12 +255,12 @@ class Meta
                 // Skip separators
                 if ($task !== 'separator') {
                     // Validate settings
-                    if (\is_array($task) && !empty($task['name']) && is_string($task['name']) &&
-                        !empty($task['action-uri']) && is_string($task['action-uri']) &&
-                        !empty($task['icon-uri']) && is_string($task['icon-uri']) && \preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
+                    if (\is_array($task) && !empty($task['name']) && \is_string($task['name']) &&
+                        !empty($task['action-uri']) && \is_string($task['action-uri']) &&
+                        !empty($task['icon-uri']) && \is_string($task['icon-uri']) && \preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
                     ) {
                         $tasks_count++;
-                        if (empty($task['window-type']) || !in_array($task['window-type'], ['tab', 'self', 'window'])) {
+                        if (empty($task['window-type']) || !\in_array($task['window-type'], ['tab', 'self', 'window'])) {
                             $tasks[$key]['window-type'] = 'tab';
                         }
                     } else {
@@ -387,7 +387,7 @@ class Meta
         foreach ($admins as $key => $admin) {
             if (\is_numeric($admin)) {
                 // Convert to int
-                $admins[$key] = (int)$admin;
+                $admins[$key] = (int) $admin;
             } else {
                 // Remove value
                 unset($admins[$key]);

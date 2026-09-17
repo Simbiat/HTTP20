@@ -7,7 +7,6 @@ namespace Simbiat\http20;
 use Simbiat\SandClock;
 
 use Simbiat\StringHelpers\Convert;
-use function is_int, is_float, is_string, is_array;
 
 /**
  * Functions, that generate useful HTML code.
@@ -48,36 +47,36 @@ class HTML
             }
             if (!empty($item['end_time'])) {
                 // Ensure we have an integer time or something that can be converted to one
-                if (is_string($item['end_time'])) {
+                if (\is_string($item['end_time'])) {
                     // Convert string
                     $item['end_time'] = \strtotime($item['end_time']);
                     if ($item['end_time'] === false) {
                         // Failed to convert, skipping item
                         continue;
                     }
-                } elseif (!is_int($item['end_time']) && !is_float($item['end_time'])) {
+                } elseif (!\is_int($item['end_time']) && !\is_float($item['end_time'])) {
                     // If not int or float - skip item
                     continue;
-                } elseif (is_float($item['end_time'])) {
+                } elseif (\is_float($item['end_time'])) {
                     // Convert float to integer
-                    $item['end_time'] = (int)$item['end_time'];
+                    $item['end_time'] = (int) $item['end_time'];
                 }
             }
             if (!empty($item['start_time'])) {
                 // Ensure we have an integer time or something that can be converted to one
-                if (is_string($item['start_time'])) {
+                if (\is_string($item['start_time'])) {
                     // Convert string
                     $item['start_time'] = \strtotime($item['start_time']);
                     if ($item['start_time'] === false) {
                         // Failed to convert, skipping item
                         continue;
                     }
-                } elseif (!is_int($item['end_time']) && !is_float($item['start_time'])) {
+                } elseif (!\is_int($item['end_time']) && !\is_float($item['start_time'])) {
                     // If not int or float - skip item
                     continue;
-                } elseif (is_float($item['start_time'])) {
+                } elseif (\is_float($item['start_time'])) {
                     // Convert float to integer
-                    $item['start_time'] = (int)$item['start_time'];
+                    $item['start_time'] = (int) $item['start_time'];
                 }
             }
             // Check if end_time is set
@@ -172,9 +171,9 @@ class HTML
                 }
                 // List responsibilities
                 if (!empty($item['responsibilities'])) {
-                    if (is_string($item['responsibilities'])) {
+                    if (\is_string($item['responsibilities'])) {
                         $output .= '<div class="timeline_responsibilities"><b>Responsibilities: </b>'.$item['responsibilities'].'</div>';
-                    } elseif (is_array($item['responsibilities'])) {
+                    } elseif (\is_array($item['responsibilities'])) {
                         $output .= '<div class="timeline_responsibilities"><b>Responsibilities:</b></div><ul class="timeline_responsibilities_list">';
                         foreach ($item['responsibilities'] as $responsibility) {
                             $output .= '<li>'.$responsibility.'</li>';
@@ -184,9 +183,9 @@ class HTML
                 }
                 // List achievements
                 if (!empty($item['achievements'])) {
-                    if (is_string($item['achievements'])) {
+                    if (\is_string($item['achievements'])) {
                         $output .= '<div class="timeline_achievements"><b>Achievements: </b>'.$item['achievements'].'</div>';
-                    } elseif (is_array($item['achievements'])) {
+                    } elseif (\is_array($item['achievements'])) {
                         $output .= '<div class="timeline_achievements"><b>Achievements:</b></div><ul class="timeline_achievements_list">';
                         foreach ($item['achievements'] as $achievement) {
                             $output .= '<li>'.$achievement.'</li>';
@@ -205,7 +204,7 @@ class HTML
                     $brs = $item['time'] - $to_order[$key + 1]['time'];
                 }
                 // Convert difference to number of months
-                $brs = (int)\floor($brs / 2592000);
+                $brs = (int) \floor($brs / 2592000);
                 // Limit it to 12
                 if ($brs > $br_limit) {
                     $brs = $br_limit;
@@ -345,7 +344,7 @@ class HTML
         // Sanitize settings for non-numeric settings
         foreach ($non_numerics as $key => $value) {
             // If not a string - revert text values to defaults
-            if (!is_string($value)) {
+            if (!\is_string($value)) {
                 $value = match ($key) {
                     'first_text' => 'First page',
                     'prev_text' => 'Previous page ($number)',
@@ -372,7 +371,7 @@ class HTML
         // Increase the count for pagination
         self::$paginations++;
         // Calculate maximum number of numeric links to left/right of the current one
-        $side_numerics = (int)\floor(($max_numerics - 1) / 2);
+        $side_numerics = (int) \floor(($max_numerics - 1) / 2);
         // Calculate starting page
         $start_page = $current - $side_numerics;
         if ($start_page < 1) {
@@ -426,7 +425,7 @@ class HTML
         }
         // Add a link to the previous page
         if (!empty($non_numerics['prev'])) {
-            $output .= '<li class="pagination_li pagination_prev" aria-label="'.\str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.\str_replace('$number', (string)($prev_page), $non_numerics['prev_text']).'"' : ' aria-disabled="true"').'>';
+            $output .= '<li class="pagination_li pagination_prev" aria-label="'.\str_replace('$number', (string) ($prev_page), $non_numerics['prev_text']).'"'.($current !== 1 ? ' '.$tooltip.'="'.\str_replace('$number', (string) ($prev_page), $non_numerics['prev_text']).'"' : ' aria-disabled="true"').'>';
             if ($current !== 1 && $total !== $max_numerics) {
                 $output .= '<a class="pagination_link" href="'.$prefix.($prev_page).'"><span class="pagination_span">'.$non_numerics['prev'].'</span></a>';
             } else {
@@ -446,7 +445,7 @@ class HTML
         }
         // Add a link to the next page
         if (!empty($non_numerics['next'])) {
-            $output .= '<li class="pagination_li pagination_next" aria-label="'.\str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.\str_replace('$number', (string)($next_page), $non_numerics['next_text']).'"' : ' aria-disabled="true"').'>';
+            $output .= '<li class="pagination_li pagination_next" aria-label="'.\str_replace('$number', (string) ($next_page), $non_numerics['next_text']).'"'.($current !== $total ? ' '.$tooltip.'="'.\str_replace('$number', (string) ($next_page), $non_numerics['next_text']).'"' : ' aria-disabled="true"').'>';
             if ($current !== $total && $total !== $max_numerics) {
                 $output .= '<a class="pagination_link" href="'.$prefix.($next_page).'"><span class="pagination_span">'.$non_numerics['next'].'</span></a>';
             } else {
@@ -456,7 +455,7 @@ class HTML
         }
         // Add a link to the last page
         if (!empty($non_numerics['last'])) {
-            $output .= '<li class="pagination_li pagination_last" aria-label="'.\str_replace('$number', (string)$total, $non_numerics['last_text']).'"'.($current < ($total - $side_numerics) ? ' '.$tooltip.'="'.\str_replace('$number', (string)$total, $non_numerics['last_text']).'"' : ' aria-disabled="true"').'>';
+            $output .= '<li class="pagination_li pagination_last" aria-label="'.\str_replace('$number', (string) $total, $non_numerics['last_text']).'"'.($current < ($total - $side_numerics) ? ' '.$tooltip.'="'.\str_replace('$number', (string) $total, $non_numerics['last_text']).'"' : ' aria-disabled="true"').'>';
             if ($current < ($total - $side_numerics) && $total !== $max_numerics) {
                 $output .= '<a class="pagination_link" href="'.$prefix.$total.'"><span class="pagination_span">'.$non_numerics['last'].'</span></a>';
             } else {
@@ -473,11 +472,11 @@ class HTML
             $links_array = [];
             if ($current !== 1) {
                 $links_array[] = ['href' => $prefix.'1', 'rel' => 'first prefetch', 'title' => $non_numerics['first_text']];
-                $links_array[] = ['href' => $prefix.($prev_page), 'rel' => 'prev prefetch', 'title' => \str_replace('$number', (string)($prev_page), $non_numerics['prev_text'])];
+                $links_array[] = ['href' => $prefix.($prev_page), 'rel' => 'prev prefetch', 'title' => \str_replace('$number', (string) ($prev_page), $non_numerics['prev_text'])];
             }
             if ($current !== $total) {
-                $links_array[] = ['href' => $prefix.$total, 'rel' => 'last prefetch', 'title' => \str_replace('$number', (string)$total, $non_numerics['last_text'])];
-                $links_array[] = ['href' => $prefix.($next_page), 'rel' => 'next prefetch', 'title' => \str_replace('$number', (string)($next_page), $non_numerics['next_text'])];
+                $links_array[] = ['href' => $prefix.$total, 'rel' => 'last prefetch', 'title' => \str_replace('$number', (string) $total, $non_numerics['last_text'])];
+                $links_array[] = ['href' => $prefix.($next_page), 'rel' => 'next prefetch', 'title' => \str_replace('$number', (string) ($next_page), $non_numerics['next_text'])];
             }
             // Send the headers if this was requested
             if ($headers) {

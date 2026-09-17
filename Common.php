@@ -16,30 +16,35 @@ class Common
 {
     /**
      * Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses a portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47
+     *
      * @var string
      */
     public const string LANGUAGE_ENC_REGEX = /** @lang PhpRegExp */
         '(UTF-8|ISO-8859-1|[!#$%&+\-^_`{}~a-zA-Z0-9]+)\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
     /**
      * Language values as per https://www.ietf.org/rfc/bcp/bcp47.txt (essentially just part of the above value)
+     *
      * @var string
      */
     public const string LANGUAGE_TAG_REGEX = /** @lang PhpRegExp */
         '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
     /**
      * Regex for MIME type
+     *
      * @var string
      */
     public const string MIME_REGEX = /** @lang PhpRegExp */
         '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
     /**
      * Linkage of extensions to MIME types
+     *
      * @var array
      */
     public static array $extension_to_mime = [];
 
     /**
      * Get MIME type based on extension
+     *
      * @param string $extension Extension to get MIME for
      * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
      *
@@ -53,6 +58,7 @@ class Common
 
     /**
      * Get extension based on MIME type
+     *
      * @param string $mime      MIME to get an extension for
      * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
      *
@@ -73,7 +79,7 @@ class Common
     {
         if (Sanitize::whiteString($mime_list)) {
             // Check if it's a valid JSON string
-            if (json_validate($mime_list)) {
+            if (\json_validate($mime_list)) {
                 try {
                     self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
                     return;
@@ -96,6 +102,7 @@ class Common
 
     /**
      * Wrapper for date(), that handles strings and allows validation of the result
+     *
      * @param string|int|float|null $time        Time value
      * @param string                $format      Expected format
      * @param string                $valid_regex Regex to use for validation
@@ -105,15 +112,15 @@ class Common
     public static function valueToTime(string|int|float|null $time, string $format, string $valid_regex = ''): string
     {
         // If we want to use a constant, but it was sent as a string
-        if (str_starts_with(mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
+        if (\str_starts_with(\mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
             $format = \constant($format);
         }
         if (empty($time)) {
             $time = \date($format);
         } elseif (\is_numeric($time)) {
             // Ensure we use int
-            $time = \date($format, (int)$time);
-        } elseif (is_string($time)) {
+            $time = \date($format, (int) $time);
+        } elseif (\is_string($time)) {
             // Attempt to convert string to time
             $time = \date($format, \strtotime($time));
         } else {
@@ -146,7 +153,7 @@ class Common
         $postfix = '';
         if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
             // Attempt brotli compression, if available and client supports it
-            if (extension_loaded('brotli') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
+            if (\extension_loaded('brotli') && \str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
                 // Compress string
                 $string = \brotli_compress($string, 11, \BROTLI_TEXT);
                 // Send header with format
@@ -155,7 +162,7 @@ class Common
                 }
                 $postfix = '-br';
                 // Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
-            } elseif (extension_loaded('zlib') && str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
+            } elseif (\extension_loaded('zlib') && \str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
                 // It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
                 // GZipping the string
                 $string = \gzcompress($string, 9, \FORCE_GZIP);
@@ -173,7 +180,7 @@ class Common
         }
         // Some HTTP methods do not support body, thus we need to ensure it's not sent.
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
-        if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])) {
+        if (\in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])) {
             // Send the output
             echo $string;
         }
@@ -184,19 +191,21 @@ class Common
 
     /**
      * Function to check if string is a valid language code
+     *
      * @param string $string
      *
      * @return bool
      */
     public static function langCodeCheck(string $string): bool
     {
-        return in_array(mb_strtolower($string, 'UTF-8'),
-            ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk']
+        return \in_array(\mb_strtolower($string, 'UTF-8'),
+            ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk'],
         );
     }
 
     /**
      * Function does the same as `rawurlencode`, but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use `htmlentities`, but otherwise break HTML/XML
+     *
      * @param string $string String to encode
      * @param bool   $full   Means that all characters will be converted (useful when text inside a tag). If `false` only `<` and `&` are converted (useful when inside attribute). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML
      *
@@ -230,7 +239,7 @@ class Common
             throw new \UnexpectedValueException('Empty set of files provided to `reductor` function');
         }
         // Check if a string
-        if (is_string($files)) {
+        if (\is_string($files)) {
             // Convert to array
             $files = [$files];
         }
@@ -266,7 +275,7 @@ class Common
         }
         // Minify
         if ($minify) {
-            switch (mb_strtolower($type, 'UTF-8')) {
+            switch (\mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     $content = \preg_replace(
                         [
@@ -279,14 +288,14 @@ class Common
                             // Minify object attribute(s) except JSON attribute(s). From `{'foo':'bar'}` to `{foo:'bar'}`
                             '#([{,])(\')(\d+|[a-z_][a-z0-9_]*)\2(?=:)#i',
                             // --ibid. From `foo['bar']` to `foo.bar`
-                            '#([a-z0-9_)\]])\[([\'"])([a-z_][a-z0-9_]*)\2]#i'
+                            '#([a-z0-9_)\]])\[([\'"])([a-z_][a-z0-9_]*)\2]#i',
                         ],
                         [
                             '$1',
                             '$1$2',
                             '}',
                             '$1$3',
-                            '$1.$3'
+                            '$1.$3',
                         ],
                         $content);
                     break;
@@ -313,7 +322,7 @@ class Common
                             // Replace `(border|outline):none` with `(border|outline):0`
                             '#(?<=[{;])(border|outline):none(?=[;}!])#',
                             // Remove empty selector(s)
-                            '#(/\*(?>.*?\*/))|(^|[{}])[^\s{}]+{}#s'
+                            '#(/\*(?>.*?\*/))|(^|[{}])[^\s{}]+{}#s',
                         ],
                         [
                             '$1',
@@ -326,7 +335,7 @@ class Common
                             '$1$2$4$5',
                             '$1$2$3',
                             '$1:0',
-                            '$1$2'
+                            '$1$2',
                         ],
                         $content);
                     break;
@@ -352,7 +361,7 @@ class Common
                             '#(&nbsp;)&nbsp;(?![<\s])#', // clean up ...
                             '#(?<=>)(&nbsp;)(?=<)#', // --ibid
                             // Remove HTML comment(s) except IE comment(s)
-                            '#\s*<!--(?!\[if\s).*?-->\s*|(?<!>)\n+(?=<[^!])#s'
+                            '#\s*<!--(?!\[if\s).*?-->\s*|(?<!>)\n+(?=<[^!])#s',
                         ],
                         [
                             '<$1$2</$1>',
@@ -364,7 +373,7 @@ class Common
                             '<$1$2',
                             '$1 ',
                             '$1',
-                            ''
+                            '',
                         ],
                         $content);
                     break;
@@ -372,7 +381,7 @@ class Common
         }
         if (empty($to_file)) {
             // Send the appropriate header
-            switch (mb_strtolower($type, 'UTF-8')) {
+            switch (\mb_strtolower($type, 'UTF-8')) {
                 case 'js':
                     if (!\headers_list()) {
                         \header('Content-Type: application/javascript; charset=utf-8');
@@ -402,7 +411,8 @@ class Common
      * @return void
      * @noinspection PhpUsageOfSilenceOperatorInspection
      */
-    #[NoReturn] public static function forceClose(): void
+    #[NoReturn]
+    public static function forceClose(): void
     {
         // Close session
         if (\session_status() === \PHP_SESSION_ACTIVE) {

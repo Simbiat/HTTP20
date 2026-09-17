@@ -33,7 +33,7 @@ class Atom
         }
         $feed_settings['title'] = $title;
         // validate text type
-        if (!in_array(mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'])) {
+        if (!\in_array(\mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'])) {
             Headers::clientReturn(500, false);
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
@@ -168,7 +168,7 @@ class Atom
     private static function atomElementValidator(array &$elements, string $type = 'author', string $element_name = 'name'): void
     {
         foreach ($elements as $key => $element_to_val) {
-            if (!is_array($element_to_val)) {
+            if (!\is_array($element_to_val)) {
                 unset($elements[$key]);
                 continue;
             }
@@ -185,7 +185,7 @@ class Atom
                     unset($elements[$key]);
                     continue;
                 }
-                if (!empty($element_to_val['rel']) && !in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
+                if (!empty($element_to_val['rel']) && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])) {
                     unset($elements[$key]);
                     continue;
                 }

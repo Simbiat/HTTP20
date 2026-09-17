@@ -23,7 +23,7 @@ class Sitemap
     public static function sitemap(array $links, #[ExpectedValues(['xml', 'index', 'html', 'text', 'txt'])] string $format = 'xml', bool $direct_output = false): string
     {
         // Sanitize format
-        if (!in_array($format, ['xml', 'index', 'html', 'text', 'txt'])) {
+        if (!\in_array($format, ['xml', 'index', 'html', 'text', 'txt'])) {
             $format = 'xml';
         }
         // Validate the links if the list is not empty. I did not find any recommendations for empty sitemaps, and I do not see a technical reason to break here. If sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
@@ -31,7 +31,7 @@ class Sitemap
         // Allow only 50000 links
         $links = \array_slice($links, 0, 50000, true);
         // Generate the output string
-        if (in_array($format, ['text', 'txt'])) {
+        if (\in_array($format, ['text', 'txt'])) {
             $output = \implode("\r\n", \array_column($links, 'loc'));
         } else {
             // Set initial output
@@ -42,8 +42,8 @@ class Sitemap
             };
             // Set initial string length
             $str_len = match ($format) {
-                'xml' => mb_strlen($output, 'UTF-8') + mb_strlen('</urlset>', 'UTF-8'),
-                'index' => mb_strlen($output, 'UTF-8') + mb_strlen('</sitemapindex>', 'UTF-8'),
+                'xml' => \mb_strlen($output, 'UTF-8') + \mb_strlen('</urlset>', 'UTF-8'),
+                'index' => \mb_strlen($output, 'UTF-8') + \mb_strlen('</sitemapindex>', 'UTF-8'),
                 default => 0,
             };
             foreach ($links as $key => $link) {
@@ -56,7 +56,7 @@ class Sitemap
                     default => '',
                 };
                 // Get its length
-                $len_to_add = mb_strlen($to_add, 'UTF-8');
+                $len_to_add = \mb_strlen($to_add, 'UTF-8');
                 // Check that we are not exceeding the limit of 50 MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather than from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
                 if (($str_len + $len_to_add) < 52428800) {
                     $output .= $to_add;
@@ -137,7 +137,7 @@ class Sitemap
                 throw new \UnexpectedValueException('No `loc` value provided for link `'.$key.'`');
             }
             // Check if `loc` has same base URL
-            if (mb_strripos($link['loc'], $first, 0, 'UTF-8') !== 0) {
+            if (\mb_strripos($link['loc'], $first, 0, 'UTF-8') !== 0) {
                 throw new \UnexpectedValueException('Link `'.$key.'` has different base URL');
             }
             // Check for duplicates
@@ -165,7 +165,7 @@ class Sitemap
             }
             if (isset($link['priority'])) {
                 if (\is_numeric($link['priority'])) {
-                    $link['priority'] = (float)$link['priority'];
+                    $link['priority'] = (float) $link['priority'];
                     if ($link['priority'] > 1.0) {
                         $links[$key]['priority'] = '1.0';
                     } elseif ($link['priority'] < 0.0) {
