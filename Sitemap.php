@@ -14,6 +14,7 @@ class Sitemap
 {
     /**
      * Function to generate sitemap in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html
+     *
      * @param array  $links         List of links to process.
      * @param string $format        Format for the output. Values `xml`, `index`, `html`, `text` or `txt` are expected.
      * @param bool   $direct_output Whether to output result directly to browser.
@@ -58,7 +59,7 @@ class Sitemap
                 // Get its length
                 $len_to_add = \mb_strlen($to_add, 'UTF-8');
                 // Check that we are not exceeding the limit of 50 MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather than from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
-                if (($str_len + $len_to_add) < 52428800) {
+                if ($str_len + $len_to_add < 52428800) {
                     $output .= $to_add;
                     $str_len += $len_to_add;
                 }
@@ -76,23 +77,28 @@ class Sitemap
                 switch ($format) {
                     case 'html':
                         \header('Content-Type: text/html; charset=utf-8');
+
                         break;
                     case 'text':
                     case 'txt':
                         \header('Content-Type: text/plain; charset=utf-8');
+
                         break;
                     default:
                         \header('Content-Type: application/xml; charset=utf-8');
+
                         break;
                 }
             }
             Common::zEcho($output);
         }
+
         return $output;
     }
 
     /**
      * Function to validate the links provided
+     *
      * @param array $links
      *
      * @return void
@@ -114,7 +120,10 @@ class Sitemap
             throw new \UnexpectedValueException('Failed to parse `loc` element as URL');
         }
         // Check that scheme and host are present
-        if (empty($first['scheme']) || empty($first['host'])) {
+        if (
+            empty($first['scheme'])
+            || empty($first['host'])
+        ) {
             throw new \UnexpectedValueException('Failed to determine scheme or host for provided links');
         }
         // Build base URL
@@ -160,7 +169,10 @@ class Sitemap
                 $links[$key]['lastmod'] = Common::valueToTime($link['lastmod'], \DATE_ATOM);
             }
             // Unset invalid changefreq
-            if (isset($link['changefreq']) && \preg_match('/^(always|hourly|daily|weekly|monthly|yearly|never)$/i', $link['changefreq']) !== 1) {
+            if (
+                isset($link['changefreq'])
+                && \preg_match('/^(always|hourly|daily|weekly|monthly|yearly|never)$/i', $link['changefreq']) !== 1
+            ) {
                 unset($links[$key]['changefreq']);
             }
             if (isset($link['priority'])) {

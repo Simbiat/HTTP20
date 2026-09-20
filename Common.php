@@ -53,6 +53,7 @@ class Common
     public static function getMimeFromExtension(string $extension, string $mime_list = ''): string|false
     {
         self::loadMime($mime_list);
+
         return self::$extension_to_mime[$extension] ?? false;
     }
 
@@ -67,6 +68,7 @@ class Common
     public static function getExtensionFromMime(string $mime, string $mime_list = ''): false|int|string
     {
         self::loadMime($mime_list);
+
         return \array_search($mime, self::$extension_to_mime, true);
     }
 
@@ -82,6 +84,7 @@ class Common
             if (\json_validate($mime_list)) {
                 try {
                     self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
+
                     return;
                 } catch (\Throwable) {
                     return;
@@ -126,12 +129,19 @@ class Common
         } else {
             throw new \UnexpectedValueException('Time provided to `valueToTime` is neither numeric or string');
         }
-        if ($format === 'c' || $format === \DATE_ATOM) {
+        if (
+            $format === 'c'
+            || $format === \DATE_ATOM
+        ) {
             $valid_regex = '/^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:Z|[+-][01]\d:[0-5]\d)$/i';
         }
-        if (!empty($valid_regex) && \preg_match($valid_regex, $time) !== 1) {
+        if (
+            !empty($valid_regex)
+            && \preg_match($valid_regex, $time) !== 1
+        ) {
             throw new \UnexpectedValueException('Date provided to `valueToTime` failed to be validated against the provided regex');
         }
+
         return $time;
     }
 
@@ -153,7 +163,10 @@ class Common
         $postfix = '';
         if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
             // Attempt brotli compression, if available and client supports it
-            if (\extension_loaded('brotli') && \str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')) {
+            if (
+                \extension_loaded('brotli')
+                && \str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'br')
+            ) {
                 // Compress string
                 $string = \brotli_compress($string, 11, \BROTLI_TEXT);
                 // Send header with format
@@ -162,7 +175,10 @@ class Common
                 }
                 $postfix = '-br';
                 // Check that zlib is loaded and client supports GZip. We are ignoring Deflate because of known inconsistencies with how it is handled by browsers depending on whether it is wrapped in Zlib or not.
-            } elseif (\extension_loaded('zlib') && \str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
+            } elseif (
+                \extension_loaded('zlib')
+                && \str_contains($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')
+            ) {
                 // It is recommended to use ob_gzhandler or zlib.output_compression, but I am getting inconsistent results with headers when using them, thus this "direct" approach.
                 // GZipping the string
                 $string = \gzcompress($string, 9, \FORCE_GZIP);
@@ -216,6 +232,7 @@ class Common
         if ($full) {
             return \str_replace(['\'', '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
         }
+
         return \str_replace(['&', '<'], ['%26', '%3C'], $string);
     }
 
@@ -257,7 +274,7 @@ class Common
                     $content .= \file_get_contents($file);
                 }
             } elseif (\is_dir($file)) {
-                $file_list = (new \RecursiveIteratorIterator((new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS)), \RecursiveIteratorIterator::SELF_FIRST));
+                $file_list = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
                 foreach ($file_list as $sub_file) {
                     if (\strcasecmp($sub_file->getExtension(), $type) === 0) {
                         // Add date to list
@@ -298,6 +315,7 @@ class Common
                             '$1.$3',
                         ],
                         $content);
+
                     break;
                 case 'css':
                     $content = \preg_replace(
@@ -338,6 +356,7 @@ class Common
                             '$1$2',
                         ],
                         $content);
+
                     break;
                 case 'html':
                     $content = \preg_replace_callback('#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
@@ -376,6 +395,7 @@ class Common
                             '',
                         ],
                         $content);
+
                     break;
             }
         }
@@ -386,16 +406,19 @@ class Common
                     if (!\headers_list()) {
                         \header('Content-Type: application/javascript; charset=utf-8');
                     }
+
                     break;
                 case 'css':
                     if (!\headers_list()) {
                         \header('Content-Type: text/css; charset=utf-8');
                     }
+
                     break;
                 default:
                     if (!\headers_list()) {
                         \header('Content-Type: text/html; charset=utf-8');
                     }
+
                     break;
             }
             // Send data to browser
@@ -409,6 +432,7 @@ class Common
      * Function to force close HTTP connection. Possible notices from `ob_end_clean` and `flush` are suppressed, since I do not see a good alternative to this, when closing connection, which may be closed in a non-planned way.
      *
      * @return void
+     *
      * @noinspection PhpUsageOfSilenceOperatorInspection
      */
     #[NoReturn]

@@ -37,20 +37,24 @@ class Sharing
         // Download is valid only in case of GET method
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             Headers::clientReturn(405, $exit);
+
             return false;
         }
         // Check that path exists and is actually a file
         if (!\is_file($file)) {
             if (isset($_SERVER['HTTP_RANGE'])) {
                 Headers::clientReturn(410, $exit);
+
                 return false;
             }
             Headers::clientReturn(404, $exit);
+
             return false;
         }
         // Check if file is readable
         if (!\is_readable($file)) {
             Headers::clientReturn(409, $exit);
+
             return false;
         }
         // Get file information (we need extension and basename)
@@ -66,7 +70,10 @@ class Sharing
         Headers::eTag($boundary, true);
         // Check if MIME was provided
         // If yes, validate its format
-        if (!empty($mime) && \preg_match('/^(('.Common::MIME_REGEX.') ?)+$/i', $mime) !== 1) {
+        if (
+            !empty($mime)
+            && \preg_match('/^(('.Common::MIME_REGEX.') ?)+$/i', $mime) !== 1
+        ) {
             // Empty invalid MIME
             $mime = '';
         }
@@ -81,8 +88,12 @@ class Sharing
         }
         // Process ranges
         $ranges = self::rangesValidate($filesize);
-        if (isset($ranges[0]) && $ranges[0] === false) {
+        if (
+            isset($ranges[0])
+            && $ranges[0] === false
+        ) {
             Headers::clientReturn(416, $exit);
+
             return false;
         }
         // Send common headers
@@ -100,6 +111,7 @@ class Sharing
         // Check if file was opened
         if ($stream === false) {
             Headers::clientReturn(500, $exit);
+
             return false;
         }
         // Open output stream
@@ -107,6 +119,7 @@ class Sharing
         // Check if stream was opened
         if ($output === false) {
             Headers::clientReturn(500, $exit);
+
             return false;
         }
         // Disable buffering. This should help limit the memory usage. At least, in some cases.
@@ -134,12 +147,15 @@ class Sharing
                 \fclose($output);
                 if ($result === false) {
                     Headers::clientReturn(500, $exit);
+
                     return false;
                 }
                 if ($exit) {
                     Headers::clientReturn(200);
+
                     return true;
                 }
+
                 return $result;
             }
             \header('Content-Type: multipart/byteranges; boundary='.$boundary);
@@ -171,6 +187,7 @@ class Sharing
                     \fclose($stream);
                     \fclose($output);
                     Headers::clientReturn(500, $exit);
+
                     return false;
                 }
                 $sent += $result;
@@ -181,8 +198,10 @@ class Sharing
             echo "\r\n--".$boundary."\r\n";
             if ($exit) {
                 Headers::clientReturn(200);
+
                 return true;
             }
+
             return $sent;
         }
         \header('Content-Type: '.$mime);
@@ -195,12 +214,15 @@ class Sharing
         \fclose($output);
         if ($result === false) {
             Headers::clientReturn(500, $exit);
+
             return false;
         }
         if ($exit) {
             Headers::clientReturn(200);
+
             return true;
         }
+
         return $result;
     }
 
@@ -231,11 +253,20 @@ class Sharing
         $max_post = self::phpMemoryToInt(\ini_get('post_max_size'));
         $max_files = (int) \ini_get('max_file_uploads');
         // Check if POST or PUT
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PUT') {
+        if (
+            $_SERVER['REQUEST_METHOD'] !== 'POST'
+            && $_SERVER['REQUEST_METHOD'] !== 'PUT'
+        ) {
             return Headers::clientReturn(405, $exit);
         }
         // Check content type if we have POST method
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && (empty($_SERVER['CONTENT_TYPE']) || \preg_match('/^multipart\/form-data(;)?/i', $_SERVER['CONTENT_TYPE']) !== 1)) {
+        if (
+            $_SERVER['REQUEST_METHOD'] === 'POST'
+            && (
+                empty($_SERVER['CONTENT_TYPE'])
+                || \preg_match('/^multipart\/form-data(;)?/i', $_SERVER['CONTENT_TYPE']) !== 1
+            )
+        ) {
             return Headers::clientReturn(415, $exit);
         }
         // Sanitize provided MIME types
@@ -257,19 +288,29 @@ class Sharing
             return Headers::clientReturn(501, $exit);
         }
         // Check that we do have some space allocated for file uploads
-        if ($max_upload === 0 || $max_post === 0 || $max_files === 0) {
+        if (
+            $max_upload === 0
+            || $max_post === 0
+            || $max_files === 0
+        ) {
             return Headers::clientReturn(507, $exit);
         }
         // Validate destination directory
         if (\is_string($dest_path)) {
             $dest_path = \realpath($dest_path);
-            if (!\is_dir($dest_path) || !\is_writable($dest_path)) {
+            if (
+                !\is_dir($dest_path)
+                || !\is_writable($dest_path)
+            ) {
                 return Headers::clientReturn(500, $exit);
             }
         } elseif (\is_array($dest_path)) {
             foreach ($dest_path as $key => $path) {
                 $dest_path[$key] = \realpath($path);
-                if (!\is_dir($dest_path[$key]) || !\is_writable($dest_path[$key])) {
+                if (
+                    !\is_dir($dest_path[$key])
+                    || !\is_writable($dest_path[$key])
+                ) {
                     return Headers::clientReturn(500, $exit);
                 }
             }
@@ -279,7 +320,13 @@ class Sharing
         // Process files based on method used
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Check that something was sent to us at all
-            if ((isset($_SERVER['CONTENT_LENGTH']) && (int) $_SERVER['CONTENT_LENGTH'] === 0) || empty($_FILES)) {
+            if (
+                (
+                    isset($_SERVER['CONTENT_LENGTH'])
+                    && (int) $_SERVER['CONTENT_LENGTH'] === 0
+                )
+                || empty($_FILES)
+            ) {
                 return Headers::clientReturn(400, $exit);
             }
             // Standardize $_FILES and also count them
@@ -317,12 +364,16 @@ class Sharing
             // Check for any errors in files, so that we can exit before actually processing the rest
             foreach ($_FILES as $field => $files) {
                 // Check that field has a folder to copy the file to
-                if (\is_array($dest_path) && !isset($dest_path[$field])) {
+                if (
+                    \is_array($dest_path)
+                    && !isset($dest_path[$field])
+                ) {
                     if ($intolerant) {
                         return Headers::clientReturn(501, $exit);
                     }
                     // Remove the file from list
                     unset($_FILES[$field]);
+
                     continue;
                 }
                 // Set destination path
@@ -343,6 +394,7 @@ class Sharing
                             }
                             // Remove the file from list
                             unset($_FILES[$field][$key]);
+
                             continue 2;
                         case \UPLOAD_ERR_PARTIAL:
                         case \UPLOAD_ERR_NO_FILE:
@@ -352,6 +404,7 @@ class Sharing
                             }
                             // Remove the file from list
                             unset($_FILES[$field][$key]);
+
                             continue 2;
                         case \UPLOAD_ERR_NO_TMP_DIR:
                         case \UPLOAD_ERR_EXTENSION:
@@ -360,6 +413,7 @@ class Sharing
                             }
                             // Remove the file from list
                             unset($_FILES[$field][$key]);
+
                             continue 2;
                         default:
                             if ($intolerant) {
@@ -367,6 +421,7 @@ class Sharing
                             }
                             // Remove the file from the list
                             unset($_FILES[$field][$key]);
+
                             continue 2;
                     }
                     // Check if the file being referenced was, indeed, sent to us via POST
@@ -381,15 +436,20 @@ class Sharing
                         }
                         // Remove the file from the list
                         unset($_FILES[$field][$key]);
+
                         continue;
                     }
-                    if ($file['size'] === 0 || empty($file['tmp_name'])) {
+                    if (
+                        $file['size'] === 0
+                        || empty($file['tmp_name'])
+                    ) {
                         // Check if tmp_name is set or $file size is empty
                         if ($intolerant) {
                             return Headers::clientReturn(400, $exit);
                         }
                         // Remove the file from the list
                         unset($_FILES[$field][$key]);
+
                         continue;
                     }
                     // Get actual MIME type
@@ -399,20 +459,30 @@ class Sharing
                         }
                         // Check against allowed MIME types if any was set and fileinfo is loaded
                         // Get MIME from the file (not relying on what was sent by client)
-                        if (!empty($allowed_mime) && !\in_array($_FILES[$field][$key]['type'], $allowed_mime, true)) {
+                        if (
+                            !empty($allowed_mime)
+                            && !\in_array($_FILES[$field][$key]['type'], $allowed_mime, true)
+                        ) {
                             if ($intolerant) {
                                 return Headers::clientReturn(415, $exit);
                             }
                             // Remove the file from the list
                             unset($_FILES[$field][$key]);
+
                             continue;
                         }
                     }
                     // Sanitize name
-                    if (isset($_FILES[$field][$key]) && $safe_filename !== false) {
+                    if (
+                        isset($_FILES[$field][$key])
+                        && $safe_filename !== false
+                    ) {
                         $_FILES[$field][$key]['name'] = \basename(Convert::safeFileName($file['name']));
                         // If name is empty or name is too long, do not process it
-                        if (empty($_FILES[$field][$key]['name']) || \mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225) {
+                        if (
+                            empty($_FILES[$field][$key]['name'])
+                            || \mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225
+                        ) {
                             if ($intolerant) {
                                 return Headers::clientReturn(400, $exit);
                             }
@@ -431,7 +501,10 @@ class Sharing
                                     $ext = '.'.$ext;
                                 } else {
                                     $ext = \pathinfo($_FILES[$field][$key]['name'], \PATHINFO_EXTENSION);
-                                    if (!empty($ext) && \is_string($ext)) {
+                                    if (
+                                        !empty($ext)
+                                        && \is_string($ext)
+                                    ) {
                                         $ext = '.'.$ext;
                                     } else {
                                         $ext = '';
@@ -484,7 +557,10 @@ class Sharing
                     }
                     foreach ($files as $file) {
                         // Move file, but only if it's not already present in destination
-                        if (!\is_file($final_path.'/'.$file['new_name']) && \move_uploaded_file($file['tmp_name'], $final_path.'/'.$file['new_name'])) {
+                        if (
+                            !\is_file($final_path.'/'.$file['new_name'])
+                            && \move_uploaded_file($file['tmp_name'], $final_path.'/'.$file['new_name'])
+                        ) {
                             $uploaded_files[] = ['server_name' => $file['new_name'], 'server_path' => $final_path, 'user_name' => $file['name'], 'size' => $file['size'], 'type' => $file['type'], 'hash' => $file['hash'], 'field' => $field];
                         } elseif ($intolerant) {
                             return $uploaded_files;
@@ -494,7 +570,10 @@ class Sharing
             }
             // Process PUT requests
         } else {
-            if (!isset($_SERVER['CONTENT_LENGTH']) || (int) $_SERVER['CONTENT_LENGTH'] === 0) {
+            if (
+                !isset($_SERVER['CONTENT_LENGTH'])
+                || (int) $_SERVER['CONTENT_LENGTH'] === 0
+            ) {
                 return Headers::clientReturn(411, $exit);
             }
             $client_size = (int) $_SERVER['CONTENT_LENGTH'];
@@ -508,7 +587,11 @@ class Sharing
                 return Headers::clientReturn(500, $exit);
             }
             // Get MIME from the file (not relying on what was sent by client)
-            if (!empty($allowed_mime) && isset($_SERVER['CONTENT_TYPE']) && !\in_array($_SERVER['CONTENT_TYPE'], $allowed_mime, true)) {
+            if (
+                !empty($allowed_mime)
+                && isset($_SERVER['CONTENT_TYPE'])
+                && !\in_array($_SERVER['CONTENT_TYPE'], $allowed_mime, true)
+            ) {
                 return Headers::clientReturn(415, $exit);
             }
             // Attempt to get name from header
@@ -517,17 +600,26 @@ class Sharing
                 // filename* is preferred over filename as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
                 // Note that this format MAY include charset
                 $name = \preg_replace('/^(.*filename\*='.Common::LANGUAGE_ENC_REGEX.'"?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$12', $_SERVER['HTTP_CONTENT_DISPOSITION']);
-                if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
+                if (
+                    empty($name)
+                    || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']
+                ) {
                     // If we are here, it means that there is no filename*
                     $name = \preg_replace('/^(.*filename="?)(?<filename>[^";=*]*)((([";]).*)|($))$/i', '$2', $_SERVER['HTTP_CONTENT_DISPOSITION']);
-                    if (empty($name) || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']) {
+                    if (
+                        empty($name)
+                        || $name === $_SERVER['HTTP_CONTENT_DISPOSITION']
+                    ) {
                         // If we are here, it means no filename was shared
                         $name = '';
                     }
                 }
             }
             // Sanitize the name
-            if (!empty($name) && $safe_filename) {
+            if (
+                !empty($name)
+                && $safe_filename
+            ) {
                 $name = \basename(Convert::safeFileName($name));
             }
             if (empty($name)) {
@@ -543,7 +635,10 @@ class Sharing
                 $resumable = true;
             }
             // Check if file already exists
-            if ($resumable && \is_file($upload_dir.'/'.$name)) {
+            if (
+                $resumable
+                && \is_file($upload_dir.'/'.$name)
+            ) {
                 $offset = \filesize($upload_dir.'/'.$name);
             } else {
                 $offset = 0;
@@ -556,12 +651,16 @@ class Sharing
                     return Headers::clientReturn(409, $exit);
                 }
                 // Read input stream
-                if ($offset > 0 && $offset < $client_size) {
+                if (
+                    $offset > 0
+                    && $offset < $client_size
+                ) {
                     // We can't fseek php://input, thus we need to read it. To improve performance we will use php://temp with a memory limit
                     $garbage = \fopen('php://temp', 'wb');
                     // Check if stream was opened
                     if ($garbage === false) {
                         \fclose($stream);
+
                         return Headers::clientReturn(500, $exit);
                     }
                     $collected = \stream_copy_to_stream($stream, $garbage, $offset);
@@ -570,6 +669,7 @@ class Sharing
                     if ($collected !== $offset) {
                         // Means we failed to read appropriate amount of bytes
                         \fclose($stream);
+
                         return Headers::clientReturn(500, $exit);
                     }
                 }
@@ -588,6 +688,7 @@ class Sharing
                     // Check if stream was opened
                     if ($output === false) {
                         \fclose($stream);
+
                         return Headers::clientReturn(500, $exit);
                     }
                     // Disable buffering. This should help limit the memory usage. At least, in some cases.
@@ -601,7 +702,7 @@ class Sharing
                     \fclose($stream);
                     \fclose($output);
                     // Check that the size is the one we expect
-                    if (($result + $offset) < $client_size) {
+                    if ($result + $offset < $client_size) {
                         $result = false;
                     } else {
                         $result = true;
@@ -612,9 +713,13 @@ class Sharing
                 $result = true;
             }
             if (!$result) {
-                if (!$resumable && \is_file($upload_dir.'/'.$name)) {
+                if (
+                    !$resumable
+                    && \is_file($upload_dir.'/'.$name)
+                ) {
                     \unlink($upload_dir.'/'.$name);
                 }
+
                 return Headers::clientReturn(500, $exit);
             }
             // Get file MIME type
@@ -624,10 +729,14 @@ class Sharing
             }
             // Check against allowed MIME types if any was set and fileinfo is loaded
             // Get MIME from file (not relying on what was sent by client)
-            if (!empty($allowed_mime) && !\in_array($filetype, $allowed_mime, true)) {
+            if (
+                !empty($allowed_mime)
+                && !\in_array($filetype, $allowed_mime, true)
+            ) {
                 if (\is_file($upload_dir.'/'.$name)) {
                     \unlink($upload_dir.'/'.$name);
                 }
+
                 return Headers::clientReturn(415, $exit);
             }
             // Get extension of the file
@@ -653,6 +762,7 @@ class Sharing
             // Inform client, that files were uploaded
             return Headers::clientReturn(200);
         }
+
         return $uploaded_files;
     }
 
@@ -672,11 +782,15 @@ class Sharing
         // Ignore user abort to attempt to identify when the client has aborted
         \ignore_user_abort(true);
         // Check that we have resources, since PHP does not have type hinting for resources
-        if (!\is_resource($input) || !\is_resource($output)) {
+        if (
+            !\is_resource($input)
+            || !\is_resource($output)
+        ) {
             // Close session
             if (\session_status() === \PHP_SESSION_ACTIVE) {
                 \session_write_close();
             }
+
             return false;
         }
         // Get size if not provided
@@ -695,7 +809,10 @@ class Sharing
         \set_time_limit((int) \floor($total_size / 10240));
         // Set counter for the amount of data sent
         $sent = 0;
-        while ($sent < $total_size && \connection_status() === \CONNECTION_NORMAL) {
+        while (
+            $sent < $total_size
+            && \connection_status() === \CONNECTION_NORMAL
+        ) {
             // Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
             $sent_stat = \stream_copy_to_stream($input, $output, $speed, $offset);
             if ($sent_stat !== false) {
@@ -705,6 +822,7 @@ class Sharing
                 if (\session_status() === \PHP_SESSION_ACTIVE) {
                     \session_write_close();
                 }
+
                 return false;
             }
             $offset += $speed;
@@ -717,9 +835,13 @@ class Sharing
         if (\session_status() === \PHP_SESSION_ACTIVE) {
             \session_write_close();
         }
-        if ($sent >= $total_size && \connection_status() === \CONNECTION_NORMAL) {
+        if (
+            $sent >= $total_size
+            && \connection_status() === \CONNECTION_NORMAL
+        ) {
             return $sent;
         }
+
         return false;
     }
 
@@ -734,7 +856,10 @@ class Sharing
     public static function speedLimit(int $speed = 0, float $percentage = 0.9): int
     {
         // Sanitize percentage
-        if ($percentage <= 0 || $percentage > 1.0) {
+        if (
+            $percentage <= 0
+            || $percentage > 1.0
+        ) {
             $percentage = 0.9;
         }
         // Get memory limit
@@ -745,9 +870,13 @@ class Sharing
         // When using stream there is still a certain memory overhead, so we take only percentage of the memory
         // Percentage was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
         $memory = (int) \floor($memory * $percentage);
-        if ($speed <= 0 || $speed > $memory) {
+        if (
+            $speed <= 0
+            || $speed > $memory
+        ) {
             $speed = $memory;
         }
+
         return $speed;
     }
 
@@ -771,6 +900,7 @@ class Sharing
             'k' => 1024,
             default => 1,
         };
+
         return $memory_int;
     }
 
@@ -787,6 +917,7 @@ class Sharing
             // Validate the value
             if (\preg_match('/^bytes=\d*-\d*(\s*,\s*\d*-\d*)*$/i', $_SERVER['HTTP_RANGE']) !== 1) {
                 \header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
+
                 return [0 => false];
             }
             // Remove bytes
@@ -798,7 +929,7 @@ class Sharing
                 if (\preg_match('/^-\d+$/', $range) === 1) {
                     $ranges[$key] = ['start' => 0, 'end' => (int) \mb_ltrim($range, '-', 'UTF-8')];
                 } elseif (\preg_match('/^\d+-$/', $range) === 1) {
-                    $ranges[$key] = ['start' => (int) \mb_rtrim($range, '-', 'UTF-8'), 'end' => ($size - 1)];
+                    $ranges[$key] = ['start' => (int) \mb_rtrim($range, '-', 'UTF-8'), 'end' => $size - 1];
                 } elseif (\preg_match('/^\d+-\d+$/', $range) === 1) {
                     $temp_range = \explode('-', $range);
                     $ranges[$key] = ['start' => (int) $temp_range[0], 'end' => (int) $temp_range[1]];
@@ -807,7 +938,12 @@ class Sharing
                     return [0 => false];
                 }
                 // Check range is of proper value
-                if ($ranges[$key]['start'] >= $ranges[$key]['end'] || $ranges[$key]['start'] >= $size || $ranges[$key]['end'] > $size || ($ranges[0]['end'] - $ranges[0]['start'] + 1) > $size) {
+                if (
+                    $ranges[$key]['start'] >= $ranges[$key]['end']
+                    || $ranges[$key]['start'] >= $size
+                    || $ranges[$key]['end'] > $size
+                    || ($ranges[0]['end'] - $ranges[0]['start'] + 1) > $size
+                ) {
                     return [0 => false];
                 }
             }
@@ -819,9 +955,20 @@ class Sharing
                         if ($key_sec > $key_prime) {
                             // If overlap in any way - exit
                             if (
-                                ($range_prime['start'] === $range_sec['start'] && $range_prime['end'] === $range_sec['end']) ||
-                                ($range_sec['end'] >= $range_prime['start'] && $range_sec['end'] < $range_prime['end']) ||
-                                ($range_sec['start'] > $range_prime['start'] && $range_sec['start'] <= $range_prime['end'])
+                                (
+                                    $range_prime['start'] === $range_sec['start']
+                                    && $range_prime['end'] === $range_sec['end']
+                                )
+                                ||
+                                (
+                                    $range_sec['end'] >= $range_prime['start']
+                                    && $range_sec['end'] < $range_prime['end']
+                                )
+                                ||
+                                (
+                                    $range_sec['start'] > $range_prime['start']
+                                    && $range_sec['start'] <= $range_prime['end']
+                                )
                             ) {
                                 return [0 => false];
                             }
@@ -833,8 +980,10 @@ class Sharing
             if (empty($ranges)) {
                 return [0 => false];
             }
+
             return $ranges;
         }
+
         return [];
     }
 
@@ -864,7 +1013,10 @@ class Sharing
                         }
                     }
                     // Check if MIME is allowed
-                    if (!empty($allowed_mime) && !\in_array($mime_type, $allowed_mime, true)) {
+                    if (
+                        !empty($allowed_mime)
+                        && !\in_array($mime_type, $allowed_mime, true)
+                    ) {
                         return Headers::clientReturn(403, $exit);
                     }
                 }
@@ -872,7 +1024,11 @@ class Sharing
             // While the above checks the actual MIME type, it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
             $extension = \pathinfo($filepath, \PATHINFO_EXTENSION);
             // Set MIME from extension, of available
-            if (!empty($extension) && \is_string($extension) && Common::getMimeFromExtension($extension) !== false) {
+            if (
+                !empty($extension)
+                && \is_string($extension)
+                && Common::getMimeFromExtension($extension) !== false
+            ) {
                 $mime_type_alt = Common::getMimeFromExtension($extension);
             }
             // Set MIME type to stream if it's empty
@@ -914,7 +1070,10 @@ class Sharing
                 // Send size information
                 \header('Content-Length: '.\filesize($filepath));
                 // Exit if HEAD method was used (by this time all headers should have been sent
-                if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+                if (
+                    isset($_SERVER['REQUEST_METHOD'])
+                    && $_SERVER['REQUEST_METHOD'] === 'HEAD'
+                ) {
                     // Close session
                     if (\session_status() === \PHP_SESSION_ACTIVE) {
                         \session_write_close();
@@ -936,8 +1095,10 @@ class Sharing
             if ($exit) {
                 exit(0);
             }
+
             return 200;
         }
+
         return Headers::clientReturn(404, $exit);
     }
 
@@ -993,7 +1154,10 @@ class Sharing
         ]]));
         $output = \fopen('php://output', 'wb');
         // Send contents
-        if ($url_open !== false && $output !== false) {
+        if (
+            $url_open !== false
+            && $output !== false
+        ) {
             \stream_copy_to_stream($url_open, $output);
             \fclose($output);
             \fclose($url_open);

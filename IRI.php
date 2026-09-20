@@ -61,6 +61,7 @@ class IRI
                 return false;
             }
         }
+
         // Convert to URI. If we have succeeded - then it's a valid IRI
         return self::iriToUri($iri) !== null;
     }
@@ -71,7 +72,6 @@ class IRI
      * @param string $iri IRI string
      *
      * @return string|null
-     *
      */
     public static function iriToUri(string $iri): ?string
     {
@@ -151,14 +151,21 @@ class IRI
             $parsed_iri['fragment'] = \rawurlencode($parsed_iri['fragment']);
         }
         // Validate that all components besides `query` do *not* contain characters from `iprivate` terminal
-        if (\array_any($parsed_iri, static fn($value, $component) => $component !== 'query' && \preg_match('/['.self::I_PRIVATE.']/u', $value) === 1)) {
+        if (
+            \array_any(
+                $parsed_iri, static fn($value, $component) => $component !== 'query'
+                && \preg_match('/['.self::I_PRIVATE.']/u', $value) === 1
+            )
+        ) {
             return null;
         }
+
         return self::restoreUri($parsed_iri);
     }
 
     /**
      * Restore the array from `parse_url()` function to original URL
+     *
      * @param array $parsed_uri Array from `parse_url()`
      *
      * @return string|null
@@ -168,6 +175,7 @@ class IRI
         if (empty($parsed_uri)) {
             return null;
         }
+
         return (!empty($parsed_uri['scheme']) ? $parsed_uri['scheme'].'://' : '')
             .(!empty($parsed_uri['user']) ? $parsed_uri['user'].(!empty($parsed_uri['pass']) ? ':'.$parsed_uri['pass'] : '').'@' : '')
             .($parsed_uri['host'] ?? '')
@@ -179,6 +187,7 @@ class IRI
 
     /**
      * Alternative to `parse_url()`. UTF-8 safe, supports URIs and IRIs without a scheme (and without `//`)
+     *
      * @param string $uri
      *
      * @return array|false
@@ -189,7 +198,10 @@ class IRI
         $uri = \mb_trim($uri, null, 'UTF-8');
         $result = \preg_match('/^(?:(?<scheme>[^:\/?#]+):)?(?:\/\/(?:(?<user>[^:@\/]+)(?::(?<pass>[^:@\/]+))?@)?(?<host>[^\/?#:]*)(?::(?<port>\d+))?)?(?<path>[^?#]*)(?:\?(?<query>[^#]*))?(?:#(?<fragment>.*))?$/ui', $uri, $matches);
         // If the match failed somehow or if the array is empty - return false
-        if ($result !== 1 || \count($matches) === 0) {
+        if (
+            $result !== 1
+            || \count($matches) === 0
+        ) {
             return false;
         }
         // Remove the numeric keys
@@ -198,6 +210,7 @@ class IRI
                 unset($matches[$key]);
             }
         }
+
         return $matches;
     }
 
@@ -216,12 +229,14 @@ class IRI
             $pairs[] = self::toRFC3986($key).'='.self::toRFC3986($value);
         }
         // Suppressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does
+
         /** @noinspection ImplodeMissUseInspection */
         return \implode('&', $pairs);
     }
 
     /**
      * Same as `rawurlencode` but only for reserved characters
+     *
      * @param string $string String to encode
      *
      * @return string
