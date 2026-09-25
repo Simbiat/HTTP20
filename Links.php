@@ -10,7 +10,7 @@ use Simbiat\StringHelpers\Sanitize;
 /**
  * Generate HTTP `Link` header and `link` HTML element.
  */
-class Links
+final class Links
 {
     /**
      * Regex for `rel` values that are allowed in the HTML body as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
@@ -61,14 +61,10 @@ class Links
     public function __construct()
     {
         // Check if Save-Data is on
-        if (
+        self::$save_data =
             \array_key_exists('HTTP_SAVE_DATA', $_SERVER)
             && \preg_match('/^on$/uir', $_SERVER['HTTP_SAVE_DATA']) === 1
-        ) {
-            self::$save_data = true;
-        } else {
-            self::$save_data = false;
-        }
+         ? true : false;
     }
 
     /**
@@ -133,11 +129,7 @@ class Links
                 continue;
             }
             // Generate element as string
-            if ($type === 'header') {
-                $links_to_send[] = \preg_replace('/[\r\n\p{C}]/uir', '', self::generateHeader($link));
-            } else {
-                $links_to_send[] = \preg_replace('/[\r\n\p{C}]/uir', '', self::generateTag($link));
-            }
+            $links_to_send[] = $type === 'header' ? \preg_replace('/[\r\n\p{C}]/uir', '', self::generateHeader($link)) : \preg_replace('/[\r\n\p{C}]/uir', '', self::generateTag($link));
         }
         if (\count($links_to_send) === 0) {
             return '';
@@ -231,14 +223,10 @@ class Links
             && \array_key_exists('href', $link)
         ) {
             $ext = \pathinfo($link['href'], \PATHINFO_EXTENSION);
-            if (
+            $link['type'] =
                 \is_string($ext)
                 && Common::getMimeFromExtension($ext) !== false
-            ) {
-                $link['type'] = Common::getMimeFromExtension($ext);
-            } else {
-                $link['type'] = '';
-            }
+             ? Common::getMimeFromExtension($ext) : '';
         }
         if (
             \array_key_exists('rel', $link)
@@ -355,11 +343,7 @@ class Links
             $link['crossorigin'] = 'anonymous';
         }
         // Sanitize `title` if it's set
-        if (\array_key_exists('title', $link)) {
-            $link['title'] = \urldecode(\htmlspecialchars($link['title'], \ENT_QUOTES | \ENT_SUBSTITUTE));
-        } else {
-            $link['title'] = '';
-        }
+        $link['title'] = \array_key_exists('title', $link) ? \urldecode(\htmlspecialchars($link['title'], \ENT_QUOTES | \ENT_SUBSTITUTE)) : '';
         // Validate `title*`, which is valid only for HTTP header
         if (
             \array_key_exists('title*', $link)

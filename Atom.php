@@ -9,7 +9,7 @@ use JetBrains\PhpStorm\ExpectedValues;
 /**
  * Generate Atom feed
  */
-class Atom
+final class Atom
 {
     /**
      * Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
@@ -56,11 +56,7 @@ class Atom
         // Check time
         if (empty($feed_settings['updated'])) {
             $dates = \array_merge(\array_column($entries, 'updated'), \array_column($entries, 'published'));
-            if (empty($dates)) {
-                $feed_settings['updated'] = Common::valueToTime(\time(), \DATE_ATOM);
-            } else {
-                $feed_settings['updated'] = Common::valueToTime(\max($dates), \DATE_ATOM);
-            }
+            $feed_settings['updated'] = empty($dates) ? Common::valueToTime(\time(), \DATE_ATOM) : Common::valueToTime(\max($dates), \DATE_ATOM);
         } else {
             $feed_settings['updated'] = Common::valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
@@ -202,20 +198,22 @@ class Atom
                     continue;
                 }
             }
-            if ($type === 'entry') {
-                if (empty($element_to_val['title'])) {
-                    unset($elements[$key]);
+            if ($type !== 'entry') {
+                continue;
+            }
 
-                    continue;
-                }
-                if (empty($element_to_val['updated'])) {
-                    unset($elements[$key]);
+            if (empty($element_to_val['title'])) {
+                unset($elements[$key]);
 
-                    continue;
-                }
-                if (!IRI::isValidIri($element_to_val['link'], 'https')) {
-                    unset($elements[$key]);
-                }
+                continue;
+            }
+            if (empty($element_to_val['updated'])) {
+                unset($elements[$key]);
+
+                continue;
+            }
+            if (!IRI::isValidIri($element_to_val['link'], 'https')) {
+                unset($elements[$key]);
             }
         }
     }
@@ -355,21 +353,23 @@ class Atom
         }
         // Add a source
         if (
-            !empty($entry['source_id'])
-            || !empty($entry['source_title'])
-            || !empty($entry['source_updated'])
+            empty($entry['source_id'])
+            && empty($entry['source_title'])
+            && empty($entry['source_updated'])
         ) {
-            $source = $element->appendChild($feed->createElement('source'));
-            if (!empty($entry['source_id'])) {
-                $source->appendChild($feed->createElement('id', $entry['source_id']));
-            }
-            if (!empty($entry['source_title'])) {
-                $source_title = $source->appendChild($feed->createElement('title', $entry['source_title']));
-                $source_title->setAttribute('type', $text_type);
-            }
-            if (!empty($entry['source_updated'])) {
-                $source->appendChild($feed->createElement('updated', Common::valueToTime($entry['source_updated'], \DATE_ATOM)));
-            }
+            return;
+        }
+
+        $source = $element->appendChild($feed->createElement('source'));
+        if (!empty($entry['source_id'])) {
+            $source->appendChild($feed->createElement('id', $entry['source_id']));
+        }
+        if (!empty($entry['source_title'])) {
+            $source_title = $source->appendChild($feed->createElement('title', $entry['source_title']));
+            $source_title->setAttribute('type', $text_type);
+        }
+        if (!empty($entry['source_updated'])) {
+            $source->appendChild($feed->createElement('updated', Common::valueToTime($entry['source_updated'], \DATE_ATOM)));
         }
     }
 

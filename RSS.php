@@ -7,7 +7,7 @@ namespace Simbiat\http20;
 /**
  * Class to generate RSS feed
  */
-class RSS
+final class RSS
 {
     /**
      * Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
@@ -77,19 +77,11 @@ class RSS
         // Check time
         if (empty($feed_settings['pubDate'])) {
             $dates = \array_column($entries, 'pubDate');
-            if (empty($dates)) {
-                $feed_settings['pubDate'] = Common::valueToTime(\time(), \DATE_RSS);
-            } else {
-                $feed_settings['pubDate'] = Common::valueToTime(\max($dates), \DATE_RSS);
-            }
+            $feed_settings['pubDate'] = empty($dates) ? Common::valueToTime(\time(), \DATE_RSS) : Common::valueToTime(\max($dates), \DATE_RSS);
         } else {
             $feed_settings['pubDate'] = Common::valueToTime($feed_settings['pubDate'], \DATE_RSS);
         }
-        if (empty($feed_settings['lastBuildDate'])) {
-            $feed_settings['lastBuildDate'] = $feed_settings['pubDate'];
-        } else {
-            $feed_settings['lastBuildDate'] = Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
-        }
+        $feed_settings['lastBuildDate'] = empty($feed_settings['lastBuildDate']) ? $feed_settings['pubDate'] : Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         // Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
         Headers::lastModified(\max(\strtotime($feed_settings['pubDate']), \strtotime($feed_settings['lastBuildDate'])));
         // Check cloud
@@ -342,11 +334,13 @@ class RSS
         if (!empty($entry['pubDate'])) {
             $element->appendChild($feed->createElement('pubDate', Common::valueToTime($entry['pubDate'], \DATE_RSS)));
         }
-        if (!empty($entry['enclosure_url'])) {
-            $enclosure = $element->appendChild($feed->createElement('enclosure'));
-            $enclosure->setAttribute('url', $entry['enclosure_url']);
-            $enclosure->setAttribute('length', (string) (int) $entry['enclosure_length']);
-            $enclosure->setAttribute('type', $entry['enclosure_type']);
+        if (empty($entry['enclosure_url'])) {
+            return;
         }
+
+        $enclosure = $element->appendChild($feed->createElement('enclosure'));
+        $enclosure->setAttribute('url', $entry['enclosure_url']);
+        $enclosure->setAttribute('length', (string) (int) $entry['enclosure_length']);
+        $enclosure->setAttribute('type', $entry['enclosure_type']);
     }
 }

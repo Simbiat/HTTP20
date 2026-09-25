@@ -7,7 +7,7 @@ namespace Simbiat\http20;
 /**
  * IRI-related function
  */
-class IRI
+final class IRI
 {
     /**
      * Characters from the `ucschar` terminal as seen in RFC 3987

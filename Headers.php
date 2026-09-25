@@ -9,7 +9,7 @@ use JetBrains\PhpStorm\ExpectedValues;
 /**
  * Functions that send/handle different HTTP headers.
  */
-class Headers
+final class Headers
 {
     /**
      * Same as `$_POST`, but for PUT
@@ -447,14 +447,10 @@ class Headers
                             ) {
                                 // Check if it's script or style source
                                 // If it's not 'none' - add 'report-sample'
-                                if (
+                                $default_directives[$directive] =
                                     $value !== '\'none\''
                                     && \in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])
-                                ) {
-                                    $default_directives[$directive] = '\'report-sample\' '.$value;
-                                } else {
-                                    $default_directives[$directive] = $value;
-                                }
+                                 ? '\'report-sample\' '.$value : $value;
                             }
 
                             break;
@@ -665,11 +661,7 @@ class Headers
     public static function features(array $features = [], bool $force_check = true, bool $permissions = false): void
     {
         if (!\headers_sent()) {
-            if ($permissions) {
-                $defaults = self::PERMISSIONS_DEFAULT;
-            } else {
-                $defaults = self::SECURE_FEATURES;
-            }
+            $defaults = $permissions ? self::PERMISSIONS_DEFAULT : self::SECURE_FEATURES;
             foreach ($features as $feature => $allow_list) {
                 // Sanitize
                 $feature = \mb_strtolower(\mb_trim($feature, null, 'UTF-8'), 'UTF-8');
@@ -717,11 +709,7 @@ class Headers
     {
         if (!\headers_sent()) {
             // In case it's not numeric, replace it with 0
-            if (\is_numeric($mod_time)) {
-                $mod_time = (int) $mod_time;
-            } else {
-                $mod_time = 0;
-            }
+            $mod_time = \is_numeric($mod_time) ? (int) $mod_time : 0;
             if ($mod_time <= 0) {
                 // Get the freshest modification time of all PHP files using PHP's getlastmod time
                 $mod_time = \max(\max(\array_map('\filemtime', \array_filter(\get_included_files(), '\is_file')), \getlastmod()));
@@ -951,17 +939,15 @@ class Headers
                 // Split MIME
                 $mime = \explode('/', $mime);
                 // Attempt to get priority for supported MIME type (with optional subtype)
-                if (\preg_match('/.*('.$mime[0].'\/('.$mime[1].'|\*))(;q=((0\.[0-9])|[0-1])(?>\s*(,|$)))?.*/m', $_SERVER['HTTP_ACCEPT'], $matches) === 1) {
-                    // Add to array
-                    if (
-                        !isset($matches[4])
-                        || $matches[4] === ''
-                    ) {
-                        $acceptable[$mime[0].'/'.$mime[1]] = 1.0;
-                    } else {
-                        $acceptable[$mime[0].'/'.$mime[1]] = (float) $matches[4];
-                    }
+                if (\preg_match('/.*('.$mime[0].'\/('.$mime[1].'|\*))(;q=((0\.[0-9])|[0-1])(?>\s*(,|$)))?.*/m', $_SERVER['HTTP_ACCEPT'], $matches) !== 1) {
+                    continue;
                 }
+
+                // Add to array
+                $acceptable[$mime[0].'/'.$mime[1]] =
+                    !isset($matches[4])
+                    || $matches[4] === ''
+                 ? 1.0 : (float) $matches[4];
             }
             // Check if any of the supported types are acceptable
             if (empty($acceptable)) {

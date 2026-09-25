@@ -12,7 +12,7 @@ use Simbiat\StringHelpers\Convert;
 /**
  * Functions related to file sharing
  */
-class Sharing
+final class Sharing
 {
     /**
      * Function for smart resumable download with proper headers
@@ -174,11 +174,7 @@ class Sharing
                 // Echo supportive text
                 echo "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n";
                 // Limit speed to range length if the current speed limit is too large, so that it will be provided fully
-                if ($speed_limit > $range['end'] - $range['start'] + 1) {
-                    $speed_limit_multi = $range['end'] - $range['start'] + 1;
-                } else {
-                    $speed_limit_multi = $speed_limit;
-                }
+                $speed_limit_multi = $speed_limit > $range['end'] - $range['start'] + 1 ? $range['end'] - $range['start'] + 1 : $speed_limit;
                 $speed_limit_multi = self::speedLimit($speed_limit_multi);
                 // Output data
                 $result = self::streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speed_limit_multi);
@@ -240,11 +236,7 @@ class Sharing
     public static function upload(string|array $dest_path, bool $preserve_names = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): int|array
     {
         // Set upload directory
-        if (\is_writable(\ini_get('upload_tmp_dir'))) {
-            $upload_dir = \ini_get('upload_tmp_dir');
-        } else {
-            $upload_dir = \sys_get_temp_dir();
-        }
+        $upload_dir = \is_writable(\ini_get('upload_tmp_dir')) ? \ini_get('upload_tmp_dir') : \sys_get_temp_dir();
         // Ensure we do not have trailing slash
         $upload_dir = \preg_replace('/(.*[^\\\\\/]+)([\\\\\/]+$)/', '$1', $upload_dir);
         // Cache some PHP settings
@@ -277,11 +269,7 @@ class Sharing
             }
         }
         // Cache filename sanitizer
-        if (\method_exists(Convert::class, 'safeFileName')) {
-            $safe_filename = true;
-        } else {
-            $safe_filename = false;
-        }
+        $safe_filename = \method_exists(Convert::class, 'safeFileName');
         // Check if file upload is enabled on server
         if (!\ini_get('file_uploads')) {
             return Headers::clientReturn(501, $exit);
@@ -376,11 +364,7 @@ class Sharing
                     continue;
                 }
                 // Set destination path
-                if (\is_array($dest_path)) {
-                    $final_path = $dest_path[$field];
-                } else {
-                    $final_path = $dest_path;
-                }
+                $final_path = \is_array($dest_path) ? $dest_path[$field] : $dest_path;
                 foreach ($files as $key => $file) {
                     switch ($file['error']) {
                         case \UPLOAD_ERR_OK:
@@ -473,64 +457,62 @@ class Sharing
                     }
                     // Sanitize name
                     if (
-                        isset($_FILES[$field][$key])
-                        && $safe_filename !== false
+                        !isset($_FILES[$field][$key])
+                        || $safe_filename === false
                     ) {
-                        $_FILES[$field][$key]['name'] = \basename(Convert::safeFileName($file['name']));
-                        // If name is empty or name is too long, do not process it
-                        if (
-                            empty($_FILES[$field][$key]['name'])
-                            || \mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225
-                        ) {
-                            if ($intolerant) {
-                                return Headers::clientReturn(400, $exit);
-                            }
-                            // Remove the file from list
-                            unset($_FILES[$field][$key]);
+                        continue;
+                    }
+
+                    $_FILES[$field][$key]['name'] = \basename(Convert::safeFileName($file['name']));
+                    // If name is empty or name is too long, do not process it
+                    if (
+                        empty($_FILES[$field][$key]['name'])
+                        || \mb_strlen($_FILES[$field][$key]['name'], 'UTF-8') > 225
+                    ) {
+                        if ($intolerant) {
+                            return Headers::clientReturn(400, $exit);
+                        }
+                        // Remove the file from list
+                        unset($_FILES[$field][$key]);
+                    } else {
+                        // Set new name for the file. By default, we will be using hash of the file. Using sha3-512 since it has lower probability of collisions than md5, although we do lose some speed
+                        // Hash is saved regardless, though, since it may be very useful
+                        $_FILES[$field][$key]['hash'] = \hash_file('sha3-512', $file['tmp_name']);
+                        if ($preserve_names) {
+                            $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
                         } else {
-                            // Set new name for the file. By default, we will be using hash of the file. Using sha3-512 since it has lower probability of collisions than md5, although we do lose some speed
-                            // Hash is saved regardless, though, since it may be very useful
-                            $_FILES[$field][$key]['hash'] = \hash_file('sha3-512', $file['tmp_name']);
-                            if ($preserve_names) {
-                                $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['name'];
+                            // Get extension (if any)
+                            $ext = Common::getExtensionFromMime($_FILES[$field][$key]['type']);
+                            if ($ext) {
+                                $ext = '.'.$ext;
                             } else {
-                                // Get extension (if any)
-                                $ext = Common::getExtensionFromMime($_FILES[$field][$key]['type']);
-                                if ($ext) {
-                                    $ext = '.'.$ext;
-                                } else {
-                                    $ext = \pathinfo($_FILES[$field][$key]['name'], \PATHINFO_EXTENSION);
-                                    if (
-                                        !empty($ext)
-                                        && \is_string($ext)
-                                    ) {
-                                        $ext = '.'.$ext;
-                                    } else {
-                                        $ext = '';
-                                    }
-                                }
-                                // Generate name from hash and extension from the original file
-                                $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['hash'].$ext;
+                                $ext = \pathinfo($_FILES[$field][$key]['name'], \PATHINFO_EXTENSION);
+                                $ext =
+                                    !empty($ext)
+                                    && \is_string($ext)
+                                 ? '.'.$ext : '';
                             }
-                            // Check if the destination file already exists
-                            if (\is_file($final_path.'/'.$_FILES[$field][$key]['new_name'])) {
-                                if ($overwrite) {
-                                    // Check that it is writable
-                                    if (!\is_writable($final_path.'/'.$_FILES[$field][$key]['new_name'])) {
-                                        if ($intolerant) {
-                                            return Headers::clientReturn(409, $exit);
-                                        }
-                                        // Remove the file from the list
-                                        unset($_FILES[$field][$key]);
+                            // Generate name from hash and extension from the original file
+                            $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['hash'].$ext;
+                        }
+                        // Check if the destination file already exists
+                        if (\is_file($final_path.'/'.$_FILES[$field][$key]['new_name'])) {
+                            if ($overwrite) {
+                                // Check that it is writable
+                                if (!\is_writable($final_path.'/'.$_FILES[$field][$key]['new_name'])) {
+                                    if ($intolerant) {
+                                        return Headers::clientReturn(409, $exit);
                                     }
-                                } else {
-                                    // Add it to the list of successfully uploaded files if we are not preserving names, since that implies relative uniqueness of them, thus we are most likely seeing the same file
-                                    if (!$preserve_names) {
-                                        $uploaded_files[] = ['server_name' => $_FILES[$field][$key]['new_name'], 'server_path' => $final_path, 'user_name' => $_FILES[$field][$key]['name'], 'size' => $file['size'], 'type' => $_FILES[$field][$key]['type'], 'hash' => $_FILES[$field][$key]['hash'], 'field' => $field];
-                                    }
-                                    // Remove the file from global list
+                                    // Remove the file from the list
                                     unset($_FILES[$field][$key]);
                                 }
+                            } else {
+                                // Add it to the list of successfully uploaded files if we are not preserving names, since that implies relative uniqueness of them, thus we are most likely seeing the same file
+                                if (!$preserve_names) {
+                                    $uploaded_files[] = ['server_name' => $_FILES[$field][$key]['new_name'], 'server_path' => $final_path, 'user_name' => $_FILES[$field][$key]['name'], 'size' => $file['size'], 'type' => $_FILES[$field][$key]['type'], 'hash' => $_FILES[$field][$key]['hash'], 'field' => $field];
+                                }
+                                // Remove the file from global list
+                                unset($_FILES[$field][$key]);
                             }
                         }
                     }
@@ -549,11 +531,7 @@ class Sharing
                 // Process files and put them into an array
                 foreach ($_FILES as $field => $files) {
                     // Set destination path
-                    if (\is_array($dest_path)) {
-                        $final_path = $dest_path[$field];
-                    } else {
-                        $final_path = $dest_path;
-                    }
+                    $final_path = \is_array($dest_path) ? $dest_path[$field] : $dest_path;
                     foreach ($files as $file) {
                         // Move file, but only if it's not already present in destination
                         if (
@@ -634,14 +612,10 @@ class Sharing
                 $resumable = true;
             }
             // Check if file already exists
-            if (
+            $offset =
                 $resumable
                 && \is_file($upload_dir.'/'.$name)
-            ) {
-                $offset = \filesize($upload_dir.'/'.$name);
-            } else {
-                $offset = 0;
-            }
+             ? \filesize($upload_dir.'/'.$name) : 0;
             if ($offset !== $client_size) {
                 // Open input stream
                 $stream = \fopen('php://input', 'rb');
@@ -701,11 +675,7 @@ class Sharing
                     \fclose($stream);
                     \fclose($output);
                     // Check that the size is the one we expect
-                    if ($result + $offset < $client_size) {
-                        $result = false;
-                    } else {
-                        $result = true;
-                    }
+                    $result = $result + $offset < $client_size ? false : true;
                 }
             } else {
                 // Means the file we have is complete
@@ -996,7 +966,9 @@ class Sharing
      *
      * @return int
      */
-    public static function fileEcho(#[FileReference] string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
+    public static function fileEcho(#[FileReference]
+    string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])]
+    string $cache_strategy = 'month', bool $exit = true): int
     {
         // Check if file exists
         if (\is_file($filepath)) {
@@ -1110,7 +1082,8 @@ class Sharing
      * @return void
      */
     #[NoReturn]
-    public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = ''): void
+    public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])]
+    string $cache_strategy = ''): void
     {
         // Get headers
         $headers_data = \get_headers($url, context: \stream_context_create(['http' => [

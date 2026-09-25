@@ -9,7 +9,7 @@ use JetBrains\PhpStorm\ExpectedValues;
 /**
  * Generate sitemap file
  */
-class Sitemap
+final class Sitemap
 {
     /**
      * Function to generate sitemap in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html
@@ -58,10 +58,12 @@ class Sitemap
                 // Get its length
                 $len_to_add = \mb_strlen($to_add, 'UTF-8');
                 // Check that we are not exceeding the limit of 50 MB. Using limit from Google (https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap) rather than from original spec (https://www.sitemaps.org/protocol.html), since we should care more about search engines' limitations
-                if ($str_len + $len_to_add < 52428800) {
-                    $output .= $to_add;
-                    $str_len += $len_to_add;
+                if ($str_len + $len_to_add >= 52428800) {
+                    continue;
                 }
+
+                $output .= $to_add;
+                $str_len += $len_to_add;
             }
             // Close tags
             $output .= match ($format) {
@@ -131,11 +133,7 @@ class Sitemap
         $value_counts = \array_count_values(\array_column($links, 'loc'));
         // Get max value of lastmod
         $max_date = \array_map('\intval', \array_column($links, 'lastmod'));
-        if (!empty($max_date)) {
-            $max_date = \max($max_date);
-        } else {
-            $max_date = 0;
-        }
+        $max_date = !empty($max_date) ? \max($max_date) : 0;
         // Send Last-Modified header and stop further processing if client already has a fresh enough copy
         Headers::lastModified($max_date, true);
         // Check that all links start from
@@ -158,11 +156,7 @@ class Sitemap
             // Sanitize values
             $links[$key]['loc'] = Common::htmlToRFC3986($link['loc']);
             // Sanitize name (used only for HTML format
-            if (isset($link['name'])) {
-                $links[$key]['name'] = \htmlspecialchars($link['name'], \ENT_QUOTES | \ENT_SUBSTITUTE);
-            } else {
-                $links[$key]['name'] = \htmlspecialchars($links[$key]['loc'], \ENT_QUOTES | \ENT_SUBSTITUTE);
-            }
+            $links[$key]['name'] = isset($link['name']) ? \htmlspecialchars($link['name'], \ENT_QUOTES | \ENT_SUBSTITUTE) : \htmlspecialchars($links[$key]['loc'], \ENT_QUOTES | \ENT_SUBSTITUTE);
             // Convert lastmod
             if (isset($link['lastmod'])) {
                 $links[$key]['lastmod'] = Common::valueToTime($link['lastmod'], \DATE_ATOM);
@@ -174,19 +168,21 @@ class Sitemap
             ) {
                 unset($links[$key]['changefreq']);
             }
-            if (isset($link['priority'])) {
-                if (\is_numeric($link['priority'])) {
-                    $link['priority'] = (float) $link['priority'];
-                    if ($link['priority'] > 1.0) {
-                        $links[$key]['priority'] = '1.0';
-                    } elseif ($link['priority'] < 0.0) {
-                        $links[$key]['priority'] = '0.0';
-                    } else {
-                        $links[$key]['priority'] = \number_format($link['priority'], 1);
-                    }
+            if (!isset($link['priority'])) {
+                continue;
+            }
+
+            if (\is_numeric($link['priority'])) {
+                $link['priority'] = (float) $link['priority'];
+                if ($link['priority'] > 1.0) {
+                    $links[$key]['priority'] = '1.0';
+                } elseif ($link['priority'] < 0.0) {
+                    $links[$key]['priority'] = '0.0';
                 } else {
-                    unset($links[$key]['priority']);
+                    $links[$key]['priority'] = \number_format($link['priority'], 1);
                 }
+            } else {
+                unset($links[$key]['priority']);
             }
         }
     }

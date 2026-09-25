@@ -11,7 +11,7 @@ use Simbiat\StringHelpers\Sanitize;
 /**
  * Collection of useful HTTP related functions
  */
-class Common
+final class Common
 {
     /**
      * Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses a portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47
@@ -90,12 +90,14 @@ class Common
             }
         }
         // Read the file with MIME types
-        if (\count(self::$extension_to_mime) === 0) {
-            try {
-                self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
-            } catch (\Throwable) {
-                return;
-            }
+        if (\count(self::$extension_to_mime) !== 0) {
+            return;
+        }
+
+        try {
+            self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return;
         }
     }
 

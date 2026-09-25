@@ -7,7 +7,7 @@ namespace Simbiat\http20;
 /**
  * Functions, that generate sets of meta-tags, that may be useful for your website.
  */
-class Meta
+final class Meta
 {
     /**
      * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards
@@ -326,11 +326,7 @@ class Meta
                     empty($notifications['cycle'])
                     || \preg_match('/^[0-7]$/', $notifications['cycle']) !== 1
                 ) {
-                    if ($links > 1) {
-                        $notifications['cycle'] = 1;
-                    } else {
-                        $notifications['cycle'] = 0;
-                    }
+                    $notifications['cycle'] = $links > 1 ? 1 : 0;
                 }
             } else {
                 // We do not have any links left (if we even had any)

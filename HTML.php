@@ -10,7 +10,7 @@ use Simbiat\StringHelpers\Convert;
 /**
  * Functions, that generate useful HTML code.
  */
-class HTML
+final class HTML
 {
     // Static to count breadcrumbs in case multiple ones are created
     private(set) static int $crumbs = 0;
@@ -33,11 +33,7 @@ class HTML
      */
     public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $br_limit = 0): string
     {
-        if (\method_exists(SandClock::class, 'seconds')) {
-            $sand_clock = true;
-        } else {
-            $sand_clock = false;
-        }
+        $sand_clock = \method_exists(SandClock::class, 'seconds') ? true : false;
         $time = \time();
         // Sanitize $items and add them to array, that will be ordered
         $to_order = [];
@@ -105,27 +101,29 @@ class HTML
                 $to_order[] = $item;
             }
             // Check if start_time is set
-            if (!empty($item['start_time'])) {
-                // If end_time is present and its formatted version is the same as a formatted version of start_time - continue to next element
-                if (
-                    !empty($item['end_time'])
-                    && \date($format, $item['end_time']) === \date($format, $item['start_time'])
-                ) {
-                    continue;
-                }
-                // Add columns for sorting
-                $item['time'] = $item['start_time'];
-                $item['start'] = 1;
-                // Add to the array of current items if end_time is empty
-                if (empty($item['end_time'])) {
-                    $item['ended'] = false;
-                    $current[] = $item;
-                } else {
-                    $item['ended'] = true;
-                }
-                // Add to order as "start" item
-                $to_order[] = $item;
+            if (empty($item['start_time'])) {
+                continue;
             }
+
+            // If end_time is present and its formatted version is the same as a formatted version of start_time - continue to next element
+            if (
+                !empty($item['end_time'])
+                && \date($format, $item['end_time']) === \date($format, $item['start_time'])
+            ) {
+                continue;
+            }
+            // Add columns for sorting
+            $item['time'] = $item['start_time'];
+            $item['start'] = 1;
+            // Add to the array of current items if end_time is empty
+            if (empty($item['end_time'])) {
+                $item['ended'] = false;
+                $current[] = $item;
+            } else {
+                $item['ended'] = true;
+            }
+            // Add to order as "start" item
+            $to_order[] = $item;
         }
         // Order timeline
         if ($asc) {
@@ -246,21 +244,19 @@ class HTML
             }
             $output .= '</div></div>';
             // Check if there is a following item
-            if (!empty($to_order[$key + 1])) {
-                // Calculate time difference
-                if ($asc) {
-                    $brs = $to_order[$key + 1]['time'] - $item['time'];
-                } else {
-                    $brs = $item['time'] - $to_order[$key + 1]['time'];
-                }
-                // Convert difference to number of months
-                $brs = (int) \floor($brs / 2592000);
-                // Limit it to 12
-                if ($brs > $br_limit) {
-                    $brs = $br_limit;
-                }
-                $output .= \str_repeat('<br>', $brs);
+            if (empty($to_order[$key + 1])) {
+                continue;
             }
+
+            // Calculate time difference
+            $brs = $asc ? $to_order[$key + 1]['time'] - $item['time'] : $item['time'] - $to_order[$key + 1]['time'];
+            // Convert difference to number of months
+            $brs = (int) \floor($brs / 2592000);
+            // Limit it to 12
+            if ($brs > $br_limit) {
+                $brs = $br_limit;
+            }
+            $output .= \str_repeat('<br>', $brs);
         }
         // Close timeline
         $output .= '</time-line>';
