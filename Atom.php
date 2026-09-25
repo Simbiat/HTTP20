@@ -6,8 +6,6 @@ namespace Simbiat\http20;
 
 use JetBrains\PhpStorm\ExpectedValues;
 
-use function in_array, is_array;
-
 /**
  * Generate Atom feed
  */

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Simbiat\http20;
 
 use Simbiat\SandClock;
-
 use Simbiat\StringHelpers\Convert;
 
 /**
@@ -15,8 +14,10 @@ class HTML
 {
     // Static to count breadcrumbs in case multiple ones are created
     private(set) static int $crumbs = 0;
+
     // Static to count pagination elements in case multiple ones are created
     private(set) static int $paginations = 0;
+
     // Static to count timelines in case multiple ones are created
     private(set) static int $timelines = 0;
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Simbiat\http20;
 
 use JetBrains\PhpStorm\ExpectedValues;
-use function in_array;
 
 /**
  * Functions that send/handle different HTTP headers.
@@ -20,6 +19,7 @@ class Headers
      * @noinspection PhpPropertyNamingConventionInspection
      */
     private(set) static array $_PUT = [];
+
     /**
      * Same as `$_POST`, but for DELETE
      *
@@ -28,6 +28,7 @@ class Headers
      * @noinspection PhpPropertyNamingConventionInspection
      */
     private(set) static array $_DELETE = [];
+
     /**
      * Same as `$_POST`, but for PATCH
      *
@@ -36,6 +37,7 @@ class Headers
      * @noinspection PhpPropertyNamingConventionInspection
      */
     private(set) static array $_PATCH = [];
+
     /**
      * Same as `$_FILES`, but gotten from PUT, PATCH or DELETE requests
      *
@@ -48,25 +50,21 @@ class Headers
     /**
      * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)
      *
-     * @var string
      */
     public const string ORIGIN_REGEX = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
     /**
      * Safe HTTP methods which can, generally, be allowed for processing
      *
-     * @var array
      */
     public const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
     /**
      * Full list of HTTP methods
      *
-     * @var array
      */
     public const array ALL_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
     /**
      * List of headers we allow exposing by default
      *
-     * @var array
      */
     public const array EXPOSED_HEADERS = [
         // CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
@@ -84,124 +82,176 @@ class Headers
     /**
      * Default values for CSP directives set to mostly restrictive values
      *
-     * @var array
      */
     public const array SECURE_DIRECTIVES = [
-        // Fetch Directives
-        'default-src' => '\'self\'', 'child-src' => '\'self\'', 'connect-src' => '\'self\'', 'font-src' => '\'self\'', 'frame-src' => '\'self\'',
-        // Blocking images, because images can be used to inject scripts:
+// Document directives
+        'base-uri' => '\'self\'',
+'child-src' => '\'self\'',
+'connect-src' => '\'self\'',
+// Fetch Directives
+        'default-src' => '\'self\'',
+'font-src' => '\'self\'',
+// Navigate directives
+        'form-action' => '\'self\'',
+'frame-ancestors' => '\'self\'',
+'frame-src' => '\'self\'',
+// Blocking images, because images can be used to inject scripts:
         // https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
         // https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
-        'img-src' => '\'none\'', 'manifest-src' => '\'self\'', 'media-src' => '\'self\'', 'object-src' => '\'none\'', 'script-src' => '\'none\'', 'script-src-elem' => '\'none\'', 'script-src-attr' => '\'none\'', 'style-src' => '\'none\'', 'style-src-elem' => '\'none\'', 'style-src-attr' => '\'none\'', 'worker-src' => '\'self\'',
-        // Document directives
-        'base-uri' => '\'self\'', 'plugin-types' => '', 'sandbox' => '',
-        // Navigate directives
-        'form-action' => '\'self\'', 'frame-ancestors' => '\'self\'',
-        // Other directives
-        'require-trusted-types-for' => '\'script\'', 'trusted-types' => '', 'report-to' => '',
+        'img-src' => '\'none\'',
+'manifest-src' => '\'self\'',
+'media-src' => '\'self\'',
+'object-src' => '\'none\'',
+'plugin-types' => '',
+'report-to' => '',
+// Other directives
+        'require-trusted-types-for' => '\'script\'',
+'sandbox' => '',
+'script-src' => '\'none\'',
+'script-src-attr' => '\'none\'',
+'script-src-elem' => '\'none\'',
+'style-src' => '\'none\'',
+'style-src-attr' => '\'none\'',
+'style-src-elem' => '\'none\'',
+'trusted-types' => '',
+'worker-src' => '\'self\'',
     ];
     /**
      * Default values for Feature-Policy, essentially disabling most of them
      *
-     * @var array
      */
     public const array SECURE_FEATURES = [
-        // Disable access to sensors
-        'accelerometer' => '\'none\'', 'ambient-light-sensor' => '\'none\'', 'gyroscope' => '\'none\'', 'magnetometer' => '\'none\'', 'vibrate' => '\'none\'',
-        // Disable access to devices
-        'camera' => '\'none\'', 'microphone' => '\'none\'', 'midi' => '\'none\'', 'usb' => '\'none\'', 'speaker' => '\'none\'',
-        // document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
+// Disable access to sensors
+        'accelerometer' => '\'none\'',
+'ambient-light-sensor' => '\'none\'',
+// Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+        'autoplay' => '\'none\'',
+// Disable access to devices
+        'camera' => '\'none\'',
+'display-capture' => '\'none\'',
+// document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
         'document-write' => '\'none\'',
-        // Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => '\'self\'', 'publickey-credentials-get' => '\'self\'',
-        // Disable geolocation, XR tracking, payment and screen capture APIs
-        'geolocation' => '\'none\'', 'xr-spatial-tracking' => '\'none\'', 'payment' => '\'none\'', 'display-capture' => '\'none\'',
-        // Disable wake-locks
-        'wake-lock' => '\'none\'', 'screen-wake-lock' => '\'none\'',
-        // Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
-        'web-share' => '\'none\'',
-        // Disable synchronous XMLHttpRequests (that were technically deprecated)
-        'sync-xhr' => '\'none\'',
-        // Disable WebVR API (halted standard, replaced by WebXR)
-        'vr' => '\'none\'',
-        // Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
-        'oversized-images' => '*(2.0)', 'unoptimized-images' => '*(0.5)', 'unoptimized-lossy-images' => '*(0.5)', 'unoptimized-lossless-images' => '*(1.0)', 'legacy-image-formats' => '\'none\'', 'unsized-media' => '\'none\'', 'image-compression' => '\'none\'', 'maximum-downscaling-image' => '\'none\'',
-        // Disable lazyload. Do not apply it to everything. While it can improve performance somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
+// Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+        'encrypted-media' => '\'self\'',
+// Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g., top, width, max-height)
+        'font-display-late-swap' => '\'none\'',
+'fullscreen' => '\'none\'',
+// Disable geolocation, XR tracking, payment and screen capture APIs
+        'geolocation' => '\'none\'',
+'gyroscope' => '\'none\'',
+'image-compression' => '\'none\'',
+'layout-animations' => '\'none\'',
+// Disable lazyload. Do not apply it to everything. While it can improve performance somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
         'lazyload' => '\'none\'',
-        // Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-        'autoplay' => '\'none\'', 'fullscreen' => '\'none\'', 'picture-in-picture' => '\'none\'',
-        // Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g., top, width, max-height)
-        'font-display-late-swap' => '\'none\'', 'layout-animations' => '\'none\'',
+'legacy-image-formats' => '\'none\'',
+'magnetometer' => '\'none\'',
+'maximum-downscaling-image' => '\'none\'',
+'microphone' => '\'none\'',
+'midi' => '\'none\'',
+// Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
+        'oversized-images' => '*(2.0)',
+'payment' => '\'none\'',
+'picture-in-picture' => '\'none\'',
+'publickey-credentials-get' => '\'self\'',
+'screen-wake-lock' => '\'none\'',
+'speaker' => '\'none\'',
+// Disable synchronous XMLHttpRequests (that were technically deprecated)
+        'sync-xhr' => '\'none\'',
+'unoptimized-images' => '*(0.5)',
+'unoptimized-lossless-images' => '*(1.0)',
+'unoptimized-lossy-images' => '*(0.5)',
+'unsized-media' => '\'none\'',
+'usb' => '\'none\'',
+'vibrate' => '\'none\'',
+// Disable WebVR API (halted standard, replaced by WebXR)
+        'vr' => '\'none\'',
+// Disable wake-locks
+        'wake-lock' => '\'none\'',
+// Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
+        'web-share' => '\'none\'',
+'xr-spatial-tracking' => '\'none\'',
     ];
     /**
      * Default values for Permissions-Policy, essentially disabling most of them. It is different from SECURE_FEATURES, because of slightly different values and different list of policies
      *
-     * @var array
      */
     public const array PERMISSIONS_DEFAULT = [
-        // Disable access to sensors
-        'accelerometer' => '', 'ambient-light-sensor' => '', 'gyroscope' => '', 'magnetometer' => '',
-        // Disable access to devices
-        'camera' => '', 'keyboard-map' => '', 'microphone' => '', 'midi' => '', 'usb' => '', 'gamepad' => '', 'speaker-selection' => '', 'hid' => '', 'serial' => '',
-        // Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
+// Disable access to sensors
+        'accelerometer' => '',
+'ambient-light-sensor' => '',
+// Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+        'autoplay' => '',
+// Disable access to devices
+        'camera' => '',
+// Clipboard access. Enable only if you are going to manipulate clipboard on client side
+        'clipboard-read' => '',
+'clipboard-write' => '',
+// User tracking stuff
+        'cross-origin-isolated' => '',
+'display-capture' => '',
+// Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
         'document-domain' => '',
-        // Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => 'self', 'publickey-credentials-get' => 'self',
-        // Disable geolocation, XR tracking, payment and screen capture APIs
-        'geolocation' => '', 'xr-spatial-tracking' => '', 'payment' => '', 'display-capture' => '',
-        // Disable wake-locks
-        'screen-wake-lock' => '', 'idle-detection' => '',
-        // Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
-        'web-share' => '',
-        // Disable synchronous XMLHttpRequests (that were technically deprecated)
+// Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+        'encrypted-media' => 'self',
+'fullscreen' => '',
+'gamepad' => '',
+// Disable geolocation, XR tracking, payment and screen capture APIs
+        'geolocation' => '',
+'gyroscope' => '',
+'hid' => '',
+'idle-detection' => '',
+'interest-cohort' => '',
+'keyboard-map' => '',
+'magnetometer' => '',
+'microphone' => '',
+'midi' => '',
+'payment' => '',
+'picture-in-picture' => '',
+'publickey-credentials-get' => 'self',
+// Disable wake-locks
+        'screen-wake-lock' => '',
+'serial' => '',
+'speaker-selection' => '',
+// Disable synchronous XMLHttpRequests (that were technically deprecated)
         'sync-xhr' => '',
-        // Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-        'autoplay' => '', 'fullscreen' => '', 'picture-in-picture' => '',
-        // Clipboard access. Enable only if you are going to manipulate clipboard on client side
-        'clipboard-read' => '', 'clipboard-write' => '',
-        // User tracking stuff
-        'cross-origin-isolated' => '', 'interest-cohort' => '',
+'usb' => '',
+// Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
+        'web-share' => '',
+'xr-spatial-tracking' => '',
     ];
     /**
      * Values supported by Sandbox in CSP
      *
-     * @var array
      */
     public const array SANDBOX_VALUES = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
     /**
      * ist of standard values for `Set-Fetch-Site`
      *
-     * @var array
      */
     public const array FETCH_SITE = ['cross-site', 'same-origin', 'same-site', 'none'];
     /**
      * List of standard values for `Set-Fetch-Mode`
      *
-     * @var array
      */
     public const array FETCH_MODE = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
     /**
      * List of values for `Set-Fetch-User`
      *
-     * @var array
      */
     public const array FETCH_USER = ['?0', '?1'];
     /**
      * List of standard Set-Fetch-Destinations besides "script-like"
      *
-     * @var array
      */
     public const array FETCH_DESTINATIONS = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
     /**
      * List of standard Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (`<script>` or similar object)
      *
-     * @var array
      */
     public const array SCRIPT_LIKE = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
     /**
      * List of standard HTTP status codes
      *
-     * @var array
      */
     public const array HTTP_CODES = [
         100 => 'Continue', 101 => 'Switching Protocols', 102 => 'Processing', 103 => 'Early Hints',

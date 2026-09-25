@@ -7,7 +7,6 @@ namespace Simbiat\http20;
 use JetBrains\PhpStorm\ExpectedValues;
 use JetBrains\PhpStorm\FileReference;
 use JetBrains\PhpStorm\NoReturn;
-
 use Simbiat\StringHelpers\Convert;
 
 /**
@@ -1115,10 +1114,10 @@ class Sharing
     {
         // Get headers
         $headers_data = \get_headers($url, context: \stream_context_create(['http' => [
-            'method' => 'HEAD',
             'follow_location' => 1,
+            'method' => 'HEAD',
             'protocol_version' => 2.0,
-        ]]));
+        ],]));
         // Check that we did get headers
         if (!\is_array($headers_data)) {
             // Failed to get headers, meaning we most likely will not be able to get the content as well
@@ -1148,10 +1147,10 @@ class Sharing
         // Open streams
         // Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
         $url_open = \fopen($url, 'rb', context: \stream_context_create(['http' => [
-            'method' => 'GET',
             'follow_location' => 1,
+            'method' => 'GET',
             'protocol_version' => 2.0,
-        ]]));
+        ],]));
         $output = \fopen('php://output', 'wb');
         // Send contents
         if (

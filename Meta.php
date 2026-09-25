@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Simbiat\http20;
 
-use function in_array, is_string;
-
 /**
  * Functions, that generate sets of meta-tags, that may be useful for your website.
  */

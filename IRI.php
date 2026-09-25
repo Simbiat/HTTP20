@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Simbiat\http20;
 
-use function is_array, is_int, is_string;
-
 /**
  * IRI-related function
  */
@@ -14,31 +12,26 @@ class IRI
     /**
      * Characters from the `ucschar` terminal as seen in RFC 3987
      *
-     * @var string
      */
     public const string UCS_CHAR = '\x{00A0}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFEF}\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}';
     /**
      * Characters from the `iprivate` terminal as seen in RFC 3987
      *
-     * @var string
      */
     public const string I_PRIVATE = '\x{E000}-\x{F8FF}\x{F0000}-\x{FFFFD}\x{100000}-\x{10FFFD}';
     /**
      * Characters from the `unreserved` terminal as seen in RFC 3987
      *
-     * @var string
      */
     public const string UNRESERVED = 'a-zA-Z0-9~_.\-';
     /**
      * Characters from the `gen-delims` terminal as seen in RFC 3987
      *
-     * @var string
      */
     public const string GEN_DELIMITERS = ':\/?#\[\]@';
     /**
      * Characters from the `sub-delims` terminal as seen in RFC 3987
      *
-     * @var string
      */
     public const string SUB_DELIMITERS = '!$&\'()*+,;=';
 
@@ -112,8 +105,10 @@ class IRI
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['host'] = \mb_strtolower($ascii_host, 'UTF-8');
         // Check if a valid domain name or IP
-        if (!\filter_var($ascii_host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME) &&
-            !\filter_var($ascii_host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4 | \FILTER_FLAG_IPV6)) {
+        if (
+            !\filter_var($ascii_host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME) &&
+            !\filter_var($ascii_host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4 | \FILTER_FLAG_IPV6)
+        ) {
             return null;
         }
         // Pross user and pass if present
@@ -153,8 +148,9 @@ class IRI
         // Validate that all components besides `query` do *not* contain characters from `iprivate` terminal
         if (
             \array_any(
-                $parsed_iri, static fn($value, $component) => $component !== 'query'
-                && \preg_match('/['.self::I_PRIVATE.']/u', $value) === 1
+                $parsed_iri,
+                static fn($value, $component) => $component !== 'query'
+                && \preg_match('/['.self::I_PRIVATE.']/u', $value) === 1,
             )
         ) {
             return null;

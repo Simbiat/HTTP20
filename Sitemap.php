@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Simbiat\http20;
 
 use JetBrains\PhpStorm\ExpectedValues;
-use function in_array;
 
 /**
  * Generate sitemap file

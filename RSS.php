@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Simbiat\http20;
 
-use function is_array;
-
 /**
  * Class to generate RSS feed
  */

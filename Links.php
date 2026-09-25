@@ -15,31 +15,26 @@ class Links
     /**
      * Regex for `rel` values that are allowed in the HTML body as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
      *
-     * @var string
      */
     public const string ALLOWED_IN_BODY = '/^\s*(alternate )?((^| )(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+(alternate)?\s*$/uir';
     /**
      * Regex for `rel` values that are used for preload
      *
-     * @var string
      */
     public const string PRELOAD_REL = '/((^| )(dns-prefetch|modulepreload|preconnect|prefetch|preload)( |$))+/uir';
     /**
      * Regex for allowed `as` values for `rel=preload` as per https://html.spec.whatwg.org/multipage/links.html#preload-destination
      *
-     * @var array
      */
     public const array AS_VALUES_PRELOAD = ['fetch', 'font', 'image', 'script', 'style', 'track'];
     /**
      * Regex for allowed `as` values for `rel=modulepreload` as per https://html.spec.whatwg.org/multipage/links.html#module-preload-destination and https://fetch.spec.whatwg.org/#request-destination-script-like
      *
-     * @var array
      */
     public const array AS_VALUES_MODULEPRELOAD = ['audioworklet', 'json', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'style', 'text', 'worker'];
     /**
      * Regex for `rel` values that are considered external resources as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
      *
-     * @var string
      */
     public const string EXTERNAL_RESOURCES = '/((^| )(dns-prefetch|icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+/uir';
     /**
@@ -407,7 +402,8 @@ class Links
             unset($link['blocking']);
         }
         // `disabled` is allowed only for stylesheets
-        if (\array_key_exists('disabled', $link) &&
+        if (
+            \array_key_exists('disabled', $link) &&
             (
                 !\array_key_exists('rel', $link) ||
                 \preg_match('/((^| )(stylesheet)( |$))+/uir', $link['rel']) !== 1 ||
