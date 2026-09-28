@@ -15,22 +15,25 @@ final class Common
 {
     /**
      * Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses a portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47
-     *
      */
-    public const string LANGUAGE_ENC_REGEX = /** @lang PhpRegExp */
+    /** @lang PhpRegExp */
+    public const string LANGUAGE_ENC_REGEX =
         '(UTF-8|ISO-8859-1|[!#$%&+\-^_`{}~a-zA-Z0-9]+)\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
+
     /**
      * Language values as per https://www.ietf.org/rfc/bcp/bcp47.txt (essentially just part of the above value)
-     *
      */
-    public const string LANGUAGE_TAG_REGEX = /** @lang PhpRegExp */
+    /** @lang PhpRegExp */
+    public const string LANGUAGE_TAG_REGEX =
         '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
+
     /**
      * Regex for MIME type
-     *
      */
-    public const string MIME_REGEX = /** @lang PhpRegExp */
+    /** @lang PhpRegExp */
+    public const string MIME_REGEX =
         '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
+
     /**
      * Linkage of extensions to MIME types
      *
@@ -66,39 +69,6 @@ final class Common
         self::loadMime($mime_list);
 
         return \array_search($mime, self::$extension_to_mime, true);
-    }
-
-    /**
-     * @param string $mime_list
-     *
-     * @return void
-     */
-    private static function loadMime(string $mime_list = ''): void
-    {
-        if (Sanitize::whiteString($mime_list)) {
-            // Check if it's a valid JSON string
-            if (\json_validate($mime_list)) {
-                try {
-                    self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
-
-                    return;
-                } catch (\Throwable) {
-                    return;
-                }
-            } elseif (!\is_file($mime_list)) {
-                $mime_list = __DIR__.'/mime.json';
-            }
-        }
-        // Read the file with MIME types
-        if (\count(self::$extension_to_mime) !== 0) {
-            return;
-        }
-
-        try {
-            self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
-        } catch (\Throwable) {
-            return;
-        }
     }
 
     /**
@@ -362,9 +332,7 @@ final class Common
                 case 'html':
                     $content = \preg_replace_callback(
                         '#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
-                        static function ($matches) {
-                            return '<'.$matches[1].\preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]).$matches[3].'>';
-                        },
+                        static fn($matches) => '<'.$matches[1].\preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]).$matches[3].'>',
                         \str_replace("\r", '', $content),
                     );
                     $content = \preg_replace(
@@ -376,13 +344,20 @@ final class Common
                             '#<(img|input)(>| .*?>)#s',
                             // Remove a line break and two or more white-space(s) between tag(s)
                             '#(<!--.*?-->)|(>)(?:\n*|\s{2,})(<)|^\s*|\s*$#s',
-                            '#(<!--.*?-->)|(?<!>)\s+(</.*?>)|(<[^/]*?>)\s+(?!<)#s', // t+c || o+t
-                            '#(<!--.*?-->)|(<[^/]*?>)\s+(<[^/]*?>)|(</.*?>)\s+(</.*?>)#s', // o+o || c+c
-                            '#(<!--.*?-->)|(</.*?>)\s+(\s)(?!<)|(?<!>)\s+(\s)(<[^/]*?/?>)|(<[^/]*?/?>)\s+(\s)(?!<)#s', // c+t || t+o || o+t -- separated by long white-space(s)
-                            '#(<!--.*?-->)|(<[^/]*?>)\s+(</.*?>)#s', // empty tag
-                            '#<(img|input)(>| .*?>)</\1>#s', // reset previous fix
-                            '#(&nbsp;)&nbsp;(?![<\s])#', // clean up ...
-                            '#(?<=>)(&nbsp;)(?=<)#', // --ibid
+                            // t+c || o+t
+                            '#(<!--.*?-->)|(?<!>)\s+(</.*?>)|(<[^/]*?>)\s+(?!<)#s',
+                            // o+o || c+c
+                            '#(<!--.*?-->)|(<[^/]*?>)\s+(<[^/]*?>)|(</.*?>)\s+(</.*?>)#s',
+                            // c+t || t+o || o+t -- separated by long white-space(s)
+                            '#(<!--.*?-->)|(</.*?>)\s+(\s)(?!<)|(?<!>)\s+(\s)(<[^/]*?/?>)|(<[^/]*?/?>)\s+(\s)(?!<)#s',
+                            // empty tag
+                            '#(<!--.*?-->)|(<[^/]*?>)\s+(</.*?>)#s',
+                            // reset previous fix
+                            '#<(img|input)(>| .*?>)</\1>#s',
+                            // clean up ...
+                            '#(&nbsp;)&nbsp;(?![<\s])#',
+                            // --ibid
+                            '#(?<=>)(&nbsp;)(?=<)#',
                             // Remove HTML comment(s) except IE comment(s)
                             '#\s*<!--(?!\[if\s).*?-->\s*|(?<!>)\n+(?=<[^!])#s',
                         ],
@@ -456,5 +431,40 @@ final class Common
         // Clean system buffer
         @\flush();
         exit(0);
+    }
+
+    /**
+     * Load MIME list
+     *
+     * @param string $mime_list
+     *
+     * @return void
+     */
+    private static function loadMime(string $mime_list = ''): void
+    {
+        if (Sanitize::whiteString($mime_list)) {
+            // Check if it's a valid JSON string
+            if (\json_validate($mime_list)) {
+                try {
+                    self::$extension_to_mime = \json_decode($mime_list, true, 512, \JSON_THROW_ON_ERROR);
+
+                    return;
+                } catch (\Throwable) {
+                    return;
+                }
+            } elseif (!\is_file($mime_list)) {
+                $mime_list = __DIR__.'/mime.json';
+            }
+        }
+        // Read the file with MIME types
+        if (\count(self::$extension_to_mime) !== 0) {
+            return;
+        }
+
+        try {
+            self::$extension_to_mime = \json_decode(\file_get_contents($mime_list), true, 512, \JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return;
+        }
     }
 }

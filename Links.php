@@ -14,35 +14,29 @@ final class Links
 {
     /**
      * Regex for `rel` values that are allowed in the HTML body as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
-     *
      */
     public const string ALLOWED_IN_BODY = '/^\s*(alternate )?((^| )(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+(alternate)?\s*$/uir';
+
     /**
      * Regex for `rel` values that are used for preload
-     *
      */
     public const string PRELOAD_REL = '/((^| )(dns-prefetch|modulepreload|preconnect|prefetch|preload)( |$))+/uir';
+
     /**
      * Regex for allowed `as` values for `rel=preload` as per https://html.spec.whatwg.org/multipage/links.html#preload-destination
-     *
      */
     public const array AS_VALUES_PRELOAD = ['fetch', 'font', 'image', 'script', 'style', 'track'];
+
     /**
      * Regex for allowed `as` values for `rel=modulepreload` as per https://html.spec.whatwg.org/multipage/links.html#module-preload-destination and https://fetch.spec.whatwg.org/#request-destination-script-like
-     *
      */
     public const array AS_VALUES_MODULEPRELOAD = ['audioworklet', 'json', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'style', 'text', 'worker'];
+
     /**
      * Regex for `rel` values that are considered external resources as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
-     *
      */
     public const string EXTERNAL_RESOURCES = '/((^| )(dns-prefetch|icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+/uir';
-    /**
-     * Flag indicating that HTTP_SAVE_DATA was received and is `on`
-     *
-     * @var bool
-     */
-    private static bool $save_data = false;
+
     /**
      * List of supported attributes
      */
@@ -58,13 +52,19 @@ final class Links
      */
     private const array FETCH_PRIORITY = ['auto', 'low', 'high'];
 
+    /**
+     * Flag indicating that HTTP_SAVE_DATA was received and is `on`
+     *
+     * @var bool
+     */
+    private static bool $save_data = false;
+
     public function __construct()
     {
         // Check if Save-Data is on
         self::$save_data =
             \array_key_exists('HTTP_SAVE_DATA', $_SERVER)
-            && \preg_match('/^on$/uir', $_SERVER['HTTP_SAVE_DATA']) === 1
-         ? true : false;
+            && \preg_match('/^on$/uir', $_SERVER['HTTP_SAVE_DATA']) === 1;
     }
 
     /**
@@ -129,7 +129,9 @@ final class Links
                 continue;
             }
             // Generate element as string
-            $links_to_send[] = $type === 'header' ? \preg_replace('/[\r\n\p{C}]/uir', '', self::generateHeader($link)) : \preg_replace('/[\r\n\p{C}]/uir', '', self::generateTag($link));
+            $links_to_send[] = $type === 'header'
+                ? \preg_replace('/[\r\n\p{C}]/uir', '', self::generateHeader($link))
+                : \preg_replace('/[\r\n\p{C}]/uir', '', self::generateTag($link));
         }
         if (\count($links_to_send) === 0) {
             return '';
@@ -154,26 +156,26 @@ final class Links
      */
     private static function generateTag(array $link): string
     {
-        return '<link'.
-            (empty($link['href']) ? '' : ' href="'.$link['href'].'"').
-            (empty($link['imagesrcset']) ? '' : ' imagesrcset="'.$link['imagesrcset'].'"').
-            (empty($link['title']) ? '' : ' title="'.$link['title'].'"').
-            (empty($link['rel']) ? '' : ' rel="'.$link['rel'].'"').
-            (empty($link['itemprop']) ? '' : ' itemprop="'.$link['itemprop'].'"').
-            (empty($link['hreflang']) ? '' : ' hreflang="'.$link['hreflang'].'"').
-            (empty($link['type']) ? '' : ' type="'.$link['type'].'"').
-            (empty($link['as']) ? '' : ' as="'.$link['as'].'"').
-            (empty($link['color']) ? '' : ' color="'.$link['color'].'"').
-            (empty($link['sizes']) ? '' : ' sizes="'.$link['sizes'].'"').
-            (empty($link['imagesizes']) ? '' : ' imagesizes="'.$link['imagesizes'].'"').
-            (empty($link['media']) ? '' : ' media="'.$link['media'].'"').
-            (empty($link['integrity']) ? '' : ' integrity="'.$link['integrity'].'"').
-            (empty($link['crossorigin']) ? '' : ' crossorigin="'.$link['crossorigin'].'"').
-            (empty($link['referrerpolicy']) ? '' : ' referrerpolicy="'.$link['referrerpolicy'].'"').
-            (empty($link['blocking']) ? '' : ' blocking="'.$link['blocking'].'"').
-            (\array_key_exists('disabled', $link) ? ' disabled' : '').
-            (empty($link['fetchpriority']) ? '' : ' fetchpriority="'.$link['fetchpriority'].'"').
-            '>';
+        return '<link'
+            .(empty($link['href']) ? '' : ' href="'.$link['href'].'"')
+            .(empty($link['imagesrcset']) ? '' : ' imagesrcset="'.$link['imagesrcset'].'"')
+            .(empty($link['title']) ? '' : ' title="'.$link['title'].'"')
+            .(empty($link['rel']) ? '' : ' rel="'.$link['rel'].'"')
+            .(empty($link['itemprop']) ? '' : ' itemprop="'.$link['itemprop'].'"')
+            .(empty($link['hreflang']) ? '' : ' hreflang="'.$link['hreflang'].'"')
+            .(empty($link['type']) ? '' : ' type="'.$link['type'].'"')
+            .(empty($link['as']) ? '' : ' as="'.$link['as'].'"')
+            .(empty($link['color']) ? '' : ' color="'.$link['color'].'"')
+            .(empty($link['sizes']) ? '' : ' sizes="'.$link['sizes'].'"')
+            .(empty($link['imagesizes']) ? '' : ' imagesizes="'.$link['imagesizes'].'"')
+            .(empty($link['media']) ? '' : ' media="'.$link['media'].'"')
+            .(empty($link['integrity']) ? '' : ' integrity="'.$link['integrity'].'"')
+            .(empty($link['crossorigin']) ? '' : ' crossorigin="'.$link['crossorigin'].'"')
+            .(empty($link['referrerpolicy']) ? '' : ' referrerpolicy="'.$link['referrerpolicy'].'"')
+            .(empty($link['blocking']) ? '' : ' blocking="'.$link['blocking'].'"')
+            .(\array_key_exists('disabled', $link) ? ' disabled' : '')
+            .(empty($link['fetchpriority']) ? '' : ' fetchpriority="'.$link['fetchpriority'].'"')
+            .'>';
     }
 
     /**
@@ -185,20 +187,20 @@ final class Links
      */
     private static function generateHeader(array $link): string
     {
-        return '<'.$link['href'].'>'.
-            (empty($link['title']) ? '' : '; title="'.$link['title'].'"').
-            (empty($link['title*']) ? '' : '; title*="'.$link['title*'].'"').
-            (empty($link['rel']) ? '' : '; rel="'.$link['rel'].'"').
-            (empty($link['hreflang']) ? '' : '; hreflang="'.$link['hreflang'].'"').
-            (empty($link['type']) ? '' : '; type="'.$link['type'].'"').
-            (empty($link['as']) ? '' : '; as="'.$link['as'].'"').
-            (empty($link['sizes']) ? '' : '; sizes="'.$link['sizes'].'"').
-            (empty($link['imagesizes']) ? '' : '; imagesizes="'.$link['imagesizes'].'"').
-            (empty($link['media']) ? '' : '; media="'.$link['media'].'"').
-            (empty($link['integrity']) ? '' : '; integrity="'.$link['integrity'].'"').
-            (empty($link['crossorigin']) ? '' : '; crossorigin="'.$link['crossorigin'].'"').
-            (empty($link['referrerpolicy']) ? '' : '; referrerpolicy="'.$link['referrerpolicy'].'"').
-            (empty($link['fetchpriority']) ? '' : '; fetchpriority="'.$link['fetchpriority'].'"');
+        return '<'.$link['href'].'>'
+            .(empty($link['title']) ? '' : '; title="'.$link['title'].'"')
+            .(empty($link['title*']) ? '' : '; title*="'.$link['title*'].'"')
+            .(empty($link['rel']) ? '' : '; rel="'.$link['rel'].'"')
+            .(empty($link['hreflang']) ? '' : '; hreflang="'.$link['hreflang'].'"')
+            .(empty($link['type']) ? '' : '; type="'.$link['type'].'"')
+            .(empty($link['as']) ? '' : '; as="'.$link['as'].'"')
+            .(empty($link['sizes']) ? '' : '; sizes="'.$link['sizes'].'"')
+            .(empty($link['imagesizes']) ? '' : '; imagesizes="'.$link['imagesizes'].'"')
+            .(empty($link['media']) ? '' : '; media="'.$link['media'].'"')
+            .(empty($link['integrity']) ? '' : '; integrity="'.$link['integrity'].'"')
+            .(empty($link['crossorigin']) ? '' : '; crossorigin="'.$link['crossorigin'].'"')
+            .(empty($link['referrerpolicy']) ? '' : '; referrerpolicy="'.$link['referrerpolicy'].'"')
+            .(empty($link['fetchpriority']) ? '' : '; fetchpriority="'.$link['fetchpriority'].'"');
     }
 
     /**
@@ -226,7 +228,8 @@ final class Links
             $link['type'] =
                 \is_string($ext)
                 && Common::getMimeFromExtension($ext) !== false
-             ? Common::getMimeFromExtension($ext) : '';
+                    ? Common::getMimeFromExtension($ext)
+                    : '';
         }
         if (
             \array_key_exists('rel', $link)
@@ -343,7 +346,9 @@ final class Links
             $link['crossorigin'] = 'anonymous';
         }
         // Sanitize `title` if it's set
-        $link['title'] = \array_key_exists('title', $link) ? \urldecode(\htmlspecialchars($link['title'], \ENT_QUOTES | \ENT_SUBSTITUTE)) : '';
+        $link['title'] = \array_key_exists('title', $link)
+            ? \urldecode(\htmlspecialchars($link['title'], \ENT_QUOTES | \ENT_SUBSTITUTE))
+            : '';
         // Validate `title*`, which is valid only for HTTP header
         if (
             \array_key_exists('title*', $link)
@@ -647,15 +652,11 @@ final class Links
         ) {
             return false;
         }
-        // color is allowed only for mask-icon
-        if (
-            \array_key_exists('color', $link)
-            && \preg_match('/((^| )(mask-icon)( |$))+/uir', $link['rel']) !== 1
-        ) {
-            return false;
-        }
 
-        return true;
+        // color is allowed only for mask-icon
+        return
+            !\array_key_exists('color', $link)
+            || \preg_match('/((^| )(mask-icon)( |$))+/uir', $link['rel']) === 1;
     }
 
     /**

@@ -12,6 +12,330 @@ use JetBrains\PhpStorm\ExpectedValues;
 final class Headers
 {
     /**
+     * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)
+     */
+    public const string ORIGIN_REGEX = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
+
+    /**
+     * Safe HTTP methods which can, generally, be allowed for processing
+     */
+    public const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
+    /**
+     * Full list of HTTP methods
+     */
+    public const array ALL_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
+
+    /**
+     * List of headers we allow exposing by default
+     */
+    public const array EXPOSED_HEADERS = [
+        // CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
+        'Cache-Control',
+        'Content-Language',
+        'Content-Type',
+        'Last-Modified',
+        // Security headers
+        'Strict-Transport-Security',
+        'Access-Control-Max-Age',
+        'Access-Control-Allow-Credentials',
+        'Vary',
+        'Access-Control-Allow-Origin',
+        'Access-Control-Expose-Headers',
+        'Access-Control-Allow-Headers',
+        'Access-Control-Allow-Methods',
+        'Cross-Origin-Embedder-Policy',
+        'Cross-Origin-Opener-Policy',
+        'Cross-Origin-Resource-Policy',
+        'Referrer-Policy',
+        'Content-Security-Policy',
+        'Content-Security-Policy-Report-Only',
+        // Performance headers
+        'X-Content-Type-Options',
+        'X-DNS-Prefetch-Control',
+        'Connection',
+        'Keep-Alive',
+        // Other
+        'Feature-Policy',
+        'ETag',
+        'Link',
+    ];
+
+    /**
+     * Default values for CSP directives set to mostly restrictive values
+     */
+    public const array SECURE_DIRECTIVES = [
+// Document directives
+        'base-uri' => '\'self\'',
+        'child-src' => '\'self\'',
+        'connect-src' => '\'self\'',
+// Fetch Directives
+        'default-src' => '\'self\'',
+        'font-src' => '\'self\'',
+// Navigate directives
+        'form-action' => '\'self\'',
+        'frame-ancestors' => '\'self\'',
+        'frame-src' => '\'self\'',
+// Blocking images, because images can be used to inject scripts:
+        // https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
+        // https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
+        'img-src' => '\'none\'',
+        'manifest-src' => '\'self\'',
+        'media-src' => '\'self\'',
+        'object-src' => '\'none\'',
+        'plugin-types' => '',
+        'report-to' => '',
+// Other directives
+        'require-trusted-types-for' => '\'script\'',
+        'sandbox' => '',
+        'script-src' => '\'none\'',
+        'script-src-attr' => '\'none\'',
+        'script-src-elem' => '\'none\'',
+        'style-src' => '\'none\'',
+        'style-src-attr' => '\'none\'',
+        'style-src-elem' => '\'none\'',
+        'trusted-types' => '',
+        'worker-src' => '\'self\'',
+    ];
+
+    /**
+     * Default values for Feature-Policy, essentially disabling most of them
+     */
+    public const array SECURE_FEATURES = [
+// Disable access to sensors
+        'accelerometer' => '\'none\'',
+        'ambient-light-sensor' => '\'none\'',
+// Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+        'autoplay' => '\'none\'',
+// Disable access to devices
+        'camera' => '\'none\'',
+        'display-capture' => '\'none\'',
+// document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
+        'document-write' => '\'none\'',
+// Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+        'encrypted-media' => '\'self\'',
+// Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g., top, width, max-height)
+        'font-display-late-swap' => '\'none\'',
+        'fullscreen' => '\'none\'',
+// Disable geolocation, XR tracking, payment and screen capture APIs
+        'geolocation' => '\'none\'',
+        'gyroscope' => '\'none\'',
+        'image-compression' => '\'none\'',
+        'layout-animations' => '\'none\'',
+// Disable lazyload. Do not apply it to everything. While it can improve performance somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
+        'lazyload' => '\'none\'',
+        'legacy-image-formats' => '\'none\'',
+        'magnetometer' => '\'none\'',
+        'maximum-downscaling-image' => '\'none\'',
+        'microphone' => '\'none\'',
+        'midi' => '\'none\'',
+// Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
+        'oversized-images' => '*(2.0)',
+        'payment' => '\'none\'',
+        'picture-in-picture' => '\'none\'',
+        'publickey-credentials-get' => '\'self\'',
+        'screen-wake-lock' => '\'none\'',
+        'speaker' => '\'none\'',
+// Disable synchronous XMLHttpRequests (that were technically deprecated)
+        'sync-xhr' => '\'none\'',
+        'unoptimized-images' => '*(0.5)',
+        'unoptimized-lossless-images' => '*(1.0)',
+        'unoptimized-lossy-images' => '*(0.5)',
+        'unsized-media' => '\'none\'',
+        'usb' => '\'none\'',
+        'vibrate' => '\'none\'',
+// Disable WebVR API (halted standard, replaced by WebXR)
+        'vr' => '\'none\'',
+// Disable wake-locks
+        'wake-lock' => '\'none\'',
+// Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
+        'web-share' => '\'none\'',
+        'xr-spatial-tracking' => '\'none\'',
+    ];
+
+    /**
+     * Default values for Permissions-Policy, essentially disabling most of them. It is different from SECURE_FEATURES, because of slightly different values and different list of policies
+     */
+    public const array PERMISSIONS_DEFAULT = [
+// Disable access to sensors
+        'accelerometer' => '',
+        'ambient-light-sensor' => '',
+// Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
+        'autoplay' => '',
+// Disable access to devices
+        'camera' => '',
+// Clipboard access. Enable only if you are going to manipulate clipboard on client side
+        'clipboard-read' => '',
+        'clipboard-write' => '',
+// User tracking stuff
+        'cross-origin-isolated' => '',
+        'display-capture' => '',
+// Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
+        'document-domain' => '',
+// Allowing use of DRM and Web Authentication API, but only on our site and its own frames
+        'encrypted-media' => 'self',
+        'fullscreen' => '',
+        'gamepad' => '',
+// Disable geolocation, XR tracking, payment and screen capture APIs
+        'geolocation' => '',
+        'gyroscope' => '',
+        'hid' => '',
+        'idle-detection' => '',
+        'interest-cohort' => '',
+        'keyboard-map' => '',
+        'magnetometer' => '',
+        'microphone' => '',
+        'midi' => '',
+        'payment' => '',
+        'picture-in-picture' => '',
+        'publickey-credentials-get' => 'self',
+// Disable wake-locks
+        'screen-wake-lock' => '',
+        'serial' => '',
+        'speaker-selection' => '',
+// Disable synchronous XMLHttpRequests (that were technically deprecated)
+        'sync-xhr' => '',
+        'usb' => '',
+// Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
+        'web-share' => '',
+        'xr-spatial-tracking' => '',
+    ];
+
+    /**
+     * Values supported by Sandbox in CSP
+     */
+    public const array SANDBOX_VALUES = [
+        'allow-downloads-without-user-activation',
+        'allow-forms',
+        'allow-modals',
+        'allow-orientation-lock',
+        'allow-pointer-lock',
+        'allow-popups',
+        'allow-popups-to-escape-sandbox',
+        'allow-presentation',
+        'allow-same-origin',
+        'allow-scripts',
+        'allow-storage-access-by-user-activation',
+        'allow-top-navigation',
+        'allow-top-navigation-by-user-activation',
+    ];
+
+    /**
+     * ist of standard values for `Set-Fetch-Site`
+     */
+    public const array FETCH_SITE = ['cross-site', 'same-origin', 'same-site', 'none'];
+
+    /**
+     * List of standard values for `Set-Fetch-Mode`
+     */
+    public const array FETCH_MODE = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
+
+    /**
+     * List of values for `Set-Fetch-User`
+     */
+    public const array FETCH_USER = ['?0', '?1'];
+
+    /**
+     * List of standard Set-Fetch-Destinations besides "script-like"
+     */
+    public const array FETCH_DESTINATIONS = [
+        'audio',
+        'audioworklet',
+        'document',
+        'embed',
+        'empty',
+        'font',
+        'image',
+        'manifest',
+        'object',
+        'paintworklet',
+        'report',
+        'script',
+        'serviceworker',
+        'sharedworker',
+        'style',
+        'track',
+        'video',
+        'worker',
+        'xslt',
+        'nested-document',
+    ];
+
+    /**
+     * List of standard Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (`<script>` or similar object)
+     */
+    public const array SCRIPT_LIKE = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
+
+    /**
+     * List of standard HTTP status codes
+     */
+    public const array HTTP_CODES = [
+        100 => 'Continue',
+        101 => 'Switching Protocols',
+        102 => 'Processing',
+        103 => 'Early Hints',
+        200 => 'OK',
+        201 => 'Created',
+        202 => 'Accepted',
+        203 => 'Non-Authoritative Information',
+        204 => 'No Content',
+        205 => 'Reset Content',
+        206 => 'Partial Content',
+        207 => 'Multi-Status',
+        208 => 'Already Reported',
+        226 => 'IM Used',
+        300 => 'Multiple Choices',
+        301 => 'Moved Permanently',
+        302 => 'Found',
+        303 => 'See Other',
+        304 => 'Not Modified',
+        305 => 'Use Proxy',
+        306 => 'Switch Proxy',
+        307 => 'Temporary Redirect',
+        308 => 'Permanent Redirect',
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        402 => 'Payment Required',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        406 => 'Not Acceptable',
+        407 => 'Proxy Authentication Required',
+        408 => 'Request Timeout',
+        409 => 'Conflict',
+        410 => 'Gone',
+        411 => 'Length Required',
+        412 => 'Precondition Failed',
+        413 => 'Payload Too Large',
+        414 => 'URI Too Long',
+        415 => 'Unsupported Media Type',
+        416 => 'Range Not Satisfiable',
+        417 => 'Expectation Failed',
+        418 => 'I\'m a teapot',
+        421 => 'Misdirected Request',
+        422 => 'Unprocessable Entity',
+        423 => 'Locked',
+        424 => 'Failed Dependency',
+        425 => 'Too Early',
+        426 => 'Upgrade Required',
+        428 => 'Precondition Required',
+        429 => 'Too Many Requests',
+        431 => 'Request Header Fields Too Large',
+        451 => 'Unavailable For Legal Reasons',
+        500 => 'Internal Server Error',
+        501 => 'Not Implemented',
+        502 => 'Bad Gateway',
+        503 => 'Service Unavailable',
+        504 => 'Gateway Timeout',
+        505 => 'HTTP Version Not Supported',
+        506 => 'Variant Also Negotiates',
+        507 => 'Insufficient Storage',
+        508 => 'Loop Detected',
+        510 => 'Not Extended',
+        511 => 'Network Authentication Required',
+    ];
+
+    /**
      * Same as `$_POST`, but for PUT
      *
      * @var array
@@ -48,220 +372,6 @@ final class Headers
     private(set) static array $_FILES = [];
 
     /**
-     * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)
-     *
-     */
-    public const string ORIGIN_REGEX = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
-    /**
-     * Safe HTTP methods which can, generally, be allowed for processing
-     *
-     */
-    public const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
-    /**
-     * Full list of HTTP methods
-     *
-     */
-    public const array ALL_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
-    /**
-     * List of headers we allow exposing by default
-     *
-     */
-    public const array EXPOSED_HEADERS = [
-        // CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
-        'Cache-Control', 'Content-Language', 'Content-Type', 'Last-Modified',
-        // Security headers
-        'Strict-Transport-Security', 'Access-Control-Max-Age', 'Access-Control-Allow-Credentials',
-        'Vary', 'Access-Control-Allow-Origin',
-        'Access-Control-Expose-Headers', 'Access-Control-Allow-Headers', 'Access-Control-Allow-Methods',
-        'Cross-Origin-Embedder-Policy', 'Cross-Origin-Opener-Policy', 'Cross-Origin-Resource-Policy', 'Referrer-Policy', 'Content-Security-Policy', 'Content-Security-Policy-Report-Only',
-        // Performance headers
-        'X-Content-Type-Options', 'X-DNS-Prefetch-Control', 'Connection', 'Keep-Alive',
-        // Other
-        'Feature-Policy', 'ETag', 'Link',
-    ];
-    /**
-     * Default values for CSP directives set to mostly restrictive values
-     *
-     */
-    public const array SECURE_DIRECTIVES = [
-// Document directives
-        'base-uri' => '\'self\'',
-'child-src' => '\'self\'',
-'connect-src' => '\'self\'',
-// Fetch Directives
-        'default-src' => '\'self\'',
-'font-src' => '\'self\'',
-// Navigate directives
-        'form-action' => '\'self\'',
-'frame-ancestors' => '\'self\'',
-'frame-src' => '\'self\'',
-// Blocking images, because images can be used to inject scripts:
-        // https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
-        // https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
-        'img-src' => '\'none\'',
-'manifest-src' => '\'self\'',
-'media-src' => '\'self\'',
-'object-src' => '\'none\'',
-'plugin-types' => '',
-'report-to' => '',
-// Other directives
-        'require-trusted-types-for' => '\'script\'',
-'sandbox' => '',
-'script-src' => '\'none\'',
-'script-src-attr' => '\'none\'',
-'script-src-elem' => '\'none\'',
-'style-src' => '\'none\'',
-'style-src-attr' => '\'none\'',
-'style-src-elem' => '\'none\'',
-'trusted-types' => '',
-'worker-src' => '\'self\'',
-    ];
-    /**
-     * Default values for Feature-Policy, essentially disabling most of them
-     *
-     */
-    public const array SECURE_FEATURES = [
-// Disable access to sensors
-        'accelerometer' => '\'none\'',
-'ambient-light-sensor' => '\'none\'',
-// Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-        'autoplay' => '\'none\'',
-// Disable access to devices
-        'camera' => '\'none\'',
-'display-capture' => '\'none\'',
-// document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
-        'document-write' => '\'none\'',
-// Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => '\'self\'',
-// Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g., top, width, max-height)
-        'font-display-late-swap' => '\'none\'',
-'fullscreen' => '\'none\'',
-// Disable geolocation, XR tracking, payment and screen capture APIs
-        'geolocation' => '\'none\'',
-'gyroscope' => '\'none\'',
-'image-compression' => '\'none\'',
-'layout-animations' => '\'none\'',
-// Disable lazyload. Do not apply it to everything. While it can improve performance somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
-        'lazyload' => '\'none\'',
-'legacy-image-formats' => '\'none\'',
-'magnetometer' => '\'none\'',
-'maximum-downscaling-image' => '\'none\'',
-'microphone' => '\'none\'',
-'midi' => '\'none\'',
-// Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
-        'oversized-images' => '*(2.0)',
-'payment' => '\'none\'',
-'picture-in-picture' => '\'none\'',
-'publickey-credentials-get' => '\'self\'',
-'screen-wake-lock' => '\'none\'',
-'speaker' => '\'none\'',
-// Disable synchronous XMLHttpRequests (that were technically deprecated)
-        'sync-xhr' => '\'none\'',
-'unoptimized-images' => '*(0.5)',
-'unoptimized-lossless-images' => '*(1.0)',
-'unoptimized-lossy-images' => '*(0.5)',
-'unsized-media' => '\'none\'',
-'usb' => '\'none\'',
-'vibrate' => '\'none\'',
-// Disable WebVR API (halted standard, replaced by WebXR)
-        'vr' => '\'none\'',
-// Disable wake-locks
-        'wake-lock' => '\'none\'',
-// Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
-        'web-share' => '\'none\'',
-'xr-spatial-tracking' => '\'none\'',
-    ];
-    /**
-     * Default values for Permissions-Policy, essentially disabling most of them. It is different from SECURE_FEATURES, because of slightly different values and different list of policies
-     *
-     */
-    public const array PERMISSIONS_DEFAULT = [
-// Disable access to sensors
-        'accelerometer' => '',
-'ambient-light-sensor' => '',
-// Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-        'autoplay' => '',
-// Disable access to devices
-        'camera' => '',
-// Clipboard access. Enable only if you are going to manipulate clipboard on client side
-        'clipboard-read' => '',
-'clipboard-write' => '',
-// User tracking stuff
-        'cross-origin-isolated' => '',
-'display-capture' => '',
-// Changing document.domain can allow some cross-origin access and is discouraged, due to existence of other (better) mechanisms
-        'document-domain' => '',
-// Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => 'self',
-'fullscreen' => '',
-'gamepad' => '',
-// Disable geolocation, XR tracking, payment and screen capture APIs
-        'geolocation' => '',
-'gyroscope' => '',
-'hid' => '',
-'idle-detection' => '',
-'interest-cohort' => '',
-'keyboard-map' => '',
-'magnetometer' => '',
-'microphone' => '',
-'midi' => '',
-'payment' => '',
-'picture-in-picture' => '',
-'publickey-credentials-get' => 'self',
-// Disable wake-locks
-        'screen-wake-lock' => '',
-'serial' => '',
-'speaker-selection' => '',
-// Disable synchronous XMLHttpRequests (that were technically deprecated)
-        'sync-xhr' => '',
-'usb' => '',
-// Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
-        'web-share' => '',
-'xr-spatial-tracking' => '',
-    ];
-    /**
-     * Values supported by Sandbox in CSP
-     *
-     */
-    public const array SANDBOX_VALUES = ['allow-downloads-without-user-activation', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-storage-access-by-user-activation', 'allow-top-navigation', 'allow-top-navigation-by-user-activation'];
-    /**
-     * ist of standard values for `Set-Fetch-Site`
-     *
-     */
-    public const array FETCH_SITE = ['cross-site', 'same-origin', 'same-site', 'none'];
-    /**
-     * List of standard values for `Set-Fetch-Mode`
-     *
-     */
-    public const array FETCH_MODE = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
-    /**
-     * List of values for `Set-Fetch-User`
-     *
-     */
-    public const array FETCH_USER = ['?0', '?1'];
-    /**
-     * List of standard Set-Fetch-Destinations besides "script-like"
-     *
-     */
-    public const array FETCH_DESTINATIONS = ['audio', 'audioworklet', 'document', 'embed', 'empty', 'font', 'image', 'manifest', 'object', 'paintworklet', 'report', 'script', 'serviceworker', 'sharedworker', 'style', 'track', 'video', 'worker', 'xslt', 'nested-document'];
-    /**
-     * List of standard Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (`<script>` or similar object)
-     *
-     */
-    public const array SCRIPT_LIKE = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
-    /**
-     * List of standard HTTP status codes
-     *
-     */
-    public const array HTTP_CODES = [
-        100 => 'Continue', 101 => 'Switching Protocols', 102 => 'Processing', 103 => 'Early Hints',
-        200 => 'OK', 201 => 'Created', 202 => 'Accepted', 203 => 'Non-Authoritative Information', 204 => 'No Content', 205 => 'Reset Content', 206 => 'Partial Content', 207 => 'Multi-Status', 208 => 'Already Reported', 226 => 'IM Used',
-        300 => 'Multiple Choices', 301 => 'Moved Permanently', 302 => 'Found', 303 => 'See Other', 304 => 'Not Modified', 305 => 'Use Proxy', 306 => 'Switch Proxy', 307 => 'Temporary Redirect', 308 => 'Permanent Redirect',
-        400 => 'Bad Request', 401 => 'Unauthorized', 402 => 'Payment Required', 403 => 'Forbidden', 404 => 'Not Found', 405 => 'Method Not Allowed', 406 => 'Not Acceptable', 407 => 'Proxy Authentication Required', 408 => 'Request Timeout', 409 => 'Conflict', 410 => 'Gone', 411 => 'Length Required', 412 => 'Precondition Failed', 413 => 'Payload Too Large', 414 => 'URI Too Long', 415 => 'Unsupported Media Type', 416 => 'Range Not Satisfiable', 417 => 'Expectation Failed', 418 => 'I\'m a teapot', 421 => 'Misdirected Request', 422 => 'Unprocessable Entity', 423 => 'Locked', 424 => 'Failed Dependency', 425 => 'Too Early', 426 => 'Upgrade Required', 428 => 'Precondition Required', 429 => 'Too Many Requests', 431 => 'Request Header Fields Too Large', 451 => 'Unavailable For Legal Reasons',
-        500 => 'Internal Server Error', 501 => 'Not Implemented', 502 => 'Bad Gateway', 503 => 'Service Unavailable', 504 => 'Gateway Timeout', 505 => 'HTTP Version Not Supported', 506 => 'Variant Also Negotiates', 507 => 'Insufficient Storage', 508 => 'Loop Detected', 510 => 'Not Extended', 511 => 'Network Authentication Required',
-    ];
-
-    /**
      * Function sends headers, related to security
      *
      * @param string $strat          Security strategy to apply: `strict` (default), `mild` or `loose`
@@ -284,7 +394,7 @@ final class Headers
                 }
             }
             // If we end up with an empty list of custom methods - use the default one
-            if (empty($allow_methods)) {
+            if (\count($allow_methods) === 0) {
                 $allow_methods = $default_methods;
             }
             // Send the header. More on methods - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
@@ -310,7 +420,7 @@ final class Headers
                 }
             }
             // Check that list is still not empty; otherwise, we assume that access from all origins is allowed (akin to *)
-            if (!empty($allow_origins)) {
+            if (\count($allow_origins) !== 0) {
                 if (
                     isset($_SERVER['HTTP_ORIGIN'])
                     && \preg_match('/'.self::ORIGIN_REGEX.'/i', $_SERVER['HTTP_ORIGIN']) === 1
@@ -343,7 +453,7 @@ final class Headers
             // Send the list
             \header('Access-Control-Expose-Headers: '.\implode(', ', \array_unique(\array_merge(self::EXPOSED_HEADERS, $expose_headers))));
             // Allow headers, that can change server state, but are normally restricted by CORS
-            if (!empty($allow_headers)) {
+            if (\count($allow_headers) !== 0) {
                 \header('Access-Control-Allow-Headers: '.\implode(', ', \array_unique(\array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allow_headers))));
             }
             // Set CORS strategy
@@ -450,7 +560,8 @@ final class Headers
                                 $default_directives[$directive] =
                                     $value !== '\'none\''
                                     && \in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])
-                                 ? '\'report-sample\' '.$value : $value;
+                                        ? '\'report-sample\' '.$value
+                                        : $value;
                             }
 
                             break;
@@ -508,27 +619,36 @@ final class Headers
         ) {
             // Setting defaults
             $site = \array_intersect($site, self::FETCH_SITE);
-            if (empty($site)) {
+            if (\count($site) === 0) {
                 // Allow everything
                 $site = self::FETCH_SITE;
             }
             $mode = \array_intersect($mode, self::FETCH_MODE);
-            if (empty($mode)) {
+            if (\count($mode) === 0) {
                 // Allow all modes
                 $mode = self::FETCH_MODE;
             }
             $user = \array_intersect($user, self::FETCH_USER);
-            if (empty($user)) {
+            if (\count($user) === 0) {
                 // Allow only actions triggered by user activation
                 $user = ['?1'];
             }
             $dest = \array_intersect($dest, self::FETCH_DESTINATIONS);
-            if (empty($dest)) {
+            if (\count($dest) === 0) {
                 $dest = [
                     // Allow navigation (including from frames)
-                    'document', 'embed', 'frame', 'iframe',
+                    'document',
+                    'embed',
+                    'frame',
+                    'iframe',
                     // Allow common elements
-                    'audio', 'font', 'image', 'style', 'video', 'track', 'manifest',
+                    'audio',
+                    'font',
+                    'image',
+                    'style',
+                    'video',
+                    'track',
+                    'manifest',
                     // Allow empty
                     'empty',
                 ];
@@ -621,7 +741,7 @@ final class Headers
                 \header('Connection: Keep-Alive');
                 \header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive * 1000));
             }
-            if (!empty($client_hints)) {
+            if (\count($client_hints) !== 0) {
                 // Implode client hints
                 $client_hints_new = \implode(', ', $client_hints);
                 // Notify, that we support Client Hints: https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
@@ -661,7 +781,9 @@ final class Headers
     public static function features(array $features = [], bool $force_check = true, bool $permissions = false): void
     {
         if (!\headers_sent()) {
-            $defaults = $permissions ? self::PERMISSIONS_DEFAULT : self::SECURE_FEATURES;
+            $defaults = $permissions
+                ? self::PERMISSIONS_DEFAULT
+                : self::SECURE_FEATURES;
             foreach ($features as $feature => $allow_list) {
                 // Sanitize
                 $feature = \mb_strtolower(\mb_trim($feature, null, 'UTF-8'), 'UTF-8');
@@ -709,7 +831,9 @@ final class Headers
     {
         if (!\headers_sent()) {
             // In case it's not numeric, replace it with 0
-            $mod_time = \is_numeric($mod_time) ? (int) $mod_time : 0;
+            $mod_time = \is_numeric($mod_time)
+                ? (int) $mod_time
+                : 0;
             if ($mod_time <= 0) {
                 // Get the freshest modification time of all PHP files using PHP's getlastmod time
                 $mod_time = \max(\max(\array_map('\filemtime', \array_filter(\get_included_files(), '\is_file')), \getlastmod()));
@@ -931,7 +1055,7 @@ final class Headers
         // Check if header is set, and we do have a limit on supported MIME types
         if (
             isset($_SERVER['HTTP_ACCEPT'])
-            && !empty($supported)
+            && \count($supported) !== 0
         ) {
             // Generate list of acceptable values
             $acceptable = [];
@@ -947,10 +1071,11 @@ final class Headers
                 $acceptable[$mime[0].'/'.$mime[1]] =
                     !isset($matches[4])
                     || $matches[4] === ''
-                 ? 1.0 : (float) $matches[4];
+                        ? 1.0
+                        : (float) $matches[4];
             }
             // Check if any of the supported types are acceptable
-            if (empty($acceptable)) {
+            if (\count($acceptable) === 0) {
                 // If not - check if */* is supported
                 if (\preg_match('/\*\/\*/', $_SERVER['HTTP_ACCEPT']) === 1) {
                     // Consider as no limitation

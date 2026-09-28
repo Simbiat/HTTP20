@@ -174,7 +174,9 @@ final class Sharing
                 // Echo supportive text
                 echo "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n";
                 // Limit speed to range length if the current speed limit is too large, so that it will be provided fully
-                $speed_limit_multi = $speed_limit > $range['end'] - $range['start'] + 1 ? $range['end'] - $range['start'] + 1 : $speed_limit;
+                $speed_limit_multi = $speed_limit > $range['end'] - $range['start'] + 1
+                    ? $range['end'] - $range['start'] + 1
+                    : $speed_limit;
                 $speed_limit_multi = self::speedLimit($speed_limit_multi);
                 // Output data
                 $result = self::streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speed_limit_multi);
@@ -236,7 +238,9 @@ final class Sharing
     public static function upload(string|array $dest_path, bool $preserve_names = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): int|array
     {
         // Set upload directory
-        $upload_dir = \is_writable(\ini_get('upload_tmp_dir')) ? \ini_get('upload_tmp_dir') : \sys_get_temp_dir();
+        $upload_dir = \is_writable(\ini_get('upload_tmp_dir'))
+            ? \ini_get('upload_tmp_dir')
+            : \sys_get_temp_dir();
         // Ensure we do not have trailing slash
         $upload_dir = \preg_replace('/(.*[^\\\\\/]+)([\\\\\/]+$)/', '$1', $upload_dir);
         // Cache some PHP settings
@@ -338,7 +342,6 @@ final class Sharing
                     $_FILES[$field][0]['size'] = $files['size'];
                     $_FILES[$field][0]['tmp_name'] = $files['tmp_name'];
                     $_FILES[$field][0]['error'] = $files['error'];
-
                 }
                 unset($_FILES[$field]['name'], $_FILES[$field]['type'], $_FILES[$field]['size'], $_FILES[$field]['tmp_name'], $_FILES[$field]['error'], $_FILES[$field]['full_path']);
             }
@@ -364,7 +367,9 @@ final class Sharing
                     continue;
                 }
                 // Set destination path
-                $final_path = \is_array($dest_path) ? $dest_path[$field] : $dest_path;
+                $final_path = \is_array($dest_path)
+                    ? $dest_path[$field]
+                    : $dest_path;
                 foreach ($files as $key => $file) {
                     switch ($file['error']) {
                         case \UPLOAD_ERR_OK:
@@ -490,7 +495,8 @@ final class Sharing
                                 $ext =
                                     !empty($ext)
                                     && \is_string($ext)
-                                 ? '.'.$ext : '';
+                                        ? '.'.$ext
+                                        : '';
                             }
                             // Generate name from hash and extension from the original file
                             $_FILES[$field][$key]['new_name'] = $_FILES[$field][$key]['hash'].$ext;
@@ -531,7 +537,9 @@ final class Sharing
                 // Process files and put them into an array
                 foreach ($_FILES as $field => $files) {
                     // Set destination path
-                    $final_path = \is_array($dest_path) ? $dest_path[$field] : $dest_path;
+                    $final_path = \is_array($dest_path)
+                        ? $dest_path[$field]
+                        : $dest_path;
                     foreach ($files as $file) {
                         // Move file, but only if it's not already present in destination
                         if (
@@ -615,7 +623,8 @@ final class Sharing
             $offset =
                 $resumable
                 && \is_file($upload_dir.'/'.$name)
-             ? \filesize($upload_dir.'/'.$name) : 0;
+                    ? \filesize($upload_dir.'/'.$name)
+                    : 0;
             if ($offset !== $client_size) {
                 // Open input stream
                 $stream = \fopen('php://input', 'rb');
@@ -670,12 +679,12 @@ final class Sharing
                     // Ignore user abort to attempt to identify when client has aborted
                     // ignore_user_abort(true);
                     // Save file
-                    $result = \stream_copy_to_stream($stream, $output, $client_size - $offset);
+                    $stream_result = \stream_copy_to_stream($stream, $output, $client_size - $offset);
                     // Close streams
                     \fclose($stream);
                     \fclose($output);
                     // Check that the size is the one we expect
-                    $result = $result + $offset < $client_size ? false : true;
+                    $result = $stream_result + $offset >= $client_size;
                 }
             } else {
                 // Means the file we have is complete
@@ -966,9 +975,7 @@ final class Sharing
      *
      * @return int
      */
-    public static function fileEcho(#[FileReference]
-    string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])]
-    string $cache_strategy = 'month', bool $exit = true): int
+    public static function fileEcho(#[FileReference] string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
     {
         // Check if file exists
         if (\is_file($filepath)) {
@@ -1082,15 +1089,16 @@ final class Sharing
      * @return void
      */
     #[NoReturn]
-    public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])]
-    string $cache_strategy = ''): void
+    public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = ''): void
     {
         // Get headers
-        $headers_data = \get_headers($url, context: \stream_context_create(['http' => [
-            'follow_location' => 1,
-            'method' => 'HEAD',
-            'protocol_version' => 2.0,
-        ],]));
+        $headers_data = \get_headers($url, context: \stream_context_create([
+            'http' => [
+                'follow_location' => 1,
+                'method' => 'HEAD',
+                'protocol_version' => 2.0,
+            ],
+        ]));
         // Check that we did get headers
         if (!\is_array($headers_data)) {
             // Failed to get headers, meaning we most likely will not be able to get the content as well
@@ -1119,11 +1127,13 @@ final class Sharing
         }
         // Open streams
         // Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
-        $url_open = \fopen($url, 'rb', context: \stream_context_create(['http' => [
-            'follow_location' => 1,
-            'method' => 'GET',
-            'protocol_version' => 2.0,
-        ],]));
+        $url_open = \fopen($url, 'rb', context: \stream_context_create([
+            'http' => [
+                'follow_location' => 1,
+                'method' => 'GET',
+                'protocol_version' => 2.0,
+            ],
+        ]));
         $output = \fopen('php://output', 'wb');
         // Send contents
         if (

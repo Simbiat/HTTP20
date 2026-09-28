@@ -133,7 +133,9 @@ final class Sitemap
         $value_counts = \array_count_values(\array_column($links, 'loc'));
         // Get max value of lastmod
         $max_date = \array_map('\intval', \array_column($links, 'lastmod'));
-        $max_date = !empty($max_date) ? \max($max_date) : 0;
+        $max_date = !empty($max_date)
+            ? \max($max_date)
+            : 0;
         // Send Last-Modified header and stop further processing if client already has a fresh enough copy
         Headers::lastModified($max_date, true);
         // Check that all links start from
@@ -151,12 +153,14 @@ final class Sitemap
                 // Remove duplicate
                 unset($links[$key]);
                 // Reduce count
-                $value_counts[$link['loc']]--;
+                --$value_counts[$link['loc']];
             }
             // Sanitize values
             $links[$key]['loc'] = Common::htmlToRFC3986($link['loc']);
             // Sanitize name (used only for HTML format
-            $links[$key]['name'] = isset($link['name']) ? \htmlspecialchars($link['name'], \ENT_QUOTES | \ENT_SUBSTITUTE) : \htmlspecialchars($links[$key]['loc'], \ENT_QUOTES | \ENT_SUBSTITUTE);
+            $links[$key]['name'] = isset($link['name'])
+                ? \htmlspecialchars($link['name'], \ENT_QUOTES | \ENT_SUBSTITUTE)
+                : \htmlspecialchars($links[$key]['loc'], \ENT_QUOTES | \ENT_SUBSTITUTE);
             // Convert lastmod
             if (isset($link['lastmod'])) {
                 $links[$key]['lastmod'] = Common::valueToTime($link['lastmod'], \DATE_ATOM);

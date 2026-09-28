@@ -33,7 +33,9 @@ final class HTML
      */
     public static function timeline(array $items, string $format = 'Y-m-d', bool $asc = false, int $br_limit = 0): string
     {
-        $sand_clock = \method_exists(SandClock::class, 'seconds') ? true : false;
+        $sand_clock = \method_exists(SandClock::class, 'seconds')
+            ? true
+            : false;
         $time = \time();
         // Sanitize $items and add them to array, that will be ordered
         $to_order = [];
@@ -127,22 +129,16 @@ final class HTML
         }
         // Order timeline
         if ($asc) {
-            \usort($to_order, static function ($a, $b) {
-                return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
-            });
+            \usort($to_order, static fn($a, $b) => [$a['time'], $a['start']] <=> [$b['time'], $b['start']]);
         } else {
-            \usort($to_order, static function ($a, $b) {
-                return [$b['time'], $b['start']] <=> [$a['time'], $a['start']];
-            });
+            \usort($to_order, static fn($a, $b) => [$b['time'], $b['start']] <=> [$a['time'], $a['start']]);
         }
         // Order current events if any
         if (\count($current) !== 0) {
-            \usort($current, static function ($a, $b) {
-                return [$a['time'], $a['start']] <=> [$b['time'], $b['start']];
-            });
+            \usort($current, static fn($a, $b) => [$a['time'], $a['start']] <=> [$b['time'], $b['start']]);
         }
         // Increase the count for crumbs
-        self::$timelines++;
+        ++self::$timelines;
         // Open timeline
         $output = '<time-line id="timeline_"'.self::$timelines.' role="complementary" aria-label="timeline '.self::$timelines.'">';
         // Add elements
@@ -249,7 +245,9 @@ final class HTML
             }
 
             // Calculate time difference
-            $brs = $asc ? $to_order[$key + 1]['time'] - $item['time'] : $item['time'] - $to_order[$key + 1]['time'];
+            $brs = $asc
+                ? $to_order[$key + 1]['time'] - $item['time']
+                : $item['time'] - $to_order[$key + 1]['time'];
             // Convert difference to number of months
             $brs = (int) \floor($brs / 2592000);
             // Limit it to 12
@@ -315,7 +313,7 @@ final class HTML
             return '';
         }
         // Increase the count for crumbs
-        self::$crumbs++;
+        ++self::$crumbs;
         // Set initial item number (position)
         $position = 1;
         // Set depth of the item. This is, essentially, position in reverse. Useful in case you want to hide some elements in the list. Adding 1 to avoid last element getting ID of 0.
@@ -335,8 +333,8 @@ final class HTML
             // Update item value to string. First element will always have its ID end with 0, because you may want to hide first element (generally home page) with CSS
             $items[$key] = '<li id="li_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '.($item_depth === 1 ? 'aria-current="location"' : '').'><a id="a_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemscope itemtype="https://schema.org/WebPage" itemprop="item" itemid="'.$item['href'].'" href="'.\htmlspecialchars($item['href'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"><span id="span_breadcrumbs_'.self::$crumbs.'_'.($position === 1 ? 0 : $item_depth).'" itemprop="name">'.\htmlspecialchars($item['name'], \ENT_QUOTES | \ENT_SUBSTITUTE).'</span></a><meta itemprop="position" content="'.$position.'" /></li>';
             // Update counters
-            $item_depth--;
-            $position++;
+            --$item_depth;
+            ++$position;
             // Add page as "parent" to current one, if links were requested and this not the first (and only) link in set. Technically, "up" was dropped from specification, but if not supported by client, the link should be silently ignored as per specification, so no worries
             if (
                 $links
@@ -442,7 +440,7 @@ final class HTML
             $non_numerics[$key] = $value;
         }
         // Increase the count for pagination
-        self::$paginations++;
+        ++self::$paginations;
         // Calculate maximum number of numeric links to left/right of the current one
         $side_numerics = (int) \floor(($max_numerics - 1) / 2);
         // Calculate starting page

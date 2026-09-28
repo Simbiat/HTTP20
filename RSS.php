@@ -81,7 +81,9 @@ final class RSS
         } else {
             $feed_settings['pubDate'] = Common::valueToTime($feed_settings['pubDate'], \DATE_RSS);
         }
-        $feed_settings['lastBuildDate'] = empty($feed_settings['lastBuildDate']) ? $feed_settings['pubDate'] : Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
+        $feed_settings['lastBuildDate'] = empty($feed_settings['lastBuildDate'])
+            ? $feed_settings['pubDate']
+            : Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
         // Send Last-Modified header right now, but do not exit if 304 is sent, so that proper set of Cache-Control headers is sent as well
         Headers::lastModified(\max(\strtotime($feed_settings['pubDate']), \strtotime($feed_settings['lastBuildDate'])));
         // Check cloud

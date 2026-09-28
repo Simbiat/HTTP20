@@ -293,11 +293,11 @@ final class Meta
             $links = \count($notifications);
             // Exclude frequency
             if (isset($notifications['frequency'])) {
-                $links--;
+                --$links;
             }
             // Exclude cycle
             if (isset($notifications['cycle'])) {
-                $links--;
+                --$links;
             }
             if ($links > 0) {
                 if ($links > 5) {
@@ -309,7 +309,7 @@ final class Meta
                             if ($links > 5) {
                                 unset($notifications[$key]);
                             } else {
-                                $links++;
+                                ++$links;
                             }
                         }
                     }
@@ -326,7 +326,9 @@ final class Meta
                     empty($notifications['cycle'])
                     || \preg_match('/^[0-7]$/', $notifications['cycle']) !== 1
                 ) {
-                    $notifications['cycle'] = $links > 1 ? 1 : 0;
+                    $notifications['cycle'] = $links > 1
+                        ? 1
+                        : 0;
                 }
             } else {
                 // We do not have any links left (if we even had any)
@@ -353,7 +355,7 @@ final class Meta
                         && \is_string($task['icon-uri'])
                         && \preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
                     ) {
-                        $tasks_count++;
+                        ++$tasks_count;
                         if (
                             empty($task['window-type'])
                             || !\in_array($task['window-type'], ['tab', 'self', 'window'])
