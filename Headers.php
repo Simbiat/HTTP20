@@ -12,22 +12,22 @@ use JetBrains\PhpStorm\ExpectedValues;
 final class Headers
 {
     /**
-     * Regex to validate Origins (essentially, a URI in https://examplecom:443 format)
+     * Regex to validate Origins (essentially, a URI in https://examplecom:443 format).
      */
     public const string ORIGIN_REGEX = '(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]+):\/\/(?<host>[a-zA-Z0-9.\-_~]+)(?<port>:\d+)?';
 
     /**
-     * Safe HTTP methods which can, generally, be allowed for processing
+     * Safe HTTP methods which can, generally, be allowed for processing.
      */
     public const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
     /**
-     * Full list of HTTP methods
+     * Full list of HTTP methods.
      */
     public const array ALL_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
 
     /**
-     * List of headers we allow exposing by default
+     * List of headers we allow exposing by default.
      */
     public const array EXPOSED_HEADERS = [
         // CORS allowed ones, except for Pragma and Expires, as those two are discouraged to be used (Cache-Control is far better)
@@ -62,7 +62,7 @@ final class Headers
     ];
 
     /**
-     * Default values for CSP directives set to mostly restrictive values
+     * Default values for CSP directives set to mostly restrictive values.
      */
     public const array SECURE_DIRECTIVES = [
 // Document directives
@@ -99,7 +99,7 @@ final class Headers
     ];
 
     /**
-     * Default values for Feature-Policy, essentially disabling most of them
+     * Default values for Feature-Policy, essentially disabling most of them.
      */
     public const array SECURE_FEATURES = [
 // Disable access to sensors
@@ -154,7 +154,7 @@ final class Headers
     ];
 
     /**
-     * Default values for Permissions-Policy, essentially disabling most of them. It is different from SECURE_FEATURES, because of slightly different values and different list of policies
+     * Default values for Permissions-Policy, essentially disabling most of them. It is different from SECURE_FEATURES, because of slightly different values and different list of policies.
      */
     public const array PERMISSIONS_DEFAULT = [
 // Disable access to sensors
@@ -202,7 +202,7 @@ final class Headers
     ];
 
     /**
-     * Values supported by Sandbox in CSP
+     * Values supported by Sandbox in CSP.
      */
     public const array SANDBOX_VALUES = [
         'allow-downloads-without-user-activation',
@@ -221,22 +221,22 @@ final class Headers
     ];
 
     /**
-     * ist of standard values for `Set-Fetch-Site`
+     * ist of standard values for `Set-Fetch-Site`.
      */
     public const array FETCH_SITE = ['cross-site', 'same-origin', 'same-site', 'none'];
 
     /**
-     * List of standard values for `Set-Fetch-Mode`
+     * List of standard values for `Set-Fetch-Mode`.
      */
     public const array FETCH_MODE = ['same-origin', 'cors', 'navigate', 'nested-navigate', 'websocket', 'no-cors'];
 
     /**
-     * List of values for `Set-Fetch-User`
+     * List of values for `Set-Fetch-User`.
      */
     public const array FETCH_USER = ['?0', '?1'];
 
     /**
-     * List of standard Set-Fetch-Destinations besides "script-like"
+     * List of standard Set-Fetch-Destinations besides "script-like".
      */
     public const array FETCH_DESTINATIONS = [
         'audio',
@@ -262,12 +262,12 @@ final class Headers
     ];
 
     /**
-     * List of standard Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (`<script>` or similar object)
+     * List of standard Set-Fetch-Destinations that are considered "script-like", that is, they are, most likely, triggered by a script (`<script>` or similar object).
      */
     public const array SCRIPT_LIKE = ['audioworklet', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'worker'];
 
     /**
-     * List of standard HTTP status codes
+     * List of standard HTTP status codes.
      */
     public const array HTTP_CODES = [
         100 => 'Continue',
@@ -336,43 +336,43 @@ final class Headers
     ];
 
     /**
-     * Same as `$_POST`, but for PUT
+     * Same as `$_POST`, but for PUT.
      *
      * @var array
      *
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    private(set) static array $_PUT = [];
+    public private(set) static array $_PUT = [];
 
     /**
-     * Same as `$_POST`, but for DELETE
+     * Same as `$_POST`, but for DELETE.
      *
      * @var array
      *
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    private(set) static array $_DELETE = [];
+    public private(set) static array $_DELETE = [];
 
     /**
-     * Same as `$_POST`, but for PATCH
+     * Same as `$_POST`, but for PATCH.
      *
      * @var array
      *
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    private(set) static array $_PATCH = [];
+    public private(set) static array $_PATCH = [];
 
     /**
-     * Same as `$_FILES`, but gotten from PUT, PATCH or DELETE requests
+     * Same as `$_FILES`, but gotten from PUT, PATCH or DELETE requests.
      *
      * @var array
      *
      * @noinspection PhpPropertyNamingConventionInspection
      */
-    private(set) static array $_FILES = [];
+    public private(set) static array $_FILES = [];
 
     /**
-     * Function sends headers, related to security
+     * Function sends headers, related to security.
      *
      * @param string $strat          Security strategy to apply: `strict` (default), `mild` or `loose`
      * @param array  $allow_origins  List of allowed origins. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
@@ -472,7 +472,7 @@ final class Headers
                     \header('Referrer-Policy: strict-origin-when-cross-origin');
 
                     break;
-                // Make 'strict' default value, but also allow explicit specification
+                    // Make 'strict' default value, but also allow explicit specification
                 case 'strict':
                 default:
                     \header('Cross-Origin-Embedder-Policy: require-corp');
@@ -486,7 +486,7 @@ final class Headers
     }
 
     /**
-     * Function to process CSP header
+     * Function to process CSP header.
      *
      * @param array $csp_directives List of CSP directives. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
      * @param bool  $report_only    Whether to report violations only or both report and block them
@@ -557,9 +557,9 @@ final class Headers
                             ) {
                                 // Check if it's script or style source
                                 // If it's not 'none' - add 'report-sample'
-                                $default_directives[$directive] =
-                                    $value !== '\'none\''
-                                    && \in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'])
+                                $default_directives[$directive]
+                                    = $value !== '\'none\''
+                                    && \in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'], true)
                                         ? '\'report-sample\' '.$value
                                         : $value;
                             }
@@ -598,7 +598,7 @@ final class Headers
      * Function to process Sec-Fetch headers. Arrays are set to empty ones by default for ease of use (sending empty array is a bit easier than copying values). Below materials were used in preparation
      * https://www.w3.org/TR/fetch-metadata/
      * https://fetch.spec.whatwg.org/
-     * https://web.dev/fetch-metadata/
+     * https://web.dev/fetch-metadata/.
      *
      * @param array $site   List of allowed values for Sec-Fetch-Site
      * @param array $mode   List of allowed values for Sec-Fetch-Mode
@@ -659,21 +659,21 @@ final class Headers
             }
             // Actual validation
             if (
-                !\in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site, true) ||
-                (
+                !\in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site, true)
+                || (
                     // Mode should be ignored by default if it's any value outside the spec, which implies it can be empty
-                    !empty($_SERVER['HTTP_SEC_FETCH_MODE']) && $strict &&
-                    !\in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode, true)
-                ) ||
-                (
+                    !empty($_SERVER['HTTP_SEC_FETCH_MODE']) && $strict
+                    && !\in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode, true)
+                )
+                || (
                     // User is allowed to be missing by the spec
-                    !empty($_SERVER['HTTP_SEC_FETCH_USER']) && $strict &&
-                    !\in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user, true)
-                ) ||
-                (
+                    !empty($_SERVER['HTTP_SEC_FETCH_USER']) && $strict
+                    && !\in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user, true)
+                )
+                || (
                     // Dest should be ignored by default if it's any value outside the spec, which implies it can be empty
-                    !empty($_SERVER['HTTP_SEC_FETCH_DEST']) && $strict &&
-                    !\in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest, true)
+                    !empty($_SERVER['HTTP_SEC_FETCH_DEST']) && $strict
+                    && !\in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest, true)
                 )
             ) {
                 $bad_request = true;
@@ -716,7 +716,7 @@ final class Headers
     }
 
     /**
-     * Function to send headers, that may improve performance on client side
+     * Function to send headers, that may improve performance on client side.
      *
      * @param int   $keepalive    Time for `Keep-Alive` header (only if protocol is below HTTP 2.0). https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Keep-Alive
      * @param array $client_hints List of supported client hints. https://developer.mozilla.org/en-US/docs/Glossary/Client_hints
@@ -754,7 +754,7 @@ final class Headers
     }
 
     /**
-     * A wrapper for `features` with `permissions = true` just for convenience of access. https://www.w3.org/TR/permissions-policy-1/ is replacement for Feature-Policy
+     * A wrapper for `features` with `permissions = true` just for convenience of access. https://www.w3.org/TR/permissions-policy-1/ is replacement for Feature-Policy.
      *
      * @param array $features    List of features to enable
      * @param bool  $force_check If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
@@ -770,7 +770,7 @@ final class Headers
      * Function to manage `Feature-Policy` to control different features. By default, most features are disabled for security and performance.
      * #https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
      * #https://feature-policy-demos.appspot.com/
-     * #https://featurepolicy.info/
+     * #https://featurepolicy.info/.
      *
      * @param array $features    List of features to enable
      * @param bool  $force_check If set to `true` will check if the feature is "supported" (present in default array) and value complies with the standard. Setting it to `false` will allow you to utilize a feature or value not yet supported by the library.
@@ -789,7 +789,7 @@ final class Headers
                 $feature = \mb_strtolower(\mb_trim($feature, null, 'UTF-8'), 'UTF-8');
                 $allow_list = \mb_strtolower(\mb_trim($allow_list, null, 'UTF-8'), 'UTF-8');
                 // If validation is enforced, validate the feature and value provided
-                /** @noinspection OffsetOperationsInspection */
+                /* @noinspection OffsetOperationsInspection */
                 if (
                     !$force_check
                     || (
@@ -798,7 +798,7 @@ final class Headers
                     )
                 ) {
                     // Update value
-                    /** @noinspection OffsetOperationsInspection */
+                    /* @noinspection OffsetOperationsInspection */
                     $defaults[$feature] = $allow_list;
                 }
             }
@@ -822,12 +822,12 @@ final class Headers
     /**
      * Function to set Last-Modified header. This header is generally not required if you already have Cache-Control and ETag, but still may be useful in case of conditional requests. At least if you will provide it with proper modification time.
      *
-     * @param int|string|float $mod_time Modification time
+     * @param float|int|string $mod_time Modification time
      * @param bool             $exit     Whether to stop execution in case if HTTP 304 conditions are met (content has not been modified since last client request)
      *
      * @return void
      */
-    public static function lastModified(int|string|float $mod_time = 0, bool $exit = false): void
+    public static function lastModified(float|int|string $mod_time = 0, bool $exit = false): void
     {
         if (!\headers_sent()) {
             // In case it's not numeric, replace it with 0
@@ -853,7 +853,7 @@ final class Headers
     }
 
     /**
-     * Function to prepare and send cache-related headers
+     * Function to prepare and send cache-related headers.
      *
      * @param string $string         String to be used to calculate eTag.
      * @param string $cache_strategy Caching strategy. Allowed values are `aggressive`, `private`, `live`, `month`, `week`, `day`, `hour`.
@@ -897,7 +897,7 @@ final class Headers
                     \header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
 
                     break;
-                // Make 'hour' default value, but also allow explicit specification
+                    // Make 'hour' default value, but also allow explicit specification
                 case 'hour':
                 default:
                     \header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
@@ -915,7 +915,7 @@ final class Headers
     }
 
     /**
-     * Handle ETag header and its validation depending on request headers. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
+     * Handle ETag header and its validation depending on request headers. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag.
      *
      * @param string $etag String to use for ETag generation
      * @param bool   $exit Whether to stop execution in case of HTTP 304 or 412
@@ -946,14 +946,14 @@ final class Headers
     }
 
     /**
-     * Function to return to client and optionally force-close connection
+     * Function to return to client and optionally force-close connection.
      *
-     * @param string|int $code Numeric HTTP code
+     * @param int|string $code Numeric HTTP code
      * @param bool       $exit Whether to force-close connection
      *
      * @return int
      */
-    public static function clientReturn(string|int $code = 500, bool $exit = true): int
+    public static function clientReturn(int|string $code = 500, bool $exit = true): int
     {
         // Generate response
         if (\is_numeric($code)) {
@@ -985,7 +985,7 @@ final class Headers
     }
 
     /**
-     * Function to handle redirects
+     * Function to handle redirects.
      *
      * @param string $new_uri         New URI to redirect to. If it's not a valid URI, code 500 will be sent instead of redirect.
      * @param bool   $permanent       Whether it is a permanent redirect.
@@ -1043,7 +1043,7 @@ final class Headers
     }
 
     /**
-     * Function to handle Accept request header
+     * Function to handle Accept request header.
      *
      * @param array $supported List of supported MIME types
      * @param bool  $exit      Whether to stop processing in case of HTTP 406
@@ -1068,8 +1068,8 @@ final class Headers
                 }
 
                 // Add to array
-                $acceptable[$mime[0].'/'.$mime[1]] =
-                    !isset($matches[4])
+                $acceptable[$mime[0].'/'.$mime[1]]
+                    = !isset($matches[4])
                     || $matches[4] === ''
                         ? 1.0
                         : (float) $matches[4];
@@ -1088,7 +1088,7 @@ final class Headers
             }
 
             // Get the one with the highest priority and return its value
-            return \array_keys($acceptable, \max($acceptable))[0];
+            return \array_keys($acceptable, \max($acceptable), true)[0];
         }
 
         // Consider as no limitation
@@ -1096,7 +1096,7 @@ final class Headers
     }
 
     /**
-     * Function to parse multipart/form-data for PUT/DELETE/PATCH methods
+     * Function to parse multipart/form-data for PUT/DELETE/PATCH methods.
      */
     public static function multiPartFormParse(): void
     {
@@ -1106,7 +1106,7 @@ final class Headers
         $content_type = $_SERVER['CONTENT_TYPE'] ?? '';
         // Exit if not one of the supported methods or wrong content-type
         if (
-            !\in_array($method, ['PUT', 'DELETE', 'PATCH'])
+            !\in_array($method, ['PUT', 'DELETE', 'PATCH'], true)
             || \preg_match('/(^application\/x-www-form-urlencoded$)|(^multipart\/form-data; boundary=.*$)/ui', $content_type) !== 1
         ) {
             return;
@@ -1117,7 +1117,7 @@ final class Headers
     }
 
     /**
-     * Check if a DNT header was sent and was set to 1
+     * Check if a DNT header was sent and was set to 1.
      *
      * @return bool
      */
@@ -1127,7 +1127,7 @@ final class Headers
     }
 
     /**
-     * Check if a Sec-GPC header was sent and was set to 1
+     * Check if a Sec-GPC header was sent and was set to 1.
      *
      * @return bool
      */

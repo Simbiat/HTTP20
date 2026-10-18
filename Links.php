@@ -13,47 +13,47 @@ use Simbiat\StringHelpers\Sanitize;
 final class Links
 {
     /**
-     * Regex for `rel` values that are allowed in the HTML body as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
+     * Regex for `rel` values that are allowed in the HTML body as per https://html.spec.whatwg.org/multipage/links.html#linkTypes.
      */
     public const string ALLOWED_IN_BODY = '/^\s*(alternate )?((^| )(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+(alternate)?\s*$/uir';
 
     /**
-     * Regex for `rel` values that are used for preload
+     * Regex for `rel` values that are used for preload.
      */
     public const string PRELOAD_REL = '/((^| )(dns-prefetch|modulepreload|preconnect|prefetch|preload)( |$))+/uir';
 
     /**
-     * Regex for allowed `as` values for `rel=preload` as per https://html.spec.whatwg.org/multipage/links.html#preload-destination
+     * Regex for allowed `as` values for `rel=preload` as per https://html.spec.whatwg.org/multipage/links.html#preload-destination.
      */
     public const array AS_VALUES_PRELOAD = ['fetch', 'font', 'image', 'script', 'style', 'track'];
 
     /**
-     * Regex for allowed `as` values for `rel=modulepreload` as per https://html.spec.whatwg.org/multipage/links.html#module-preload-destination and https://fetch.spec.whatwg.org/#request-destination-script-like
+     * Regex for allowed `as` values for `rel=modulepreload` as per https://html.spec.whatwg.org/multipage/links.html#module-preload-destination and https://fetch.spec.whatwg.org/#request-destination-script-like.
      */
     public const array AS_VALUES_MODULEPRELOAD = ['audioworklet', 'json', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'style', 'text', 'worker'];
 
     /**
-     * Regex for `rel` values that are considered external resources as per https://html.spec.whatwg.org/multipage/links.html#linkTypes
+     * Regex for `rel` values that are considered external resources as per https://html.spec.whatwg.org/multipage/links.html#linkTypes.
      */
     public const string EXTERNAL_RESOURCES = '/((^| )(dns-prefetch|icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+/uir';
 
     /**
-     * List of supported attributes
+     * List of supported attributes.
      */
     private const array ALLOWED_ATTRIBUTES = ['href', 'imagesrcset', 'title', 'rel', 'itemprop', 'hreflang', 'type', 'as', 'color', 'sizes', 'imagesizes', 'media', 'integrity', 'crossorigin', 'referrerpolicy', 'blocking', 'disabled', 'fetchpriority'];
 
     /**
-     * Allowed values for `referrerpolicy`
+     * Allowed values for `referrerpolicy`.
      */
     private const array REFERRER_POLICY = ['no-referrer', 'no-referrer-when-downgrade', 'strict-origin', 'strict-origin-when-cross-origin', 'same-origin', 'origin', 'origin-when-cross-origin', 'unsafe-url'];
 
     /**
-     * Allowed values for `fetchpriority`
+     * Allowed values for `fetchpriority`.
      */
     private const array FETCH_PRIORITY = ['auto', 'low', 'high'];
 
     /**
-     * Flag indicating that HTTP_SAVE_DATA was received and is `on`
+     * Flag indicating that HTTP_SAVE_DATA was received and is `on`.
      *
      * @var bool
      */
@@ -62,13 +62,13 @@ final class Links
     public function __construct()
     {
         // Check if Save-Data is on
-        self::$save_data =
-            \array_key_exists('HTTP_SAVE_DATA', $_SERVER)
+        self::$save_data
+            = \array_key_exists('HTTP_SAVE_DATA', $_SERVER)
             && \preg_match('/^on$/uir', $_SERVER['HTTP_SAVE_DATA']) === 1;
     }
 
     /**
-     * Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags
+     * Function to return a Link header (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link) or respective HTML set of tags.
      *
      * @param array  $links              List of links
      * @param string $type               Type of links: `header`, `head` or `body`.
@@ -148,7 +148,7 @@ final class Links
     }
 
     /**
-     * Generate `<link>` representing the respective `Link` object
+     * Generate `<link>` representing the respective `Link` object.
      *
      * @param array $link Link object
      *
@@ -179,7 +179,7 @@ final class Links
     }
 
     /**
-     * Generate a link for the HTTP header representing the respective `Link` object
+     * Generate a link for the HTTP header representing the respective `Link` object.
      *
      * @param array $link
      *
@@ -204,7 +204,7 @@ final class Links
     }
 
     /**
-     * Process `type` property that needs to comply with certain rules
+     * Process `type` property that needs to comply with certain rules.
      *
      * @param array $link
      *
@@ -225,8 +225,8 @@ final class Links
             && \array_key_exists('href', $link)
         ) {
             $ext = \pathinfo($link['href'], \PATHINFO_EXTENSION);
-            $link['type'] =
-                \is_string($ext)
+            $link['type']
+                = \is_string($ext)
                 && Common::getMimeFromExtension($ext) !== false
                     ? Common::getMimeFromExtension($ext)
                     : '';
@@ -298,7 +298,7 @@ final class Links
     }
 
     /**
-     * Remove certain attributes if they are invalid or excessive
+     * Remove certain attributes if they are invalid or excessive.
      *
      * @param array  $link
      * @param string $type
@@ -382,21 +382,21 @@ final class Links
         }
         // `blocking` is allowed only for `expect` and `stylesheet`
         if (
-            \array_key_exists('blocking', $link) &&
-            (
-                !\array_key_exists('rel', $link) ||
-                \preg_match('/((^| )(expect|stylesheet)( |$))+/uir', $link['rel']) !== 1
+            \array_key_exists('blocking', $link)
+            && (
+                !\array_key_exists('rel', $link)
+                || \preg_match('/((^| )(expect|stylesheet)( |$))+/uir', $link['rel']) !== 1
             )
         ) {
             unset($link['blocking']);
         }
         // `disabled` is allowed only for stylesheets
         if (
-            \array_key_exists('disabled', $link) &&
-            (
-                !\array_key_exists('rel', $link) ||
-                \preg_match('/((^| )(stylesheet)( |$))+/uir', $link['rel']) !== 1 ||
-                !$link['disabled']
+            \array_key_exists('disabled', $link)
+            && (
+                !\array_key_exists('rel', $link)
+                || \preg_match('/((^| )(stylesheet)( |$))+/uir', $link['rel']) !== 1
+                || !$link['disabled']
             )
         ) {
             unset($link['disabled']);
@@ -412,7 +412,7 @@ final class Links
     }
 
     /**
-     * Process `integrity` attribute of the Link object
+     * Process `integrity` attribute of the Link object.
      *
      * @param array $link
      *
@@ -422,7 +422,7 @@ final class Links
     {
         if (\preg_match('/^(sha256|sha384|sha512)-(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{4})$/u', $link['integrity']) === 0) {
             $potential_iri = IRI::parseUri($link['integrity']);
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             if (
                 \is_array($potential_iri)
                 && !empty($potential_iri['host'])
@@ -495,7 +495,7 @@ final class Links
     }
 
     /**
-     * Attempt to get image size if the integrity attribute is a file
+     * Attempt to get image size if the integrity attribute is a file.
      *
      * @param array $link
      *
@@ -523,7 +523,7 @@ final class Links
     }
 
     /**
-     * Check if valid, according to https://html.spec.whatwg.org/multipage/semantics.html#the-link-element
+     * Check if valid, according to https://html.spec.whatwg.org/multipage/semantics.html#the-link-element.
      *
      * @param array  $link Link element
      * @param string $type Type of link expected
@@ -607,7 +607,7 @@ final class Links
     }
 
     /**
-     * Check the validity of links with `rel` set
+     * Check the validity of links with `rel` set.
      *
      * @param array  $link Link element
      * @param string $type Type of link expected
@@ -629,8 +629,7 @@ final class Links
                 \array_key_exists('imagesrcset', $link)
                 || \array_key_exists('imagesizes', $link)
             )
-            &&
-            (
+            && (
                 !\array_key_exists('as', $link)
                 || $link['as'] !== 'image'
                 || \preg_match('/((^| )(preload)( |$))+/iur', $link['rel']) !== 1
@@ -660,7 +659,7 @@ final class Links
     }
 
     /**
-     * If Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches)
+     * If Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches).
      *
      * @param array $link
      *

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Simbiat\http20;
 
 /**
- * Class to generate RSS feed
+ * Class to generate RSS feed.
  */
 final class RSS
 {
     /**
-     * Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification)
+     * Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification).
      *
      * @param string $title         Title for RSS feed.
      * @param array  $entries       Items for the feed.
@@ -168,7 +168,7 @@ final class RSS
             && \is_array($feed_settings['skipDays'])
         ) {
             foreach ($feed_settings['skipDays'] as $day) {
-                if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
+                if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], true)) {
                     Headers::clientReturn(500, false);
 
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
@@ -176,7 +176,7 @@ final class RSS
             }
         }
         // Generating the feed. Using DomDocument for cleaner look and strings sanitization
-        $feed = new \DomDocument('1.0', 'UTF-8');
+        $feed = new \DOMDocument('1.0', 'UTF-8');
         // We would prefer a pretty file, just in case
         $feed->preserveWhiteSpace = false;
         $feed->formatOutput = true;
@@ -295,7 +295,7 @@ final class RSS
     }
 
     /**
-     * Helper function to add actual entries
+     * Helper function to add actual entries.
      *
      * @param \DOMNode     $element Node to process
      * @param \DOMDocument $feed    Main feed object

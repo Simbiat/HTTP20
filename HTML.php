@@ -13,16 +13,16 @@ use Simbiat\StringHelpers\Convert;
 final class HTML
 {
     // Static to count breadcrumbs in case multiple ones are created
-    private(set) static int $crumbs = 0;
+    public private(set) static int $crumbs = 0;
 
     // Static to count pagination elements in case multiple ones are created
-    private(set) static int $paginations = 0;
+    public private(set) static int $paginations = 0;
 
     // Static to count timelines in case multiple ones are created
-    private(set) static int $timelines = 0;
+    public private(set) static int $timelines = 0;
 
     /**
-     * Function to generate timeline
+     * Function to generate timeline.
      *
      * @param array  $items    List of timeline items
      * @param string $format   Datetime format
@@ -280,15 +280,15 @@ final class HTML
     /**
      * #TODO: need support for other formats supported by Google https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
      * #TODO: need to validate that we have valid links
-     * Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList
+     * Function to generate breadcrumbs for your website in Microdata format as per https://schema.org/BreadcrumbList.
      *
      * @param array $items   List of items
      * @param bool  $links   If set to `false`, you will get just a string of the requested breadcrumbs, but if set to `true`, this will also generate values for `rel="home index top begin prefetch"` and `rel="up prefetch"` required for `Links()`.
      * @param bool  $headers If `$headers` is `true` along with `$links`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).
      *
-     * @return string|array
+     * @return array|string
      */
-    public static function breadcrumbs(array $items, bool $links = false, bool $headers = false): string|array
+    public static function breadcrumbs(array $items, bool $links = false, bool $headers = false): array|string
     {
         // Sanitize $items
         foreach ($items as $key => $item) {
@@ -365,7 +365,7 @@ final class HTML
     }
 
     /**
-     * Function to generate pagination navigation
+     * Function to generate pagination navigation.
      *
      * @param int    $current      Current page number
      * @param int    $total        Total page numbers
@@ -376,9 +376,9 @@ final class HTML
      * @param bool   $headers      If `$headers` is `true` along with `$links`, then it will directly send the `Link` header(s), and the return array value of `'links'` will have a pre-generated set of `<link>` tags. While neither the headers, nor the tags are required, they may assist with navigation or performance improvement for the client (due to `prefetch`).
      * @param string $tooltip      Attribute to use for tooltip. `title` by default.
      *
-     * @return string|array
+     * @return array|string
      */
-    public static function pagination(int $current, int $total, int $max_numerics = 5, array $non_numerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title'): string|array
+    public static function pagination(int $current, int $total, int $max_numerics = 5, array $non_numerics = ['first' => '<<', 'prev' => '<', 'next' => '>', 'last' => '>>', 'first_text' => 'First page', 'prev_text' => 'Previous page ($number)', 'next_text' => 'Next page ($number)', 'last_text' => 'Last page ($number)', 'page_text' => 'Page '], string $prefix = '', bool $links = false, bool $headers = false, string $tooltip = 'title'): array|string
     {
         // Sanitize numbers
         if ($current < 1) {
@@ -511,7 +511,7 @@ final class HTML
             $output .= '</li>';
         }
         // Generate numeric links
-        for ($i = $start_page; $i <= $end_page; $i++) {
+        for ($i = $start_page; $i <= $end_page; ++$i) {
             $output .= '<li class="pagination_li'.($i === $current ? ' pagination_current' : '').'" aria-label="'.$non_numerics['page_text'].$i.'"'.($i === $current ? ' aria-current="page"' : ' '.$tooltip.'="'.$non_numerics['page_text'].$i.'"').'>';
             if ($i === $current) {
                 $output .= '<span class="pagination_span">'.$i.'</span>';

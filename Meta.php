@@ -10,7 +10,7 @@ namespace Simbiat\http20;
 final class Meta
 {
     /**
-     * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards
+     * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards.
      *
      * @param array $general    Array of general settings used by cards
      * @param array $player_app Array of values used for cards with types `app` or `player`
@@ -35,7 +35,7 @@ final class Meta
         // If card type is not set or is unsupported - use 'summary'
         if (
             empty($general['card'])
-            || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'])
+            || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'], true)
         ) {
             $general['card'] = 'summary';
         }
@@ -175,7 +175,7 @@ final class Meta
     /**
      * Function to generate either set of meta tags for Microsoft [Live] Tile (for pinned sites) or XML file for appropriate config file.
      * Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
-     * `browserconfig` specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85)
+     * `browserconfig` specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85).
      *
      * @param array $general       Array of basic settings
      * @param array $tasks         Array of so-called "tasks", that appear as pinned links, if pinned from IE
@@ -304,7 +304,7 @@ final class Meta
                     $links = 0;
                     foreach ($notifications as $key => $value) {
                         // Skip frequency and cycle
-                        if (!\in_array($key, ['frequency', 'cycle'])) {
+                        if (!\in_array($key, ['frequency', 'cycle'], true)) {
                             // Remove any extra links
                             if ($links > 5) {
                                 unset($notifications[$key]);
@@ -347,18 +347,16 @@ final class Meta
                         \is_array($task)
                         && !empty($task['name'])
                         && \is_string($task['name'])
-                        &&
-                        !empty($task['action-uri'])
+                        && !empty($task['action-uri'])
                         && \is_string($task['action-uri'])
-                        &&
-                        !empty($task['icon-uri'])
+                        && !empty($task['icon-uri'])
                         && \is_string($task['icon-uri'])
                         && \preg_match('/\.(jpg|png|gif|ico)(\?.*)?$/i', $task['icon-uri']) === 1
                     ) {
                         ++$tasks_count;
                         if (
                             empty($task['window-type'])
-                            || !\in_array($task['window-type'], ['tab', 'self', 'window'])
+                            || !\in_array($task['window-type'], ['tab', 'self', 'window'], true)
                         ) {
                             $tasks[$key]['window-type'] = 'tab';
                         }
@@ -480,7 +478,7 @@ final class Meta
     }
 
     /**
-     * Function to generate Facebook special meta-tags
+     * Function to generate Facebook special meta-tags.
      *
      * @param int   $app_id Facebook appID
      * @param array $admins List of Facebook admin IDs

@@ -9,47 +9,53 @@ use JetBrains\PhpStorm\NoReturn;
 use Simbiat\StringHelpers\Sanitize;
 
 /**
- * Collection of useful HTTP related functions
+ * Collection of useful HTTP related functions.
  */
 final class Common
 {
     /**
-     * Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses a portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47
+     * Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses a portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47.
      */
-    /** @lang PhpRegExp */
-    public const string LANGUAGE_ENC_REGEX =
-        '(UTF-8|ISO-8859-1|[!#$%&+\-^_`{}~a-zA-Z0-9]+)\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
+    /**
+     * @lang PhpRegExp
+     */
+    public const string LANGUAGE_ENC_REGEX
+        = '(UTF-8|ISO-8859-1|[!#$%&+\-^_`{}~a-zA-Z0-9]+)\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
 
     /**
-     * Language values as per https://www.ietf.org/rfc/bcp/bcp47.txt (essentially just part of the above value)
+     * Language values as per https://www.ietf.org/rfc/bcp/bcp47.txt (essentially just part of the above value).
      */
-    /** @lang PhpRegExp */
-    public const string LANGUAGE_TAG_REGEX =
-        '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
+    /**
+     * @lang PhpRegExp
+     */
+    public const string LANGUAGE_TAG_REGEX
+        = '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
 
     /**
-     * Regex for MIME type
+     * Regex for MIME type.
      */
-    /** @lang PhpRegExp */
-    public const string MIME_REGEX =
-        '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
+    /**
+     * @lang PhpRegExp
+     */
+    public const string MIME_REGEX
+        = '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
 
     /**
-     * Linkage of extensions to MIME types
+     * Linkage of extensions to MIME types.
      *
      * @var array
      */
     public static array $extension_to_mime = [];
 
     /**
-     * Get MIME type based on extension
+     * Get MIME type based on extension.
      *
      * @param string $extension Extension to get MIME for
      * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
      *
-     * @return string|false
+     * @return false|string
      */
-    public static function getMimeFromExtension(string $extension, string $mime_list = ''): string|false
+    public static function getMimeFromExtension(string $extension, string $mime_list = ''): false|string
     {
         self::loadMime($mime_list);
 
@@ -57,7 +63,7 @@ final class Common
     }
 
     /**
-     * Get extension based on MIME type
+     * Get extension based on MIME type.
      *
      * @param string $mime      MIME to get an extension for
      * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
@@ -72,15 +78,15 @@ final class Common
     }
 
     /**
-     * Wrapper for date(), that handles strings and allows validation of the result
+     * Wrapper for date(), that handles strings and allows validation of the result.
      *
-     * @param string|int|float|null $time        Time value
+     * @param null|float|int|string $time        Time value
      * @param string                $format      Expected format
      * @param string                $valid_regex Regex to use for validation
      *
      * @return string
      */
-    public static function valueToTime(string|int|float|null $time, string $format, string $valid_regex = ''): string
+    public static function valueToTime(null|float|int|string $time, string $format, string $valid_regex = ''): string
     {
         // If we want to use a constant, but it was sent as a string
         if (\str_starts_with(\mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
@@ -114,7 +120,7 @@ final class Common
     }
 
     /**
-     * Function uses ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers
+     * Function uses ob functions to attempt compressing output sent to browser and also provide browser with length of the output and some caching-related headers.
      *
      * @param string $string         String to echo
      * @param string $cache_strategy Cache strategy (same as for `cacheControl` function)
@@ -164,7 +170,7 @@ final class Common
         }
         // Some HTTP methods do not support body, thus we need to ensure it's not sent.
         $method = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? $_SERVER['REQUEST_METHOD'] ?? null;
-        if (\in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])) {
+        if (\in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], true)) {
             // Send the output
             echo $string;
         }
@@ -174,7 +180,7 @@ final class Common
     }
 
     /**
-     * Function to check if string is a valid language code
+     * Function to check if string is a valid language code.
      *
      * @param string $string
      *
@@ -185,11 +191,12 @@ final class Common
         return \in_array(
             \mb_strtolower($string, 'UTF-8'),
             ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk'],
+            true,
         );
     }
 
     /**
-     * Function does the same as `rawurlencode`, but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use `htmlentities`, but otherwise break HTML/XML
+     * Function does the same as `rawurlencode`, but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use `htmlentities`, but otherwise break HTML/XML.
      *
      * @param string $string String to encode
      * @param bool   $full   Means that all characters will be converted (useful when text inside a tag). If `false` only `<` and `&` are converted (useful when inside attribute). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML
@@ -206,9 +213,9 @@ final class Common
     }
 
     /**
-     * Function to merge CSS/JS files to reduce the number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f
+     * Function to merge CSS/JS files to reduce the number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f.
      *
-     * @param string|array $files          File(s) to process
+     * @param array|string $files          File(s) to process
      * @param string       $type           File(s) type (`css`, `js` or `html`)
      * @param bool         $minify         Whether to minify the output
      * @param string       $to_file        Optional path to a file, if you want to save the result
@@ -216,7 +223,7 @@ final class Common
      *
      * @return void
      */
-    public static function reductor(string|array $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $to_file = '', string $cache_strategy = ''): void
+    public static function reductor(array|string $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $to_file = '', string $cache_strategy = ''): void
     {
         // Set content to empty string as precaution
         $content = '';
@@ -434,7 +441,7 @@ final class Common
     }
 
     /**
-     * Load MIME list
+     * Load MIME list.
      *
      * @param string $mime_list
      *

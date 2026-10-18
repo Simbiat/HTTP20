@@ -10,12 +10,12 @@ use JetBrains\PhpStorm\NoReturn;
 use Simbiat\StringHelpers\Convert;
 
 /**
- * Functions related to file sharing
+ * Functions related to file sharing.
  */
 final class Sharing
 {
     /**
-     * Function for smart resumable download with proper headers
+     * Function for smart resumable download with proper headers.
      *
      * @param string $file        Path to file to send it to browser.
      * @param string $filename    Optional override for file name, if you want to provide a file with a different name.
@@ -224,18 +224,18 @@ final class Sharing
     }
 
     /**
-     * Function to handle file uploads
+     * Function to handle file uploads.
      *
-     * @param string|array $dest_path      Path to save a file(s) to.
+     * @param array|string $dest_path      Path to save a file(s) to.
      * @param bool         $preserve_names Whether to preserve name(s). If `false` will rename files to their hash + extension based on MIME type. Only for POST uploads.
      * @param bool         $overwrite      Whether to overwrite existing file(s). Only for POST uploads.
      * @param array        $allowed_mime   List of allowed MIME types to block files, that do not match it.
      * @param bool         $intolerant     Changes behaviour in case of failures during multiple files upload. If set to `true` (by default), if an error is encountered with any of the file - further processing will be aborted. If issues are encountered on checks, this will essentially discard any uploads. If it's encountered during moving of the uploaded files, list of files that were successfully processed will still be returned (or an empty array). Only for POST uploads.
      * @param bool         $exit           If set to `false` will not automatically exit once a file/range or a "bad" header is sent to a client. It then will return a value, that you can utilize somehow.
      *
-     * @return int|array
+     * @return array|int
      */
-    public static function upload(string|array $dest_path, bool $preserve_names = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): int|array
+    public static function upload(array|string $dest_path, bool $preserve_names = false, bool $overwrite = false, array $allowed_mime = [], bool $intolerant = true, bool $exit = true): array|int
     {
         // Set upload directory
         $upload_dir = \is_writable(\ini_get('upload_tmp_dir'))
@@ -492,8 +492,8 @@ final class Sharing
                                 $ext = '.'.$ext;
                             } else {
                                 $ext = \pathinfo($_FILES[$field][$key]['name'], \PATHINFO_EXTENSION);
-                                $ext =
-                                    !empty($ext)
+                                $ext
+                                    = !empty($ext)
                                     && \is_string($ext)
                                         ? '.'.$ext
                                         : '';
@@ -620,8 +620,8 @@ final class Sharing
                 $resumable = true;
             }
             // Check if file already exists
-            $offset =
-                $resumable
+            $offset
+                = $resumable
                 && \is_file($upload_dir.'/'.$name)
                     ? \filesize($upload_dir.'/'.$name)
                     : 0;
@@ -745,7 +745,7 @@ final class Sharing
     }
 
     /**
-     * Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation
+     * Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation.
      *
      * @param resource $input      Input stream
      * @param resource $output     Output stream
@@ -824,7 +824,7 @@ final class Sharing
     }
 
     /**
-     * Function to determine speed limit based on maximum allowed memory usage
+     * Function to determine speed limit based on maximum allowed memory usage.
      *
      * @param int   $speed      Desired maximum speed
      * @param float $percentage Maximum percentage of memory allowed to use
@@ -859,7 +859,7 @@ final class Sharing
     }
 
     /**
-     * Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes)
+     * Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes).
      *
      * @param string $memory
      *
@@ -883,7 +883,7 @@ final class Sharing
     }
 
     /**
-     * Function to validate HTTP header `Range` and return it as an array. If case of errors it will return array with one element (index 0) equalling false. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
+     * Function to validate HTTP header `Range` and return it as an array. If case of errors it will return array with one element (index 0) equalling false. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range.
      *
      * @param int $size
      *
@@ -937,13 +937,11 @@ final class Sharing
                                     $range_prime['start'] === $range_sec['start']
                                     && $range_prime['end'] === $range_sec['end']
                                 )
-                                ||
-                                (
+                                || (
                                     $range_sec['end'] >= $range_prime['start']
                                     && $range_sec['end'] < $range_prime['end']
                                 )
-                                ||
-                                (
+                                || (
                                     $range_sec['start'] > $range_prime['start']
                                     && $range_sec['start'] <= $range_prime['end']
                                 )
@@ -966,7 +964,7 @@ final class Sharing
     }
 
     /**
-     * Function to send a file directly to browser
+     * Function to send a file directly to browser.
      *
      * @param string $filepath       Path to file
      * @param array  $allowed_mime   List of allowed MIME types
@@ -1081,7 +1079,7 @@ final class Sharing
     }
 
     /**
-     * Function to proxy a file from another server as a stream
+     * Function to proxy a file from another server as a stream.
      *
      * @param string $url            URL to proxy
      * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)

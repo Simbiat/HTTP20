@@ -7,12 +7,12 @@ namespace Simbiat\http20;
 use JetBrains\PhpStorm\ExpectedValues;
 
 /**
- * Generate Atom feed
+ * Generate Atom feed.
  */
 final class Atom
 {
     /**
-     * Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html)
+     * Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html).
      *
      * @param string $title         Text to be used in `<title>` element
      * @param array  $entries       Items for the feed
@@ -34,7 +34,7 @@ final class Atom
         }
         $feed_settings['title'] = $title;
         // validate text type
-        if (!\in_array(\mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'])) {
+        if (!\in_array(\mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'], true)) {
             Headers::clientReturn(500, false);
 
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
@@ -79,7 +79,7 @@ final class Atom
             self::atomElementValidator($feed_settings['categories'], 'category', 'term');
         }
         // Generating the feed. Using DomDocument for clean look and strings sanitization
-        $feed = new \DomDocument('1.0', 'UTF-8');
+        $feed = new \DOMDocument('1.0', 'UTF-8');
         // We would prefer a pretty file, just in case
         $feed->preserveWhiteSpace = false;
         $feed->formatOutput = true;
@@ -157,7 +157,7 @@ final class Atom
     }
 
     /**
-     * Helper function to validate some elements
+     * Helper function to validate some elements.
      *
      * @param array  $elements     Array of elements to validate
      * @param string $type         Optional type of the element
@@ -191,7 +191,7 @@ final class Atom
                 }
                 if (
                     !empty($element_to_val['rel'])
-                    && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'])
+                    && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'], true)
                 ) {
                     unset($elements[$key]);
 
@@ -219,7 +219,7 @@ final class Atom
     }
 
     /**
-     * Helper function to add sub elements
+     * Helper function to add sub elements.
      *
      * @param \DOMNode     $element Node to process
      * @param \DOMDocument $feed    Main feed object
@@ -243,7 +243,7 @@ final class Atom
     }
 
     /**
-     * Helper function to add attributes
+     * Helper function to add attributes.
      *
      * @param \DOMElement $element    Node to process
      * @param array       $top_tag    Tag name
@@ -270,7 +270,7 @@ final class Atom
     }
 
     /**
-     * Helper function to add actual entries
+     * Helper function to add actual entries.
      *
      * @param \DOMNode     $element   Node to process
      * @param \DOMDocument $feed      Main feed object
@@ -374,7 +374,7 @@ final class Atom
     }
 
     /**
-     * Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
+     * Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id.
      *
      * @param string $link
      *

@@ -5,44 +5,44 @@ declare(strict_types=1);
 namespace Simbiat\http20;
 
 /**
- * IRI-related function
+ * IRI-related function.
  */
 final class IRI
 {
     /**
-     * Characters from the `ucschar` terminal as seen in RFC 3987
+     * Characters from the `ucschar` terminal as seen in RFC 3987.
      */
     public const string UCS_CHAR = '\x{00A0}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFEF}\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}';
 
     /**
-     * Characters from the `iprivate` terminal as seen in RFC 3987
+     * Characters from the `iprivate` terminal as seen in RFC 3987.
      */
     public const string I_PRIVATE = '\x{E000}-\x{F8FF}\x{F0000}-\x{FFFFD}\x{100000}-\x{10FFFD}';
 
     /**
-     * Characters from the `unreserved` terminal as seen in RFC 3987
+     * Characters from the `unreserved` terminal as seen in RFC 3987.
      */
     public const string UNRESERVED = 'a-zA-Z0-9~_.\-';
 
     /**
-     * Characters from the `gen-delims` terminal as seen in RFC 3987
+     * Characters from the `gen-delims` terminal as seen in RFC 3987.
      */
     public const string GEN_DELIMITERS = ':\/?#\[\]@';
 
     /**
-     * Characters from the `sub-delims` terminal as seen in RFC 3987
+     * Characters from the `sub-delims` terminal as seen in RFC 3987.
      */
     public const string SUB_DELIMITERS = '!$&\'()*+,;=';
 
     /**
-     * Check if a string is a valid International Resource Identifier (IRI)
+     * Check if a string is a valid International Resource Identifier (IRI).
      *
      * @param string       $iri    IRI to validate
-     * @param string|array $scheme Optional allowed scheme(s)
+     * @param array|string $scheme Optional allowed scheme(s)
      *
      * @return bool
      */
-    public static function isValidIri(string $iri, string|array $scheme = []): bool
+    public static function isValidIri(string $iri, array|string $scheme = []): bool
     {
         // Validate scheme, if provided
         if (!empty($scheme)) {
@@ -59,11 +59,11 @@ final class IRI
     }
 
     /**
-     * Convert International Resource Identifier (IRI) to Universal Resource Identifier (URI)
+     * Convert International Resource Identifier (IRI) to Universal Resource Identifier (URI).
      *
      * @param string $iri IRI string
      *
-     * @return string|null
+     * @return null|string
      */
     public static function iriToUri(string $iri): ?string
     {
@@ -83,14 +83,14 @@ final class IRI
             return null;
         }
         // If there is no scheme, then it may be a relative path, and thus in some cases it's not possible to determine if the first part (before first slash) is a domain or actual part of a path
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (empty($parsed_iri['scheme'])) {
             return null;
         }
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['scheme'] = \mb_strtolower($parsed_iri['scheme'], 'UTF-8');
         // If we have a scheme but somehow lack a host - that's also abnormal
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (empty($parsed_iri['host'])) {
             return null;
         }
@@ -101,47 +101,47 @@ final class IRI
         if ($ascii_host === false) {
             return null;
         }
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['host'] = \mb_strtolower($ascii_host, 'UTF-8');
         // Check if a valid domain name or IP
         if (
-            !\filter_var($ascii_host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME) &&
-            !\filter_var($ascii_host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4 | \FILTER_FLAG_IPV6)
+            !\filter_var($ascii_host, \FILTER_VALIDATE_DOMAIN, \FILTER_FLAG_HOSTNAME)
+            && !\filter_var($ascii_host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4 | \FILTER_FLAG_IPV6)
         ) {
             return null;
         }
         // Pross user and pass if present
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['user'])) {
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['user'] = \rawurlencode($parsed_iri['user']);
         }
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['pass'])) {
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['pass'] = \rawurlencode($parsed_iri['pass']);
         }
         // Process the path, if present
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['path'])) {
             // Need to use explode/implode to preserve `/` symbols. Doing rawurlencode and then restoring them may restore symbols encoded in the original IRI
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['path'] = \implode('/', \array_map('\rawurlencode', \explode('/', $parsed_iri['path'])));
         }
         // Process query, if present
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['query'])) {
             // "Explode" the query into an array using parse_str
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             \parse_str($parsed_iri['query'], $exploded_query);
             // Rebuild the query to ensure we URL encode properly
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['query'] = \http_build_query($exploded_query, encoding_type: \PHP_QUERY_RFC3986);
         }
         // Process fragment, if present
-        /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+        /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['fragment'])) {
-            /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+            /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['fragment'] = \rawurlencode($parsed_iri['fragment']);
         }
         // Validate that all components besides `query` do *not* contain characters from `iprivate` terminal
@@ -159,11 +159,11 @@ final class IRI
     }
 
     /**
-     * Restore the array from `parse_url()` function to original URL
+     * Restore the array from `parse_url()` function to original URL.
      *
      * @param array $parsed_uri Array from `parse_url()`
      *
-     * @return string|null
+     * @return null|string
      */
     public static function restoreUri(array $parsed_uri): ?string
     {
@@ -181,7 +181,7 @@ final class IRI
     }
 
     /**
-     * Alternative to `parse_url()`. UTF-8 safe, supports URIs and IRIs without a scheme (and without `//`)
+     * Alternative to `parse_url()`. UTF-8 safe, supports URIs and IRIs without a scheme (and without `//`).
      *
      * @param string $uri
      *
@@ -210,7 +210,7 @@ final class IRI
     }
 
     /**
-     * Alternative to `http_build_query()` but with URL encoding only reserved characters
+     * Alternative to `http_build_query()` but with URL encoding only reserved characters.
      *
      * @param array $params
      *
@@ -225,12 +225,12 @@ final class IRI
         }
         // Suppressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does
 
-        /** @noinspection ImplodeMissUseInspection */
+        /* @noinspection ImplodeMissUseInspection */
         return \implode('&', $pairs);
     }
 
     /**
-     * Same as `rawurlencode` but only for reserved characters
+     * Same as `rawurlencode` but only for reserved characters.
      *
      * @param string $string String to encode
      *

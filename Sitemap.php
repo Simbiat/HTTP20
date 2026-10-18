@@ -7,12 +7,12 @@ namespace Simbiat\http20;
 use JetBrains\PhpStorm\ExpectedValues;
 
 /**
- * Generate sitemap file
+ * Generate sitemap file.
  */
 final class Sitemap
 {
     /**
-     * Function to generate sitemap in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html
+     * Function to generate sitemap in XML, HTML or text formats. For XML specifications refer to https://www.sitemaps.org/protocol.html.
      *
      * @param array  $links         List of links to process.
      * @param string $format        Format for the output. Values `xml`, `index`, `html`, `text` or `txt` are expected.
@@ -23,7 +23,7 @@ final class Sitemap
     public static function sitemap(array $links, #[ExpectedValues(['xml', 'index', 'html', 'text', 'txt'])] string $format = 'xml', bool $direct_output = false): string
     {
         // Sanitize format
-        if (!\in_array($format, ['xml', 'index', 'html', 'text', 'txt'])) {
+        if (!\in_array($format, ['xml', 'index', 'html', 'text', 'txt'], true)) {
             $format = 'xml';
         }
         // Validate the links if the list is not empty. I did not find any recommendations for empty sitemaps, and I do not see a technical reason to break here. If sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
@@ -31,7 +31,7 @@ final class Sitemap
         // Allow only 50000 links
         $links = \array_slice($links, 0, 50000, true);
         // Generate the output string
-        if (\in_array($format, ['text', 'txt'])) {
+        if (\in_array($format, ['text', 'txt'], true)) {
             $output = \implode("\r\n", \array_column($links, 'loc'));
         } else {
             // Set initial output
@@ -98,7 +98,7 @@ final class Sitemap
     }
 
     /**
-     * Function to validate the links provided
+     * Function to validate the links provided.
      *
      * @param array $links
      *
