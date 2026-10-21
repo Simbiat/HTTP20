@@ -49,6 +49,7 @@ final class IRI
             if (\is_string($scheme)) {
                 $scheme = [$scheme];
             }
+
             if (\preg_match('/^('.\implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
                 return false;
             }
@@ -71,10 +72,12 @@ final class IRI
         if (!\mb_check_encoding($iri, 'UTF-8')) {
             return null;
         }
+
         // Early check for characters unsupported as per RFC 8820 and 3987. Using respective groups for maintainability, plus adding a `%` sign (for URL encoding)
         if (\preg_match('/^[%'.self::UCS_CHAR.self::I_PRIVATE.self::GEN_DELIMITERS.self::SUB_DELIMITERS.self::UNRESERVED.']+$/u', $iri) !== 1) {
             return null;
         }
+
         // Ensure only valid UTF-8 characters are present
         $iri = \mb_scrub($iri, 'UTF-8');
         // Try parsing the IRI first
@@ -82,11 +85,13 @@ final class IRI
         if (!\is_array($parsed_iri)) {
             return null;
         }
+
         // If there is no scheme, then it may be a relative path, and thus in some cases it's not possible to determine if the first part (before first slash) is a domain or actual part of a path
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (empty($parsed_iri['scheme'])) {
             return null;
         }
+
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['scheme'] = \mb_strtolower($parsed_iri['scheme'], 'UTF-8');
         // If we have a scheme but somehow lack a host - that's also abnormal
@@ -94,6 +99,7 @@ final class IRI
         if (empty($parsed_iri['host'])) {
             return null;
         }
+
         // Convert host to ASCII
         /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $ascii_host = \idn_to_ascii($parsed_iri['host']);
@@ -101,6 +107,7 @@ final class IRI
         if ($ascii_host === false) {
             return null;
         }
+
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         $parsed_iri['host'] = \mb_strtolower($ascii_host, 'UTF-8');
         // Check if a valid domain name or IP
@@ -110,24 +117,28 @@ final class IRI
         ) {
             return null;
         }
+
         // Pross user and pass if present
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['user'])) {
             /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['user'] = \rawurlencode($parsed_iri['user']);
         }
+
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['pass'])) {
             /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['pass'] = \rawurlencode($parsed_iri['pass']);
         }
+
         // Process the path, if present
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['path'])) {
             // Need to use explode/implode to preserve `/` symbols. Doing rawurlencode and then restoring them may restore symbols encoded in the original IRI
             /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-            $parsed_iri['path'] = \implode('/', \array_map('\rawurlencode', \explode('/', $parsed_iri['path'])));
+            $parsed_iri['path'] = \implode('/', \array_map(\rawurlencode(...), \explode('/', $parsed_iri['path'])));
         }
+
         // Process query, if present
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['query'])) {
@@ -138,17 +149,19 @@ final class IRI
             /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['query'] = \http_build_query($exploded_query, encoding_type: \PHP_QUERY_RFC3986);
         }
+
         // Process fragment, if present
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['fragment'])) {
             /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
             $parsed_iri['fragment'] = \rawurlencode($parsed_iri['fragment']);
         }
+
         // Validate that all components besides `query` do *not* contain characters from `iprivate` terminal
         if (
             \array_any(
                 $parsed_iri,
-                static fn($value, $component) => $component !== 'query'
+                static fn($value, $component): bool => $component !== 'query'
                 && \preg_match('/['.self::I_PRIVATE.']/u', $value) === 1,
             )
         ) {
@@ -161,13 +174,13 @@ final class IRI
     /**
      * Restore the array from `parse_url()` function to original URL.
      *
-     * @param array $parsed_uri Array from `parse_url()`
+     * @param array<string, mixed> $parsed_uri Array from `parse_url()`
      *
      * @return null|string
      */
     public static function restoreUri(array $parsed_uri): ?string
     {
-        if (empty($parsed_uri)) {
+        if ($parsed_uri === []) {
             return null;
         }
 
@@ -190,7 +203,7 @@ final class IRI
     public static function parseUri(string $uri): array|false
     {
         // Trim first
-        $uri = \mb_trim($uri, null, 'UTF-8');
+        $uri = \mb_trim($uri, encoding: 'UTF-8');
         $result = \preg_match('/^(?:(?<scheme>[^:\/?#]+):)?(?:\/\/(?:(?<user>[^:@\/]+)(?::(?<pass>[^:@\/]+))?@)?(?<host>[^\/?#:]*)(?::(?<port>\d+))?)?(?<path>[^?#]*)(?:\?(?<query>[^#]*))?(?:#(?<fragment>.*))?$/ui', $uri, $matches);
         // If the match failed somehow or if the array is empty - return false
         if (
@@ -199,6 +212,7 @@ final class IRI
         ) {
             return false;
         }
+
         // Remove the numeric keys
         foreach ($matches as $key => $value) {
             if (\is_int($key)) {
@@ -223,6 +237,7 @@ final class IRI
             // Keep key and value as-is, no encoding
             $pairs[] = self::toRFC3986($key).'='.self::toRFC3986($value);
         }
+
         // Suppressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does
 
         /* @noinspection ImplodeMissUseInspection */
@@ -239,6 +254,6 @@ final class IRI
     public static function toRFC3986(string $string): string
     {
         // It is important to have the `%` symbol first in the list, because otherwise the `%` in all replacements will also be replaced, and the result will require double decoding
-        return \str_replace(['%', ':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '='], ['%25', '%3A', '%2F', '%3F', '%23', '%5B', '%5D', '%40', '%21', '%24', '%26', '%27', '%28', '%29', '%2A', '%2B', '%2C', '%3B', '%3D'], $string);
+        return \str_replace(['%', ':', '/', '?', '#', '[', ']', '@', '!', '$', '&', "'", '(', ')', '*', '+', ',', ';', '='], ['%25', '%3A', '%2F', '%3F', '%23', '%5B', '%5D', '%40', '%21', '%24', '%26', '%27', '%28', '%29', '%2A', '%2B', '%2C', '%3B', '%3D'], $string);
     }
 }

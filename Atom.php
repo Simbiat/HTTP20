@@ -18,7 +18,7 @@ final class Atom
      * @param array  $entries       Items for the feed
      * @param string $id            Text, that will be used as `id`. It needs to be a URI. If empty `$_SERVER['REQUEST_URI']` will be used.
      * @param string $text_type     Text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
-     * @param array  $feed_settings Array with optional settings for the feed. Check Atom.md for details.
+     * @param array<string, mixed> $feed_settings Array with optional settings for the feed. Check Atom.md for details.
      *
      * @return void
      *
@@ -28,56 +28,65 @@ final class Atom
     {
         // Validate title
         if (empty($title)) {
-            Headers::clientReturn(500, false);
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         }
+
         $feed_settings['title'] = $title;
         // validate text type
-        if (!\in_array(\mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'], true)) {
-            Headers::clientReturn(500, false);
+        if (!\in_array(\mb_strtolower($text_type, 'UTF-8'), ['text', 'html', 'xhtml'], strict: true)) {
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('Unsupported text type provided for Atom feed');
         }
+
         // Validate content
-        if (!empty($entries)) {
+        if ($entries !== []) {
             self::atomElementValidator($entries, 'entry', 'link');
         }
+
         // Check id
         if (empty($id)) {
             $feed_settings['id'] = Common::htmlToRFC3986((isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
         } elseif (IRI::isValidIri($id, 'https')) {
             $feed_settings['id'] = Common::htmlToRFC3986($id);
         } else {
-            Headers::clientReturn(500, false);
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('$id provided is not a valid URI');
         }
+
         // Check time
         if (empty($feed_settings['updated'])) {
             $dates = \array_merge(\array_column($entries, 'updated'), \array_column($entries, 'published'));
-            $feed_settings['updated'] = empty($dates) ? Common::valueToTime(\time(), \DATE_ATOM) : Common::valueToTime(\max($dates), \DATE_ATOM);
+            $feed_settings['updated'] = $dates === [] ? Common::valueToTime(\time(), \DATE_ATOM) : Common::valueToTime(\max($dates), \DATE_ATOM);
         } else {
             $feed_settings['updated'] = Common::valueToTime($feed_settings['updated'], \DATE_ATOM);
         }
+
         // Send Last-Modified header right now, but do not exit if 304 is sent, so that a proper set of Cache-Control headers is sent as well
         Headers::lastModified(\strtotime($feed_settings['updated']));
         // Validate authors
         if (!empty($feed_settings['authors'])) {
             self::atomElementValidator($feed_settings['authors']);
         }
+
         // Validate contributors
         if (!empty($feed_settings['contributors'])) {
             self::atomElementValidator($feed_settings['contributors'], 'contributor');
         }
+
         // Validate links
         if (!empty($feed_settings['links'])) {
             self::atomElementValidator($feed_settings['links'], 'link', 'href');
         }
+
         // Validate categories
         if (!empty($feed_settings['categories'])) {
             self::atomElementValidator($feed_settings['categories'], 'category', 'term');
         }
+
         // Generating the feed. Using DomDocument for clean look and strings sanitization
         $feed = new \DOMDocument('1.0', 'UTF-8');
         // We would prefer a pretty file, just in case
@@ -104,6 +113,7 @@ final class Atom
                 self::atomAddAttributes($link_elem, $link, ['href', 'rel', 'type', 'hreflang', 'title', 'length']);
             }
         }
+
         // Add persons
         if (!empty($feed_settings['authors'])) {
             foreach ($feed_settings['authors'] as $person) {
@@ -111,48 +121,55 @@ final class Atom
                 self::atomAddSubElements($author, $feed, $person);
             }
         }
+
         if (!empty($feed_settings['contributors'])) {
             foreach ($feed_settings['contributors'] as $person) {
                 $contributor = $root->appendChild($feed->createElement('contributor'));
                 self::atomAddSubElements($contributor, $feed, $person);
             }
         }
+
         // Add optional feed tags
         if (!empty($feed_settings['subtitle'])) {
             $subtitle = $root->appendChild($feed->createElement('subtitle', $feed_settings['subtitle']));
             $subtitle->setAttribute('type', $text_type);
         }
+
         if (!empty($feed_settings['icon'])) {
             $root->appendChild($feed->createElement('icon', Common::htmlToRFC3986($feed_settings['icon'])));
         }
+
         if (!empty($feed_settings['logo'])) {
             $root->appendChild($feed->createElement('logo', Common::htmlToRFC3986($feed_settings['logo'])));
         }
+
         if (!empty($feed_settings['rights'])) {
             $rights = $root->appendChild($feed->createElement('rights', $feed_settings['rights']));
             $rights->setAttribute('type', $text_type);
         }
+
         if (!empty($feed_settings['categories'])) {
             foreach ($feed_settings['categories'] as $cat) {
                 $category = $root->appendChild($feed->createElement('category'));
                 self::atomAddAttributes($category, $cat, ['term', 'scheme', 'label']);
             }
         }
+
         // Add generator referencing the library itself
         $generator = $root->appendChild($feed->createElement('generator', 'Simbiat/http20'));
         $generator->setAttribute('uri', 'https://github.com/Simbiat/http20');
         // Add actual entries in the feed
-        if (!empty($entries)) {
-            foreach ($entries as $entry) {
-                $element = $root->appendChild($feed->createElement('entry'));
-                self::atomAddEntries($element, $feed, $entry, $text_type);
-            }
+        foreach ($entries as $entry) {
+            $element = $root->appendChild($feed->createElement('entry'));
+            self::atomAddEntries($element, $feed, $entry, $text_type);
         }
+
         $feed->normalizeDocument();
         // Output
         if (!\headers_sent()) {
             \header('Content-type: application/atom+xml;charset=utf-8');
         }
+
         Common::zEcho($feed->saveXML(), 'hour');
     }
 
@@ -173,31 +190,36 @@ final class Atom
 
                 continue;
             }
+
             if (empty($element_to_val[$element_name])) {
                 unset($elements[$key]);
 
                 continue;
             }
+
             if (!\is_string($element_to_val[$element_name])) {
                 unset($elements[$key]);
 
                 continue;
             }
+
             if ($type === 'link') {
                 if (!IRI::isValidIri($element_to_val['href'], 'https')) {
                     unset($elements[$key]);
 
                     continue;
                 }
+
                 if (
                     !empty($element_to_val['rel'])
-                    && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'], true)
+                    && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'], strict: true)
                 ) {
                     unset($elements[$key]);
 
                     continue;
                 }
             }
+
             if ($type !== 'entry') {
                 continue;
             }
@@ -207,11 +229,13 @@ final class Atom
 
                 continue;
             }
+
             if (empty($element_to_val['updated'])) {
                 unset($elements[$key]);
 
                 continue;
             }
+
             if (!IRI::isValidIri($element_to_val['link'], 'https')) {
                 unset($elements[$key]);
             }
@@ -223,7 +247,7 @@ final class Atom
      *
      * @param \DOMNode     $element Node to process
      * @param \DOMDocument $feed    Main feed object
-     * @param array        $top_tag Tag name
+     * @param array<string, mixed> $top_tag Tag name
      *
      * @return void
      *
@@ -245,19 +269,20 @@ final class Atom
     /**
      * Helper function to add attributes.
      *
-     * @param \DOMElement $element    Node to process
-     * @param array       $top_tag    Tag name
-     * @param array       $attributes Attributes to add
+     * @param \DOMElement           $element    Node to process
+     * @param array<string, string> $top_tag    Tag name
+     * @param array<int, string>    $attributes Attributes to add
      *
      * @return void
      */
     private static function atomAddAttributes(\DOMElement $element, array $top_tag, array $attributes): void
     {
-        if (empty($attributes)) {
-            Headers::clientReturn(500, false);
+        if ($attributes === []) {
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('Empty list of attributes provided for `atomAddAttributes` function');
         }
+
         foreach ($attributes as $attribute) {
             if (!empty($top_tag[$attribute])) {
                 if ($attribute === 'href') {
@@ -272,10 +297,10 @@ final class Atom
     /**
      * Helper function to add actual entries.
      *
-     * @param \DOMNode     $element   Node to process
-     * @param \DOMDocument $feed      Main feed object
-     * @param array        $entry     List of elements to add
-     * @param string       $text_type Text type
+     * @param \DOMNode             $element   Node to process
+     * @param \DOMDocument         $feed      Main feed object
+     * @param array<string, mixed> $entry     List of elements to add
+     * @param string               $text_type Text type
      *
      * @return void
      *
@@ -289,6 +314,7 @@ final class Atom
         } else {
             $element->appendChild($feed->createElement('id', $entry['id']));
         }
+
         $title = $element->appendChild($feed->createElement('title', $entry['title']));
         $title->setAttribute('type', $text_type);
         $element->appendChild($feed->createElement('updated', Common::valueToTime($entry['updated'], \DATE_ATOM)));
@@ -307,13 +333,16 @@ final class Atom
             if (!empty($entry['author_name'])) {
                 $author->appendChild($feed->createElement('name', $entry['author_name']));
             }
+
             if (!empty($entry['author_email'])) {
                 $author->appendChild($feed->createElement('email', $entry['author_email']));
             }
+
             if (!empty($entry['author_uri'])) {
                 $author->appendChild($feed->createElement('uri', $entry['author_uri']));
             }
         }
+
         if (
             !empty($entry['contributor_name'])
             || !empty($entry['contributor_email'])
@@ -323,34 +352,42 @@ final class Atom
             if (!empty($entry['contributor_name'])) {
                 $contributor->appendChild($feed->createElement('name', $entry['contributor_name']));
             }
+
             if (!empty($entry['contributor_email'])) {
                 $contributor->appendChild($feed->createElement('email', $entry['contributor_email']));
             }
+
             if (!empty($entry['contributor_uri'])) {
                 $contributor->appendChild($feed->createElement('uri', Common::htmlToRFC3986($entry['contributor_uri'])));
             }
         }
+
         if (!empty($entry['content'])) {
             $element->appendChild($feed->createElement('content', $entry['content']));
         }
+
         if (!empty($entry['summary'])) {
             $summary = $element->appendChild($feed->createElement('summary', $entry['summary']));
             $summary->setAttribute('type', $text_type);
         }
+
         // Add optional tags
         if (!empty($entry['category'])) {
             $category = $element->appendChild($feed->createElement('category'));
             $category->setAttribute('term', $entry['category']);
         }
+
         if (!empty($entry['published'])) {
             $element->appendChild($feed->createElement('published', Common::valueToTime($entry['published'], \DATE_ATOM)));
         } else {
             $element->appendChild($feed->createElement('updated', Common::valueToTime($entry['updated'], \DATE_ATOM)));
         }
+
         if (!empty($entry['rights'])) {
             $rights = $element->appendChild($feed->createElement('rights', $entry['rights']));
             $rights->setAttribute('type', $text_type);
         }
+
         // Add a source
         if (
             empty($entry['source_id'])
@@ -364,10 +401,12 @@ final class Atom
         if (!empty($entry['source_id'])) {
             $source->appendChild($feed->createElement('id', $entry['source_id']));
         }
+
         if (!empty($entry['source_title'])) {
             $source_title = $source->appendChild($feed->createElement('title', $entry['source_title']));
             $source_title->setAttribute('type', $text_type);
         }
+
         if (!empty($entry['source_updated'])) {
             $source->appendChild($feed->createElement('updated', Common::valueToTime($entry['source_updated'], \DATE_ATOM)));
         }
@@ -382,7 +421,7 @@ final class Atom
      */
     private static function atomIDGen(string $link): string
     {
-        $date = Common::valueToTime(null, 'Y-m-d', '/^\d{4}-\d{2}-\d{2}$/i');
+        $date = Common::valueToTime(time: null, format: 'Y-m-d', valid_regex: '/^\d{4}-\d{2}-\d{2}$/i');
         // Remove URI protocol (if any)
         $link = \preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', Common::htmlToRFC3986($link));
         // Replace any # with /

@@ -12,8 +12,8 @@ final class Meta
     /**
      * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards.
      *
-     * @param array $general    Array of general settings used by cards
-     * @param array $player_app Array of values used for cards with types `app` or `player`
+     * @param array<string, mixed> $general Array of general settings used by cards
+     * @param array<string, mixed> $player_app Array of values used for cards with types `app` or `player`
      * @param bool  $pretty     If set to `true` will add new line to the end of each `meta` tag
      *
      * @return string
@@ -21,24 +21,27 @@ final class Meta
     public static function twitter(array $general, array $player_app = [], bool $pretty = false): string
     {
         // Check that settings are not an empty array
-        if (empty($general)) {
+        if ($general === []) {
             \trigger_error('Empty array of general settings was provided for Twitter card');
 
             return '';
         }
+
         // Title is mandatory
         if (empty($general['title'])) {
             \trigger_error('Empty title was provided for Twitter card');
 
             return '';
         }
+
         // If card type is not set or is unsupported - use 'summary'
         if (
             empty($general['card'])
-            || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'], true)
+            || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'], strict: true)
         ) {
             $general['card'] = 'summary';
         }
+
         // Add main meta tag
         $output = '<meta name="twitter:card" content="'.\htmlspecialchars($general['card'], \ENT_QUOTES | \ENT_SUBSTITUTE).'" />';
         // Add title
@@ -51,6 +54,7 @@ final class Meta
         ) {
             $output .= '<meta name="twitter:site" content="'.(\str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
         }
+
         // Add site:id if not empty and valid
         if (
             !empty($general['site:id'])
@@ -58,6 +62,7 @@ final class Meta
         ) {
             $output .= '<meta name="twitter:site:id" content="'.$general['site:id'].'" />';
         }
+
         // Add creator if not empty and valid
         if (
             !empty($general['creator'])
@@ -66,6 +71,7 @@ final class Meta
         ) {
             $output .= '<meta name="twitter:creator" content="'.(\str_starts_with($general['creator'], '@') ? '' : '@').$general['creator'].'" />';
         }
+
         // Add creator:id if not empty and valid
         if (
             !empty($general['creator:id'])
@@ -73,10 +79,12 @@ final class Meta
         ) {
             $output .= '<meta name="twitter:creator:id" content="'.$general['creator:id'].'" />';
         }
+
         // Add description if not empty
         if (!empty($general['description'])) {
             $output .= '<meta name="twitter:description" content="'.\mb_substr(\htmlspecialchars($general['description'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 200, 'UTF-8').'" />';
         }
+
         // Add images' tags, that are not use with 'app' cards
         if ($general['card'] !== 'app') {
             // Add only if URL looks like a valid URL for a supported image
@@ -86,11 +94,13 @@ final class Meta
             ) {
                 $output .= '<meta name="twitter:image" content="'.$general['image'].'" />';
             }
+
             // Add image description
             if (!empty($general['image:alt'])) {
                 $output .= '<meta name="twitter:image:alt" content="'.\mb_substr(\htmlspecialchars($general['image:alt'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 420, 'UTF-8').'" />';
             }
         }
+
         // Process player tags
         if ($general['card'] === 'player') {
             // Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
@@ -108,6 +118,7 @@ final class Meta
 
                 return '';
             }
+
             // Add player URL
             $output .= '<meta name="twitter:player" content="'.$player_app['player'].'" />';
             // Add width and height
@@ -133,6 +144,7 @@ final class Meta
 
                 return '';
             }
+
             // Add IDs
             $output .= '<meta name="twitter:app:id:ipad" content="'.$player_app['id:ipad'].'" />';
             $output .= '<meta name="twitter:app:id:iphone" content="'.$player_app['id:iphone'].'" />';
@@ -144,18 +156,21 @@ final class Meta
             ) {
                 $output .= '<meta name="twitter:app:url:ipad" content="'.$player_app['url:ipad'].'" />';
             }
+
             if (
                 !empty($player_app['url:iphone'])
                 && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:iphone']) === 1
             ) {
                 $output .= '<meta name="twitter:app:url:iphone" content="'.$player_app['url:iphone'].'" />';
             }
+
             if (
                 !empty($player_app['url:googleplay'])
                 && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:googleplay']) === 1
             ) {
                 $output .= '<meta name="twitter:app:url:googleplay" content="'.$player_app['url:googleplay'].'" />';
             }
+
             // Add country code
             if (
                 !empty($player_app['country'])
@@ -164,9 +179,10 @@ final class Meta
                 $output .= '<meta name="twitter:app:country" content="'.$player_app['country'].'" />';
             }
         }
+
         // Add new lines at the end of the tags for a more readable output
         if ($pretty) {
-            $output = \str_replace('>', '>'."\r\n", $output);
+            return \str_replace('>', '>'."\r\n", $output);
         }
 
         return $output;
@@ -177,7 +193,7 @@ final class Meta
      * Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
      * `browserconfig` specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85).
      *
-     * @param array $general       Array of basic settings
+     * @param array<string, mixed> $general Array of basic settings
      * @param array $tasks         Array of so-called "tasks", that appear as pinned links, if pinned from IE
      * @param array $notifications Array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
      * @param bool  $xml           Whether to generate XML
@@ -188,11 +204,12 @@ final class Meta
     public static function msTile(array $general, array $tasks = [], array $notifications = [], bool $xml = false, bool $pretty_direct = true): string
     {
         // Check that settings are not an empty array
-        if (empty($general)) {
+        if ($general === []) {
             \trigger_error('Empty array of general settings was provided for Microsoft Tile');
 
             return '';
         }
+
         // Check name
         if (
             empty($general['name'])
@@ -203,14 +220,17 @@ final class Meta
 
             return '';
         }
+
         // If tooltip is not provided, use the name
         if (empty($general['tooltip'])) {
             $general['tooltip'] = $general['name'];
         }
+
         // If starturl is not provided set it to current host.
         if (empty($general['starturl'])) {
             $general['starturl'] = (isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] !== 443 ? ':'.$_SERVER['SERVER_PORT'] : '');
         }
+
         // If window is not provided set or incorrect
         if (
             empty($general['window'])
@@ -218,6 +238,7 @@ final class Meta
         ) {
             $general['window'] = 'width=800;height=600';
         }
+
         // If allowDomainApiCalls is not set, set it to true by default
         if (isset($general['allowDomainApiCalls'])) {
             $general['allowDomainApiCalls'] = (bool) $general['allowDomainApiCalls'];
@@ -225,6 +246,7 @@ final class Meta
         } else {
             $general['allowDomainApiCalls'] = 'true';
         }
+
         // If allowDomainApiCalls is not set, set it to true by default
         if (isset($general['allowDomainMetaTags'])) {
             $general['allowDomainMetaTags'] = (bool) $general['allowDomainMetaTags'];
@@ -232,6 +254,7 @@ final class Meta
         } else {
             $general['allowDomainMetaTags'] = 'true';
         }
+
         // Validate URI for badge (https://docs.microsoft.com/en-us/uwp/schemas/tiles/badgeschema/schema-root) and remove it if it's invalid
         if (
             empty($general['badge'])
@@ -242,6 +265,7 @@ final class Meta
         } elseif (\preg_match('/^frequency=(30|60|360|720|1440);.*$/i', $general['badge']) !== 1) {
             $general['badge'] = 'frequency=1440; '.$general['badge'];
         }
+
         // Validate colors
         if (
             empty($general['navbutton-color'])
@@ -249,6 +273,7 @@ final class Meta
         ) {
             unset($general['navbutton-color']);
         }
+
         // Technically TileColor supports named colors, but forcing only Hex values makes it consistent with navbutton-color
         if (
             empty($general['TileColor'])
@@ -256,6 +281,7 @@ final class Meta
         ) {
             unset($general['TileColor']);
         }
+
         // Validate images
         if (
             empty($general['square150x150logo'])
@@ -263,48 +289,55 @@ final class Meta
         ) {
             unset($general['square150x150logo']);
         }
+
         if (
             empty($general['square310x310logo'])
             || \preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['square310x310logo']) !== 1
         ) {
             unset($general['square310x310logo']);
         }
+
         if (
             empty($general['square70x70logo'])
             || \preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['square70x70logo']) !== 1
         ) {
             unset($general['square70x70logo']);
         }
+
         if (
             empty($general['wide310x150logo'])
             || \preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['wide310x150logo']) !== 1
         ) {
             unset($general['wide310x150logo']);
         }
+
         if (
             empty($general['TileImage'])
             || \preg_match('/\.(jpg|png|gif)(\?.*)?$/i', $general['TileImage']) !== 1
         ) {
             unset($general['TileImage']);
         }
+
         // Prepare notification value (should lead to XML formatted like https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root)
-        if (!empty($notifications)) {
+        if ($notifications !== []) {
             // Count elements (links)
             $links = \count($notifications);
             // Exclude frequency
             if (isset($notifications['frequency'])) {
                 --$links;
             }
+
             // Exclude cycle
             if (isset($notifications['cycle'])) {
                 --$links;
             }
+
             if ($links > 0) {
                 if ($links > 5) {
                     $links = 0;
                     foreach ($notifications as $key => $value) {
                         // Skip frequency and cycle
-                        if (!\in_array($key, ['frequency', 'cycle'], true)) {
+                        if (!\in_array($key, ['frequency', 'cycle'], strict: true)) {
                             // Remove any extra links
                             if ($links > 5) {
                                 unset($notifications[$key]);
@@ -314,6 +347,7 @@ final class Meta
                         }
                     }
                 }
+
                 // Sanitize frequency
                 if (
                     empty($notifications['frequency'])
@@ -321,6 +355,7 @@ final class Meta
                 ) {
                     $notifications['frequency'] = 1440;
                 }
+
                 // Sanitize cycle
                 if (
                     empty($notifications['cycle'])
@@ -335,8 +370,9 @@ final class Meta
                 $notifications = [];
             }
         }
+
         // Prepare tasks
-        if (!empty($tasks)) {
+        if ($tasks !== []) {
             // Start counter for valid tasks
             $tasks_count = 0;
             foreach ($tasks as $key => $task) {
@@ -356,7 +392,7 @@ final class Meta
                         ++$tasks_count;
                         if (
                             empty($task['window-type'])
-                            || !\in_array($task['window-type'], ['tab', 'self', 'window'], true)
+                            || !\in_array($task['window-type'], ['tab', 'self', 'window'], strict: true)
                         ) {
                             $tasks[$key]['window-type'] = 'tab';
                         }
@@ -366,6 +402,7 @@ final class Meta
                     }
                 }
             }
+
             // If there are no valid tasks, unset the array
             if ($tasks_count === 0) {
                 $tasks = [];
@@ -374,6 +411,7 @@ final class Meta
                 $tasks = \array_values($tasks);
             }
         }
+
         // Generate output
         // msapplication-config
         if ($xml) {
@@ -392,29 +430,37 @@ final class Meta
                 if (!empty($general['square70x70logo'])) {
                     $output .= '<square70x70logo src="'.\htmlspecialchars($general['square70x70logo'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"/>';
                 }
+
                 if (!empty($general['square150x150logo'])) {
                     $output .= '<square150x150logo src="'.\htmlspecialchars($general['square150x150logo'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"/>';
                 }
+
                 if (!empty($general['wide310x150logo'])) {
                     $output .= '<wide310x150logo src="'.\htmlspecialchars($general['wide310x150logo'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"/>';
                 }
+
                 if (!empty($general['square310x310logo'])) {
                     $output .= '<square310x310logo src="'.\htmlspecialchars($general['square310x310logo'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"/>';
                 }
+
                 if (!empty($general['TileImage'])) {
                     $output .= '<TileImage src="'.\htmlspecialchars($general['TileImage'], \ENT_QUOTES | \ENT_SUBSTITUTE).'"/>';
                 }
+
                 if (!empty($general['TileColor'])) {
                     $output .= '<TileColor>'.$general['TileColor'].'</TileColor>';
                 }
+
                 $output .= '</tile>';
             }
+
             // Add badge if set
             if (!empty($general['badge'])) {
                 $output .= '<badge><polling-uri src="'.\preg_replace('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge'], '$4').'"/><frequency>'.\preg_replace('/^(frequency=(30|60|360|720|1440);\s*)?(polling-uri=)(https:\/\/.*)$/i', $general['badge'], '$2').'</frequency></badge>';
             }
+
             // Add notifications if set
-            if (!empty($notifications)) {
+            if ($notifications !== []) {
                 $output .= '<notification><frequency>'.$notifications['frequency'].'</frequency><cycle>'.$notifications['cycle'].'</cycle>';
                 unset($notifications['frequency'], $notifications['cycle']);
                 // Reset keys just in case
@@ -423,8 +469,10 @@ final class Meta
                 foreach ($notifications as $key => $value) {
                     $output .= '<polling-uri'.($key !== 0 ? $key : '').' src="'.\htmlspecialchars($value, \ENT_QUOTES | \ENT_SUBSTITUTE).'"/>';
                 }
+
                 $output .= '</notification>';
             }
+
             // Close XML
             $output .= '</msapplication></browserconfig>';
             // Output directly to client if parameter is true
@@ -432,6 +480,7 @@ final class Meta
                 if (!\headers_sent()) {
                     \header('Content-Type: text/xml; charset=utf-8');
                 }
+
                 Common::zEcho($output);
             }
         } else {
@@ -445,8 +494,9 @@ final class Meta
                     $output .= '<meta name="msapplication-'.$setting.'" content="'.\htmlspecialchars($value, \ENT_QUOTES | \ENT_SUBSTITUTE).'" />';
                 }
             }
+
             // Add notifications if set
-            if (!empty($notifications)) {
+            if ($notifications !== []) {
                 $output .= '<meta name="msapplication-notification" content="frequency='.$notifications['frequency'].';cycle='.$notifications['cycle'].';';
                 unset($notifications['frequency'], $notifications['cycle']);
                 // Reset keys just in case
@@ -455,19 +505,20 @@ final class Meta
                 foreach ($notifications as $key => $value) {
                     $output .= 'polling-uri'.($key !== 0 ? $key : '').'='.\htmlspecialchars($value, \ENT_QUOTES | \ENT_SUBSTITUTE).';';
                 }
+
                 // Close the tag
                 $output .= '" />';
             }
+
             // Add tasks if set (seems to be used only by IE11 at the time of writing)
-            if (!empty($tasks)) {
-                foreach ($tasks as $key => $task) {
-                    if ($task === 'separator') {
-                        $output .= '<meta name="msapplication-task-separator" content="'.$key.'" />';
-                    } else {
-                        $output .= '<meta name="msapplication-task" content="name='.\htmlspecialchars($task['name'], \ENT_QUOTES | \ENT_SUBSTITUTE).'; action-uri='.\htmlspecialchars($task['action-uri'], \ENT_QUOTES | \ENT_SUBSTITUTE).'; icon-uri='.\htmlspecialchars($task['icon-uri'], \ENT_QUOTES | \ENT_SUBSTITUTE).'; window-type='.$task['window-type'].'" />';
-                    }
+            foreach ($tasks as $key => $task) {
+                if ($task === 'separator') {
+                    $output .= '<meta name="msapplication-task-separator" content="'.$key.'" />';
+                } else {
+                    $output .= '<meta name="msapplication-task" content="name='.\htmlspecialchars($task['name'], \ENT_QUOTES | \ENT_SUBSTITUTE).'; action-uri='.\htmlspecialchars($task['action-uri'], \ENT_QUOTES | \ENT_SUBSTITUTE).'; icon-uri='.\htmlspecialchars($task['icon-uri'], \ENT_QUOTES | \ENT_SUBSTITUTE).'; window-type='.$task['window-type'].'" />';
                 }
             }
+
             // Add new lines at the end of the tags for a more readable output
             if ($pretty_direct) {
                 $output = \str_replace('>', '>'."\r\n", $output);
@@ -499,8 +550,9 @@ final class Meta
                 unset($admins[$key]);
             }
         }
+
         // Add admins, if any
-        if (!empty($admins)) {
+        if ($admins !== []) {
             $output .= '<meta property="fb:admins" content="'.\implode(',', $admins).'"/>';
         }
 

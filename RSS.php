@@ -15,7 +15,7 @@ final class RSS
      * @param string $title         Title for RSS feed.
      * @param array  $entries       Items for the feed.
      * @param string $feed_link     Link to feed. If empty current `REQUEST_URI` will be used.
-     * @param array  $feed_settings Feed settings
+     * @param array<string, mixed> $feed_settings Feed settings
      *
      * @return void
      *
@@ -25,10 +25,11 @@ final class RSS
     {
         // Validate title
         if (empty($title)) {
-            Headers::clientReturn(500, false);
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('No `title` provided in settings for the feed');
         }
+
         $feed_settings['title'] = $title;
         // Check the feed link
         if (empty($feed_link)) {
@@ -36,51 +37,56 @@ final class RSS
         } elseif (IRI::isValidIri($feed_link, 'https')) {
             $feed_settings['link'] = Common::htmlToRFC3986($feed_link);
         } else {
-            Headers::clientReturn(500, false);
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('`feed_link` provided is not a valid URI');
         }
+
         // Validate content
-        if (!empty($entries)) {
-            foreach ($entries as $key => $entry) {
+        foreach ($entries as $key => $entry) {
+            if (
+                empty($entry['title'])
+                && empty($entry['description'])
+            ) {
+                unset($entries[$key]);
+
+                continue;
+            }
+
+            if (!empty($entry['enclosure_url'])) {
                 if (
-                    empty($entry['title'])
-                    && empty($entry['description'])
+                    empty($entry['enclosure_length'])
+                    || empty($entry['enclosure_type'])
                 ) {
                     unset($entries[$key]);
 
                     continue;
                 }
-                if (!empty($entry['enclosure_url'])) {
-                    if (
-                        empty($entry['enclosure_length'])
-                        || empty($entry['enclosure_type'])
-                    ) {
-                        unset($entries[$key]);
 
-                        continue;
-                    }
-                    if (\is_numeric($entry['enclosure_length'])) {
-                        unset($entries[$key]);
+                if (\is_numeric($entry['enclosure_length'])) {
+                    unset($entries[$key]);
 
-                        continue;
-                    }
+                    continue;
                 }
-                // Add <source> data
-                $entries[$key]['source_url'] = $feed_settings['link'];
-                $entries[$key]['source_title'] = $feed_settings['title'];
             }
+
+            // Add <source> data
+            $entries[$key]['source_url'] = $feed_settings['link'];
+            $entries[$key]['source_title'] = $feed_settings['title'];
         }
+
         if (empty($feed_settings['description'])) {
             $feed_settings['description'] = $feed_settings['title'];
         }
+
         // Check time
         if (empty($feed_settings['pubDate'])) {
             $dates = \array_column($entries, 'pubDate');
-            $feed_settings['pubDate'] = empty($dates) ? Common::valueToTime(\time(), \DATE_RSS) : Common::valueToTime(\max($dates), \DATE_RSS);
+            $feed_settings['pubDate'] = $dates === [] ? Common::valueToTime(\time(), \DATE_RSS) : Common::valueToTime(\max($dates), \DATE_RSS);
         } else {
             $feed_settings['pubDate'] = Common::valueToTime($feed_settings['pubDate'], \DATE_RSS);
         }
+
         $feed_settings['lastBuildDate'] = empty($feed_settings['lastBuildDate'])
             ? $feed_settings['pubDate']
             : Common::valueToTime($feed_settings['lastBuildDate'], \DATE_RSS);
@@ -95,52 +101,59 @@ final class RSS
                 || empty($feed_settings['cloud']['registerProcedure'])
                 || empty($feed_settings['cloud']['protocol'])
             ) {
-                Headers::clientReturn(500, false);
+                Headers::clientReturn(500, exit: false);
 
                 throw new \UnexpectedValueException('One or more attributes required for `cloud` tag are missing in settings for the feed');
             }
         }
+
         // Check TTL
         if (
             !empty($feed_settings['ttl'])
             && !\is_numeric($feed_settings['ttl'])
         ) {
-            Headers::clientReturn(500, false);
+            Headers::clientReturn(500, exit: false);
 
             throw new \UnexpectedValueException('`ttl` provided in settings for the feed is not numeric');
         }
+
         // Check image
         if (!empty($feed_settings['image'])) {
             if (empty($feed_settings['image']['url'])) {
-                Headers::clientReturn(500, false);
+                Headers::clientReturn(500, exit: false);
 
                 throw new \UnexpectedValueException('`url` property for `image` tag is missing in settings for the feed');
             }
+
             if (!empty($feed_settings['image']['width'])) {
                 if (!\is_numeric($feed_settings['image']['width'])) {
-                    Headers::clientReturn(500, false);
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('`width` property for `image` tag is not numeric in settings for the feed');
                 }
+
                 if ((int) $feed_settings['image']['width'] > 144) {
-                    Headers::clientReturn(500, false);
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('`width` property for `image` tag is more than 144 in settings for the feed');
                 }
             }
+
             if (!empty($feed_settings['image']['height'])) {
                 if (!\is_numeric($feed_settings['image']['height'])) {
-                    Headers::clientReturn(500, false);
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('`height` property for `image` tag is not numeric in settings for the feed');
                 }
+
                 if ((int) $feed_settings['image']['height'] > 400) {
-                    Headers::clientReturn(500, false);
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('`height` property for `image` tag is more than 400 in settings for the feed');
                 }
             }
         }
+
         // Check skipHours
         if (
             !empty($feed_settings['skipHours'])
@@ -148,33 +161,36 @@ final class RSS
         ) {
             foreach ($feed_settings['skipHours'] as $hour) {
                 if (!\is_numeric($hour)) {
-                    Headers::clientReturn(500, false);
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('Hour for for `skipHours` tag is not numeric in settings for the feed');
                 }
+
                 if (
                     (int) $hour < 0
                     || (int) $hour > 23
                 ) {
-                    Headers::clientReturn(500, false);
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('Hour property for `skipHours` tag is outside of 0-23 range in settings for the feed');
                 }
             }
         }
+
         // Check skipDays
         if (
             !empty($feed_settings['skipDays'])
             && \is_array($feed_settings['skipDays'])
         ) {
             foreach ($feed_settings['skipDays'] as $day) {
-                if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], true)) {
-                    Headers::clientReturn(500, false);
+                if (!\in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], strict: true)) {
+                    Headers::clientReturn(500, exit: false);
 
                     throw new \UnexpectedValueException('Day property for `skipDays` tag is not one of accepted values (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) in settings for the feed');
                 }
             }
         }
+
         // Generating the feed. Using DomDocument for cleaner look and strings sanitization
         $feed = new \DOMDocument('1.0', 'UTF-8');
         // We would prefer a pretty file, just in case
@@ -206,21 +222,25 @@ final class RSS
         ) {
             $root->appendChild($feed->createElement('language', \mb_strtolower($feed_settings['language'], 'UTF-8')));
         }
+
         if (!empty($feed_settings['copyright'])) {
             $root->appendChild($feed->createElement('copyright', $feed_settings['copyright']));
         }
+
         if (
             !empty($feed_settings['managingEditor'])
             && \filter_var($feed_settings['managingEditor'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)
         ) {
             $root->appendChild($feed->createElement('managingEditor', $feed_settings['managingEditor']));
         }
+
         if (
             !empty($feed_settings['webMaster'])
             && \filter_var($feed_settings['webMaster'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)
         ) {
             $root->appendChild($feed->createElement('webMaster', $feed_settings['webMaster']));
         }
+
         // Add cloud details (rssCloud)
         if (!empty($feed_settings['cloud'])) {
             $cloud = $feed->createElement('cloud');
@@ -231,9 +251,11 @@ final class RSS
             $cloud->setAttribute('protocol', $feed_settings['cloud']['protocol']);
             $root->appendChild($cloud);
         }
+
         if (!empty($feed_settings['ttl'])) {
             $root->appendChild($feed->createElement('ttl', (string) (int) $feed_settings['ttl']));
         }
+
         // Add categories
         if (
             !empty($feed_settings['categories'])
@@ -243,6 +265,7 @@ final class RSS
                 $root->appendChild($feed->createElement('category', $cat));
             }
         }
+
         // Add image
         if (!empty($feed_settings['image'])) {
             $image = $root->appendChild($feed->createElement('image'));
@@ -252,10 +275,12 @@ final class RSS
             if (!empty($feed_settings['image']['width'])) {
                 $image->appendChild($feed->createElement('width', (string) (int) $feed_settings['image']['width']));
             }
+
             if (!empty($feed_settings['image']['height'])) {
                 $image->appendChild($feed->createElement('height', (string) (int) $feed_settings['image']['height']));
             }
         }
+
         // Add skipDays
         if (
             !empty($feed_settings['skipDays'])
@@ -266,6 +291,7 @@ final class RSS
                 $skip_days->appendChild($feed->createElement('day', $day));
             }
         }
+
         // Add skipHours
         if (
             !empty($feed_settings['skipHours'])
@@ -276,21 +302,22 @@ final class RSS
                 $skip_hours->appendChild($feed->createElement('hour', $hour));
             }
         }
+
         // Add generator referencing the library itself
         $root->appendChild($feed->createElement('generator', 'Simbiat/http20, https://github.com/Simbiat/http20'));
         $root->appendChild($feed->createElement('docs', 'https://www.rssboard.org/rss-specification'));
         // Add actual entries in the feed
-        if (!empty($entries)) {
-            foreach ($entries as $entry) {
-                $element = $root->appendChild($feed->createElement('item'));
-                self::rssAddEntries($element, $feed, $entry);
-            }
+        foreach ($entries as $entry) {
+            $element = $root->appendChild($feed->createElement('item'));
+            self::rssAddEntries($element, $feed, $entry);
         }
+
         $feed->normalizeDocument();
         // Output
         if (!\headers_sent()) {
             \header('Content-type: application/rss+xml;charset=utf-8');
         }
+
         Common::zEcho($feed->saveXML(), 'hour');
     }
 
@@ -299,7 +326,7 @@ final class RSS
      *
      * @param \DOMNode     $element Node to process
      * @param \DOMDocument $feed    Main feed object
-     * @param array        $entry   Element to add
+     * @param array<string, mixed> $entry Element to add
      *
      * @return void
      *
@@ -310,6 +337,7 @@ final class RSS
         if (!empty($entry['title'])) {
             $element->appendChild($feed->createElement('title', $entry['title']));
         }
+
         if (!empty($entry['link'])) {
             $entry['link'] = Common::htmlToRFC3986($entry['link']);
             $element->appendChild($feed->createElement('link', $entry['link']));
@@ -318,24 +346,30 @@ final class RSS
             $source = $element->appendChild($feed->createElement('source', $entry['title']));
             $source->setAttribute('url', $entry['link']);
         }
+
         if (!empty($entry['description'])) {
             $element->appendChild($feed->createElement('description', $entry['description']));
         }
+
         if (
             !empty($feed_settings['author'])
             && \filter_var($feed_settings['author'], \FILTER_VALIDATE_EMAIL, \FILTER_FLAG_EMAIL_UNICODE)
         ) {
             $element->appendChild($feed->createElement('author', $feed_settings['author']));
         }
+
         if (!empty($entry['category'])) {
             $element->appendChild($feed->createElement('category', $entry['category']));
         }
+
         if (!empty($entry['comments'])) {
             $element->appendChild($feed->createElement('comments', Common::htmlToRFC3986($entry['comments'])));
         }
+
         if (!empty($entry['pubDate'])) {
             $element->appendChild($feed->createElement('pubDate', Common::valueToTime($entry['pubDate'], \DATE_RSS)));
         }
+
         if (empty($entry['enclosure_url'])) {
             return;
         }

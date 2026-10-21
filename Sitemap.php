@@ -23,15 +23,16 @@ final class Sitemap
     public static function sitemap(array $links, #[ExpectedValues(['xml', 'index', 'html', 'text', 'txt'])] string $format = 'xml', bool $direct_output = false): string
     {
         // Sanitize format
-        if (!\in_array($format, ['xml', 'index', 'html', 'text', 'txt'], true)) {
+        if (!\in_array($format, ['xml', 'index', 'html', 'text', 'txt'], strict: true)) {
             $format = 'xml';
         }
+
         // Validate the links if the list is not empty. I did not find any recommendations for empty sitemaps, and I do not see a technical reason to break here. If sitemaps are generated using some kind of pagination logic and a "bad" page is server to it, that results in empty array
         self::linksValidator($links);
         // Allow only 50000 links
-        $links = \array_slice($links, 0, 50000, true);
+        $links = \array_slice($links, 0, 50000, preserve_keys: true);
         // Generate the output string
-        if (\in_array($format, ['text', 'txt'], true)) {
+        if (\in_array($format, ['text', 'txt'], strict: true)) {
             $output = \implode("\r\n", \array_column($links, 'loc'));
         } else {
             // Set initial output
@@ -65,6 +66,7 @@ final class Sitemap
                 $output .= $to_add;
                 $str_len += $len_to_add;
             }
+
             // Close tags
             $output .= match ($format) {
                 'xml' => '</urlset>',
@@ -72,25 +74,17 @@ final class Sitemap
                 default => '',
             };
         }
+
         // Output directly if the flag is set to true
         if ($direct_output) {
             if (!\headers_sent()) {
-                switch ($format) {
-                    case 'html':
-                        \header('Content-Type: text/html; charset=utf-8');
-
-                        break;
-                    case 'text':
-                    case 'txt':
-                        \header('Content-Type: text/plain; charset=utf-8');
-
-                        break;
-                    default:
-                        \header('Content-Type: application/xml; charset=utf-8');
-
-                        break;
-                }
+                match ($format) {
+                    'html' => \header('Content-Type: text/html; charset=utf-8'),
+                    'text', 'txt' => \header('Content-Type: text/plain; charset=utf-8'),
+                    default => \header('Content-Type: application/xml; charset=utf-8'),
+                };
             }
+
             Common::zEcho($output);
         }
 
@@ -107,19 +101,22 @@ final class Sitemap
     private static function linksValidator(array &$links): void
     {
         // Get first element of the array to use it as base for next. Need to use array_last, because we may get an associative array
-        if (empty($links)) {
+        if ($links === []) {
             throw new \UnexpectedValueException('Empty array of links provided');
         }
+
         $first = \array_last($links);
         // Check if 'loc' is set
         if (!isset($first['loc'])) {
             throw new \UnexpectedValueException('No `loc` value provided for first link');
         }
+
         // Parse the URL
         $first = IRI::parseUri($first['loc']);
         if (!\is_array($first)) {
             throw new \UnexpectedValueException('Failed to parse `loc` element as URL');
         }
+
         // Check that scheme and host are present
         if (
             empty($first['scheme'])
@@ -127,27 +124,30 @@ final class Sitemap
         ) {
             throw new \UnexpectedValueException('Failed to determine scheme or host for provided links');
         }
+
         // Build base URL
         $first = $first['scheme'].'://'.(empty($first['user']) ? '' : $first['user'].(empty($first['pass']) ? '' : ':'.$first['pass']).'@').$first['host'].(empty($first['port']) ? '' : ':'.$first['port']);
         // Get counts of `loc` values
         $value_counts = \array_count_values(\array_column($links, 'loc'));
         // Get max value of lastmod
-        $max_date = \array_map('\intval', \array_column($links, 'lastmod'));
-        $max_date = !empty($max_date)
+        $max_date = \array_map(\intval(...), \array_column($links, 'lastmod'));
+        $max_date = $max_date !== []
             ? \max($max_date)
             : 0;
         // Send Last-Modified header and stop further processing if client already has a fresh enough copy
-        Headers::lastModified($max_date, true);
+        Headers::lastModified($max_date, exit: true);
         // Check that all links start from
         foreach ($links as $key => $link) {
             // Check if 'loc' is set
             if (!isset($link['loc'])) {
                 throw new \UnexpectedValueException('No `loc` value provided for link `'.$key.'`');
             }
+
             // Check if `loc` has same base URL
             if (\mb_strripos($link['loc'], $first, 0, 'UTF-8') !== 0) {
                 throw new \UnexpectedValueException('Link `'.$key.'` has different base URL');
             }
+
             // Check for duplicates
             if ($value_counts[$link['loc']] > 1) {
                 // Remove duplicate
@@ -155,6 +155,7 @@ final class Sitemap
                 // Reduce count
                 --$value_counts[$link['loc']];
             }
+
             // Sanitize values
             $links[$key]['loc'] = Common::htmlToRFC3986($link['loc']);
             // Sanitize name (used only for HTML format
@@ -165,6 +166,7 @@ final class Sitemap
             if (isset($link['lastmod'])) {
                 $links[$key]['lastmod'] = Common::valueToTime($link['lastmod'], \DATE_ATOM);
             }
+
             // Unset invalid changefreq
             if (
                 isset($link['changefreq'])
@@ -172,6 +174,7 @@ final class Sitemap
             ) {
                 unset($links[$key]['changefreq']);
             }
+
             if (!isset($link['priority'])) {
                 continue;
             }

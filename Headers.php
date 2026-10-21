@@ -66,36 +66,36 @@ final class Headers
      */
     public const array SECURE_DIRECTIVES = [
 // Document directives
-        'base-uri' => '\'self\'',
-        'child-src' => '\'self\'',
-        'connect-src' => '\'self\'',
+        'base-uri' => "'self'",
+        'child-src' => "'self'",
+        'connect-src' => "'self'",
 // Fetch Directives
-        'default-src' => '\'self\'',
-        'font-src' => '\'self\'',
+        'default-src' => "'self'",
+        'font-src' => "'self'",
 // Navigate directives
-        'form-action' => '\'self\'',
-        'frame-ancestors' => '\'self\'',
-        'frame-src' => '\'self\'',
+        'form-action' => "'self'",
+        'frame-ancestors' => "'self'",
+        'frame-src' => "'self'",
 // Blocking images, because images can be used to inject scripts:
         // https://www.secjuice.com/hiding-javascript-in-png-csp-bypass/
         // https://portswigger.net/research/bypassing-csp-using-polyglot-jpegs
-        'img-src' => '\'none\'',
-        'manifest-src' => '\'self\'',
-        'media-src' => '\'self\'',
-        'object-src' => '\'none\'',
+        'img-src' => "'none'",
+        'manifest-src' => "'self'",
+        'media-src' => "'self'",
+        'object-src' => "'none'",
         'plugin-types' => '',
         'report-to' => '',
 // Other directives
-        'require-trusted-types-for' => '\'script\'',
+        'require-trusted-types-for' => "'script'",
         'sandbox' => '',
-        'script-src' => '\'none\'',
-        'script-src-attr' => '\'none\'',
-        'script-src-elem' => '\'none\'',
-        'style-src' => '\'none\'',
-        'style-src-attr' => '\'none\'',
-        'style-src-elem' => '\'none\'',
+        'script-src' => "'none'",
+        'script-src-attr' => "'none'",
+        'script-src-elem' => "'none'",
+        'style-src' => "'none'",
+        'style-src-attr' => "'none'",
+        'style-src-elem' => "'none'",
         'trusted-types' => '',
-        'worker-src' => '\'self\'',
+        'worker-src' => "'self'",
     ];
 
     /**
@@ -103,54 +103,54 @@ final class Headers
      */
     public const array SECURE_FEATURES = [
 // Disable access to sensors
-        'accelerometer' => '\'none\'',
-        'ambient-light-sensor' => '\'none\'',
+        'accelerometer' => "'none'",
+        'ambient-light-sensor' => "'none'",
 // Disable autoplay, font swapping, fullscreen and picture-in-picture (if triggered in some automatic mode, can really annoy users)
-        'autoplay' => '\'none\'',
+        'autoplay' => "'none'",
 // Disable access to devices
-        'camera' => '\'none\'',
-        'display-capture' => '\'none\'',
+        'camera' => "'none'",
+        'display-capture' => "'none'",
 // document-write (.write, .writeln, .open and .close) is also discouraged because it dynamically rewrites your HTML markup and blocks parsing of the document. While this may not be exactly a security concern, if there is a stray script, that uses it, we have little control (if any) regarding what exactly it modifies.
-        'document-write' => '\'none\'',
+        'document-write' => "'none'",
 // Allowing use of DRM and Web Authentication API, but only on our site and its own frames
-        'encrypted-media' => '\'self\'',
+        'encrypted-media' => "'self'",
 // Turn off font swapping and CSS animations for any property that triggers a re-layout (e.g., top, width, max-height)
-        'font-display-late-swap' => '\'none\'',
-        'fullscreen' => '\'none\'',
+        'font-display-late-swap' => "'none'",
+        'fullscreen' => "'none'",
 // Disable geolocation, XR tracking, payment and screen capture APIs
-        'geolocation' => '\'none\'',
-        'gyroscope' => '\'none\'',
-        'image-compression' => '\'none\'',
-        'layout-animations' => '\'none\'',
+        'geolocation' => "'none'",
+        'gyroscope' => "'none'",
+        'image-compression' => "'none'",
+        'layout-animations' => "'none'",
 // Disable lazyload. Do not apply it to everything. While it can improve performance somewhat, if it's applied to everything it can provide a reversed effect. Apply it strategically with lazyload attribute.
-        'lazyload' => '\'none\'',
-        'legacy-image-formats' => '\'none\'',
-        'magnetometer' => '\'none\'',
-        'maximum-downscaling-image' => '\'none\'',
-        'microphone' => '\'none\'',
-        'midi' => '\'none\'',
+        'lazyload' => "'none'",
+        'legacy-image-formats' => "'none'",
+        'magnetometer' => "'none'",
+        'maximum-downscaling-image' => "'none'",
+        'microphone' => "'none'",
+        'midi' => "'none'",
 // Images optimizations as per https://github.com/w3c/webappsec-permissions-policy/blob/master/policies/optimized-images.md
         'oversized-images' => '*(2.0)',
-        'payment' => '\'none\'',
-        'picture-in-picture' => '\'none\'',
-        'publickey-credentials-get' => '\'self\'',
-        'screen-wake-lock' => '\'none\'',
-        'speaker' => '\'none\'',
+        'payment' => "'none'",
+        'picture-in-picture' => "'none'",
+        'publickey-credentials-get' => "'self'",
+        'screen-wake-lock' => "'none'",
+        'speaker' => "'none'",
 // Disable synchronous XMLHttpRequests (that were technically deprecated)
-        'sync-xhr' => '\'none\'',
+        'sync-xhr' => "'none'",
         'unoptimized-images' => '*(0.5)',
         'unoptimized-lossless-images' => '*(1.0)',
         'unoptimized-lossy-images' => '*(0.5)',
-        'unsized-media' => '\'none\'',
-        'usb' => '\'none\'',
-        'vibrate' => '\'none\'',
+        'unsized-media' => "'none'",
+        'usb' => "'none'",
+        'vibrate' => "'none'",
 // Disable WebVR API (halted standard, replaced by WebXR)
-        'vr' => '\'none\'',
+        'vr' => "'none'",
 // Disable wake-locks
-        'wake-lock' => '\'none\'',
+        'wake-lock' => "'none'",
 // Disable Web Share API. It's recommended to enable it explicitly for pages, where sharing will not expose potentially sensitive materials
-        'web-share' => '\'none\'',
-        'xr-spatial-tracking' => '\'none\'',
+        'web-share' => "'none'",
+        'xr-spatial-tracking' => "'none'",
     ];
 
     /**
@@ -311,7 +311,7 @@ final class Headers
         415 => 'Unsupported Media Type',
         416 => 'Range Not Satisfiable',
         417 => 'Expectation Failed',
-        418 => 'I\'m a teapot',
+        418 => "I'm a teapot",
         421 => 'Misdirected Request',
         422 => 'Unprocessable Entity',
         423 => 'Locked',
@@ -389,14 +389,16 @@ final class Headers
             $default_methods = self::SAFE_METHODS;
             // Sanitize the custom methods
             foreach ($allow_methods as $key => $method) {
-                if (!\in_array($method, self::ALL_METHODS, true)) {
+                if (!\in_array($method, self::ALL_METHODS, strict: true)) {
                     unset($allow_methods[$key]);
                 }
             }
+
             // If we end up with an empty list of custom methods - use the default one
             if (\count($allow_methods) === 0) {
                 $allow_methods = $default_methods;
             }
+
             // Send the header. More on methods - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
             \header('Access-Control-Allow-Methods: '.\implode(', ', $allow_methods));
             \header('Allow: '.\implode(', ', $allow_methods));
@@ -404,30 +406,32 @@ final class Headers
             if (
                 (
                     isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])
-                    && !\in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allow_methods, true)
+                    && !\in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], $allow_methods, strict: true)
                 )
                 || (
                     isset($_SERVER['REQUEST_METHOD'])
-                    && !\in_array($_SERVER['REQUEST_METHOD'], $allow_methods, true)
+                    && !\in_array($_SERVER['REQUEST_METHOD'], $allow_methods, strict: true)
                 )
             ) {
                 self::clientReturn(405);
             }
+
             // Sanitize Origins list
             foreach ($allow_origins as $key => $origin) {
                 if (\preg_match('/'.self::ORIGIN_REGEX.'/i', $origin) !== 1) {
                     unset($allow_origins[$key]);
                 }
             }
+
             // Check that list is still not empty; otherwise, we assume that access from all origins is allowed (akin to *)
             if (\count($allow_origins) !== 0) {
                 if (
                     isset($_SERVER['HTTP_ORIGIN'])
                     && \preg_match('/'.self::ORIGIN_REGEX.'/i', $_SERVER['HTTP_ORIGIN']) === 1
-                    && \in_array($_SERVER['HTTP_ORIGIN'], $allow_origins, true)
+                    && \in_array($_SERVER['HTTP_ORIGIN'], $allow_origins, strict: true)
                 ) {
                     // Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers if any were sent
-                    \header('Vary: Origin', false);
+                    \header('Vary: Origin', replace: false);
                     // Send actual headers
                     \header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
                     \header('Timing-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
@@ -437,11 +441,12 @@ final class Headers
                 }
             } else {
                 // Vary is required by the standard. Using `false` to prevent overwriting of other Vary headers, if any were sent
-                \header('Vary: Origin', false);
+                \header('Vary: Origin', replace: false);
                 // Send actual headers
                 \header('Access-Control-Allow-Origin: *');
                 \header('Timing-Allow-Origin: '.(isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].':'.$_SERVER['SERVER_PORT']);
             }
+
             // HSTS and force HTTPS
             \header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
             // Set caching value for CORS
@@ -456,6 +461,7 @@ final class Headers
             if (\count($allow_headers) !== 0) {
                 \header('Access-Control-Allow-Headers: '.\implode(', ', \array_unique(\array_merge(['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'], $allow_headers))));
             }
+
             // Set CORS strategy
             switch (\mb_strtolower($strat, 'UTF-8')) {
                 case 'mild':
@@ -508,7 +514,7 @@ final class Headers
                     switch ($directive) {
                         case 'sandbox':
                             // Validate the value we have
-                            if (\in_array($value, self::SANDBOX_VALUES, true)) {
+                            if (\in_array($value, self::SANDBOX_VALUES, strict: true)) {
                                 $default_directives['sandbox'] = $value;
                             } else {
                                 // Ignore the value entirely
@@ -558,9 +564,9 @@ final class Headers
                                 // Check if it's script or style source
                                 // If it's not 'none' - add 'report-sample'
                                 $default_directives[$directive]
-                                    = $value !== '\'none\''
-                                    && \in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'], true)
-                                        ? '\'report-sample\' '.$value
+                                    = $value !== "'none'"
+                                    && \in_array($directive, ['script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem', 'style-src-attr'], strict: true)
+                                        ? "'report-sample' ".$value
                                         : $value;
                             }
 
@@ -568,16 +574,19 @@ final class Headers
                     }
                 }
             }
+
             // plugin-types is not used if all objects are blocked
-            if ($default_directives['object-src'] === '\'none\'') {
+            if ($default_directives['object-src'] === "'none'") {
                 unset($default_directives['plugin-types']);
             } elseif (empty($default_directives['plugin-types'])) {
                 unset($default_directives['plugin-types']);
             }
+
             // Sandbox is ignored if we use Report-Only
             if ($report_only) {
                 unset($default_directives['sandbox']);
             }
+
             // Generate line for CSP
             $csp_line = '';
             foreach ($default_directives as $directive => $value) {
@@ -585,11 +594,12 @@ final class Headers
                     $csp_line .= $directive.' '.$value.'; ';
                 }
             }
+
             // If the report is set also send Content-Security-Policy-Report-Only header
             if (!$report_only) {
-                \header('Content-Security-Policy: upgrade-insecure-requests; '.\mb_trim($csp_line, null, 'UTF-8'));
+                \header('Content-Security-Policy: upgrade-insecure-requests; '.\mb_trim($csp_line, encoding: 'UTF-8'));
             } elseif (!empty($default_directives['report-to'])) {
-                \header('Content-Security-Policy-Report-Only: '.\mb_trim($csp_line, null, 'UTF-8'));
+                \header('Content-Security-Policy-Report-Only: '.\mb_trim($csp_line, encoding: 'UTF-8'));
             }
         }
     }
@@ -615,7 +625,7 @@ final class Headers
         // Check if Sec-Fetch was passed at all (older browsers or bots may not use it). Process it only if it's present.
         if (
             isset($_SERVER['HTTP_SEC_FETCH_SITE'])
-            && \in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::FETCH_SITE, true)
+            && \in_array($_SERVER['HTTP_SEC_FETCH_SITE'], self::FETCH_SITE, strict: true)
         ) {
             // Setting defaults
             $site = \array_intersect($site, self::FETCH_SITE);
@@ -623,16 +633,19 @@ final class Headers
                 // Allow everything
                 $site = self::FETCH_SITE;
             }
+
             $mode = \array_intersect($mode, self::FETCH_MODE);
             if (\count($mode) === 0) {
                 // Allow all modes
                 $mode = self::FETCH_MODE;
             }
+
             $user = \array_intersect($user, self::FETCH_USER);
             if (\count($user) === 0) {
                 // Allow only actions triggered by user activation
                 $user = ['?1'];
             }
+
             $dest = \array_intersect($dest, self::FETCH_DESTINATIONS);
             if (\count($dest) === 0) {
                 $dest = [
@@ -653,33 +666,34 @@ final class Headers
                     'empty',
                 ];
                 // If we have only 'same-origin' and/or 'none', allow script as well, because otherwise default settings will prevent access to JS files hosted on same domain
-                if (\in_array($site, [['same-origin', 'none'], ['same-origin'], ['none']], true)) {
+                if (\in_array($site, [['same-origin', 'none'], ['same-origin'], ['none']], strict: true)) {
                     $dest[] = 'script';
                 }
             }
+
             // Actual validation
             if (
-                !\in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site, true)
+                !\in_array($_SERVER['HTTP_SEC_FETCH_SITE'], $site, strict: true)
                 || (
                     // Mode should be ignored by default if it's any value outside the spec, which implies it can be empty
                     !empty($_SERVER['HTTP_SEC_FETCH_MODE']) && $strict
-                    && !\in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode, true)
+                    && !\in_array($_SERVER['HTTP_SEC_FETCH_MODE'], $mode, strict: true)
                 )
                 || (
                     // User is allowed to be missing by the spec
                     !empty($_SERVER['HTTP_SEC_FETCH_USER']) && $strict
-                    && !\in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user, true)
+                    && !\in_array($_SERVER['HTTP_SEC_FETCH_USER'], $user, strict: true)
                 )
                 || (
                     // Dest should be ignored by default if it's any value outside the spec, which implies it can be empty
                     !empty($_SERVER['HTTP_SEC_FETCH_DEST']) && $strict
-                    && !\in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest, true)
+                    && !\in_array($_SERVER['HTTP_SEC_FETCH_DEST'], $dest, strict: true)
                 )
             ) {
                 $bad_request = true;
             } elseif (
                 !empty($_SERVER['HTTP_SEC_FETCH_DEST'])
-                && \in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::SCRIPT_LIKE, true)
+                && \in_array($_SERVER['HTTP_SEC_FETCH_DEST'], self::SCRIPT_LIKE, strict: true)
             ) {
                 // Attempt to get content-type headers
                 $content_type = '';
@@ -689,15 +703,17 @@ final class Headers
                 } elseif (isset($_SERVER['CONTENT_TYPE'])) {
                     $content_type = $_SERVER['CONTENT_TYPE'];
                 }
+
                 // Check if we have already sent our own content-type header
                 foreach (\headers_list() as $header) {
-                    if (\str_starts_with($header, 'Content-type:') === true) {
+                    if (\str_starts_with($header, 'Content-type:')) {
                         // Get MIME
                         $content_type = \preg_replace('/^(Content-type:\s*)('.Common::MIME_REGEX.')$/', '$2', $header);
 
                         break;
                     }
                 }
+
                 // If MIME is found, and it matches CSV, audio, image or video - reject
                 if (
                     !empty($content_type)
@@ -709,6 +725,7 @@ final class Headers
         } elseif ($strict) {
             $bad_request = true;
         }
+
         if ($bad_request) {
             // Send proper header denying access and stop processing
             self::clientReturn(403);
@@ -741,6 +758,7 @@ final class Headers
                 \header('Connection: Keep-Alive');
                 \header('Keep-Alive: timeout='.$keepalive.', max='.($keepalive * 1000));
             }
+
             if (\count($client_hints) !== 0) {
                 // Implode client hints
                 $client_hints_new = \implode(', ', $client_hints);
@@ -748,7 +766,7 @@ final class Headers
                 // Logic for processing them should be done outside this function, though
                 \header('Accept-CH: '.$client_hints_new);
                 // Instruct cache to vary depending on client hints (and Origin to help with CORS https://portswigger.net/research/exploiting-cors-misconfigurations-for-bitcoins-and-bounties)
-                \header('Vary: Origin, '.$client_hints_new, false);
+                \header('Vary: Origin, '.$client_hints_new, replace: false);
             }
         }
     }
@@ -763,7 +781,7 @@ final class Headers
      */
     public static function permissions(array $features = [], bool $force_check = true): void
     {
-        self::features($features, $force_check, true);
+        self::features($features, $force_check, permissions: true);
     }
 
     /**
@@ -786,8 +804,8 @@ final class Headers
                 : self::SECURE_FEATURES;
             foreach ($features as $feature => $allow_list) {
                 // Sanitize
-                $feature = \mb_strtolower(\mb_trim($feature, null, 'UTF-8'), 'UTF-8');
-                $allow_list = \mb_strtolower(\mb_trim($allow_list, null, 'UTF-8'), 'UTF-8');
+                $feature = \mb_strtolower(\mb_trim($feature, encoding: 'UTF-8'), 'UTF-8');
+                $allow_list = \mb_strtolower(\mb_trim($allow_list, encoding: 'UTF-8'), 'UTF-8');
                 // If validation is enforced, validate the feature and value provided
                 /* @noinspection OffsetOperationsInspection */
                 if (
@@ -802,6 +820,7 @@ final class Headers
                     $defaults[$feature] = $allow_list;
                 }
             }
+
             // Generate line for header
             $header_line = '';
             foreach ($defaults as $feature => $allow_list) {
@@ -811,10 +830,11 @@ final class Headers
                     $header_line .= $feature.' '.$allow_list.'; ';
                 }
             }
+
             if ($permissions) {
-                \header('Permissions-Policy: '.\mb_rtrim(\mb_trim($header_line, null, 'UTF-8'), ',', 'UTF-8'));
+                \header('Permissions-Policy: '.\mb_rtrim(\mb_trim($header_line, encoding: 'UTF-8'), ',', 'UTF-8'));
             } else {
-                \header('Feature-Policy: '.\mb_trim($header_line, null, 'UTF-8'));
+                \header('Feature-Policy: '.\mb_trim($header_line, encoding: 'UTF-8'));
             }
         }
     }
@@ -836,15 +856,16 @@ final class Headers
                 : 0;
             if ($mod_time <= 0) {
                 // Get the freshest modification time of all PHP files using PHP's getlastmod time
-                $mod_time = \max(\max(\array_map('\filemtime', \array_filter(\get_included_files(), '\is_file')), \getlastmod()));
+                $mod_time = \max(\max(\array_map(\filemtime(...), \array_filter(\get_included_files(), \is_file(...))), \getlastmod()));
             }
+
             // Send header
             // TODO Use Sand-Clock here for proper time handling.
             \header('Last-Modified: '.\gmdate('D, d M Y H:i:s \G\M\T', $mod_time));
             // Set the flag to false for now
             if (
                 isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])
-                && \strtotime(\mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, null, 'UTF-8')) >= $mod_time
+                && \strtotime(\mb_substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 5, encoding: 'UTF-8')) >= $mod_time
             ) {
                 // If content has not been modified - return 304
                 self::clientReturn(304, $exit);
@@ -867,46 +888,21 @@ final class Headers
         if (!\headers_sent()) {
             // Send headers related to cache based on strategy selected
             // Some strategies are derived from https://csswizardry.com/2019/03/cache-control-for-civilians/
-            switch (\mb_strtolower($cache_strategy, 'UTF-8')) {
-                case 'aggressive':
-                    \header('Cache-Control: max-age=31536000, immutable, no-transform');
+            match (\mb_strtolower($cache_strategy, 'UTF-8')) {
+                'aggressive' => \header('Cache-Control: max-age=31536000, immutable, no-transform'),
+                'private' => \header('Cache-Control: private, no-cache, no-transform'),
+                'none' => \header('Cache-Control: no-cache, no-store, no-transform'),
+                'live' => \header('Cache-Control: no-cache, no-transform'),
+                // 28 days to be more precise
+                'month' => \header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform'),
+                'week' => \header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform'),
+                'day' => \header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform'),
+                default => \header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform'),
+            };
 
-                    break;
-                case 'private':
-                    \header('Cache-Control: private, no-cache, no-transform');
-
-                    break;
-                case 'none':
-                    \header('Cache-Control: no-cache, no-store, no-transform');
-
-                    break;
-                case 'live':
-                    \header('Cache-Control: no-cache, no-transform');
-
-                    break;
-                case 'month':
-                    // 28 days to be more precise
-                    \header('Cache-Control: max-age=2419200, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-
-                    break;
-                case 'week':
-                    \header('Cache-Control: max-age=604800, must-revalidate, stale-while-revalidate=86400, stale-if-error=86400, no-transform');
-
-                    break;
-                case 'day':
-                    \header('Cache-Control: max-age=86400, must-revalidate, stale-while-revalidate=43200, stale-if-error=43200, no-transform');
-
-                    break;
-                    // Make 'hour' default value, but also allow explicit specification
-                case 'hour':
-                default:
-                    \header('Cache-Control: max-age=3600, stale-while-revalidate=1800, stale-if-error=1800, no-transform');
-
-                    break;
-            }
             // Ensure that caching works properly in case the client did not support compression, but now does or vice-versa and in case data-saving mode was requested by client at any point.
             // Origin is added to help with CORS https://portswigger.net/research/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
-            \header('Vary: Origin, Save-Data, Accept-Encoding', false);
+            \header('Vary: Origin, Save-Data, Accept-Encoding', replace: false);
             // Set ETag
             if (!empty($string)) {
                 self::eTag(\hash('sha3-512', $string).$postfix, $exit);
@@ -930,15 +926,16 @@ final class Headers
             // Check if we have a conditional request. While this may have a less ideal placement than lastModified(), since ideally you will have some text to output first, but it can still save some time on client side
             if (
                 isset($_SERVER['HTTP_IF_NONE_MATCH'])
-                && \mb_trim($_SERVER['HTTP_IF_NONE_MATCH'], null, 'UTF-8') === $etag
+                && \mb_trim($_SERVER['HTTP_IF_NONE_MATCH'], encoding: 'UTF-8') === $etag
             ) {
                 // If content has not been modified - return 304
                 self::clientReturn(304, $exit);
             }
+
             // Return error if If-Match was sent, and it's different from our etag
             if (
                 isset($_SERVER['HTTP_IF_MATCH'])
-                && \mb_trim($_SERVER['HTTP_IF_MATCH'], null, 'UTF-8') !== $etag
+                && \mb_trim($_SERVER['HTTP_IF_MATCH'], encoding: 'UTF-8') !== $etag
             ) {
                 self::clientReturn(412, $exit);
             }
@@ -968,15 +965,18 @@ final class Headers
         } else {
             $response = $code;
         }
+
         // If response does not comply with HTTP standard - replace it with 500
         if (\preg_match('/^([12345]\d{2})( .+)$/', $response) !== 1) {
             $response = '500 Internal Server Error';
         }
+
         $numeric_code = (int) \preg_replace('/^([123]\d{2})( .+)$/', '$1', $response);
         // Send response header
         if (!\headers_sent()) {
             \header($_SERVER['SERVER_PROTOCOL'].' '.$response);
         }
+
         if ($exit) {
             Common::forceClose();
         }
@@ -1026,6 +1026,7 @@ final class Headers
         ) {
             $code = 302;
         }
+
         // Validate URI. Not checking the scheme since it may be a valid use-case to redirect to something besides HTTPS
         if (IRI::isValidIri($new_uri)) {
             // Send Location header, indicating new URL to be used
@@ -1038,6 +1039,7 @@ final class Headers
             // Update code to 500, since something must have gone wrong
             $code = 500;
         }
+
         // Send code and enforce connection closure
         self::clientReturn($code);
     }
@@ -1074,6 +1076,7 @@ final class Headers
                         ? 1.0
                         : (float) $matches[4];
             }
+
             // Check if any of the supported types are acceptable
             if (\count($acceptable) === 0) {
                 // If not - check if */* is supported
@@ -1081,6 +1084,7 @@ final class Headers
                     // Consider as no limitation
                     return true;
                 }
+
                 // Send 406 Not Acceptable
                 self::clientReturn(406, $exit);
 
@@ -1088,7 +1092,7 @@ final class Headers
             }
 
             // Get the one with the highest priority and return its value
-            return \array_keys($acceptable, \max($acceptable), true)[0];
+            return \array_keys($acceptable, \max($acceptable), strict: true)[0];
         }
 
         // Consider as no limitation
@@ -1106,11 +1110,12 @@ final class Headers
         $content_type = $_SERVER['CONTENT_TYPE'] ?? '';
         // Exit if not one of the supported methods or wrong content-type
         if (
-            !\in_array($method, ['PUT', 'DELETE', 'PATCH'], true)
+            !\in_array($method, ['PUT', 'DELETE', 'PATCH'], strict: true)
             || \preg_match('/(^application\/x-www-form-urlencoded$)|(^multipart\/form-data; boundary=.*$)/ui', $content_type) !== 1
         ) {
             return;
         }
+
         $parsed_data = \request_parse_body();
         self::${'_'.\mb_strtoupper($method, 'UTF-8')} = $parsed_data[0];
         self::$_FILES = $parsed_data[1];

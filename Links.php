@@ -79,35 +79,41 @@ final class Links
     public static function links(array $links = [], #[ExpectedValues(['header', 'head', 'body'])] string $type = 'header', bool $force_cross_origin = false): string
     {
         // Validate type
-        if (!\in_array($type, ['header', 'head', 'body'], true)) {
+        if (!\in_array($type, ['header', 'head', 'body'], strict: true)) {
             throw new \UnexpectedValueException('Unsupported type was provided to `links` function');
         }
+
         // Prepare an empty string
         $links_to_send = [];
         foreach ($links as $link) {
             self::disablePreload($link);
             // Replace multiple whitespaces with single space and trim
-            $link['rel'] = \mb_trim(\preg_replace('/\s{2,}/u', ' ', $link['rel'] ?? ''), null, 'UTF-8');
+            $link['rel'] = \mb_trim(\preg_replace('/\s{2,}/u', ' ', $link['rel'] ?? ''), encoding: 'UTF-8');
             // Unset rel if it's empty
             if (Sanitize::whiteString($link['rel'])) {
                 unset($link['rel']);
             }
+
             if (\array_key_exists('rel', $link)) {
                 // `shortcut icon` is legacy and `icon` shout be used instead
                 $link['rel'] = \preg_replace('/shortcut icon/uir', 'icon', $link['rel']);
             }
+
             // Check that element is an array;
             if (!\is_array($link)) {
                 continue;
             }
+
             // Clean up link properties
             if (!self::cleanLink($link, $type)) {
                 continue;
             }
+
             // Process `type` property
             if (!self::processTypeProperty($link)) {
                 continue;
             }
+
             if (
                 \array_key_exists('rel', $link)
                 && \preg_match(self::EXTERNAL_RESOURCES, $link['rel']) === 1
@@ -115,9 +121,11 @@ final class Links
                 if (!\array_key_exists('referrerpolicy', $link)) {
                     $link['referrerpolicy'] = 'no-referrer';
                 }
+
                 if (!\array_key_exists('fetchpriority', $link)) {
                     $link['fetchpriority'] = 'auto';
                 }
+
                 if (
                     $force_cross_origin
                     && !\array_key_exists('crossorigin', $link)
@@ -125,20 +133,24 @@ final class Links
                     $link['crossorigin'] = 'anonymous';
                 }
             }
+
             if (!self::isLinkValid($link, $type)) {
                 continue;
             }
+
             // Generate element as string
             $links_to_send[] = $type === 'header'
                 ? \preg_replace('/[\r\n\p{C}]/uir', '', self::generateHeader($link))
                 : \preg_replace('/[\r\n\p{C}]/uir', '', self::generateTag($link));
         }
+
         if (\count($links_to_send) === 0) {
             return '';
         }
+
         if ($type === 'header') {
             if (!\headers_sent()) {
-                \header('Link: '.\implode(', ', $links_to_send), false);
+                \header('Link: '.\implode(', ', $links_to_send), replace: false);
             }
 
             return '';
@@ -150,7 +162,7 @@ final class Links
     /**
      * Generate `<link>` representing the respective `Link` object.
      *
-     * @param array $link Link object
+     * @param array<string, mixed> $link Link object
      *
      * @return string
      */
@@ -181,7 +193,7 @@ final class Links
     /**
      * Generate a link for the HTTP header representing the respective `Link` object.
      *
-     * @param array $link
+     * @param array<string, mixed> $link
      *
      * @return string
      */
@@ -206,7 +218,7 @@ final class Links
     /**
      * Process `type` property that needs to comply with certain rules.
      *
-     * @param array $link
+     * @param array<string, mixed> $link
      *
      * @return bool
      */
@@ -219,6 +231,7 @@ final class Links
         ) {
             $link['type'] = '';
         }
+
         // Try to set or update media type based on link
         if (
             empty($link['type'])
@@ -231,6 +244,7 @@ final class Links
                     ? Common::getMimeFromExtension($ext)
                     : '';
         }
+
         if (
             \array_key_exists('rel', $link)
             && \preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) === 1
@@ -248,6 +262,7 @@ final class Links
             ) {
                 $link['as'] = 'style';
             }
+
             // Force 'as' for JS
             if (
                 (
@@ -257,6 +272,7 @@ final class Links
             ) {
                 $link['as'] = 'script';
             }
+
             // Force 'as' for images
             if (
                 (
@@ -266,6 +282,7 @@ final class Links
             ) {
                 $link['as'] = 'image';
             }
+
             // Force 'as' for fonts
             if (
                 (
@@ -275,6 +292,7 @@ final class Links
             ) {
                 $link['as'] = 'font';
             }
+
             // Force 'as' for `track`
             if (
                 (
@@ -284,6 +302,7 @@ final class Links
             ) {
                 $link['as'] = 'track';
             }
+
             // Force `as` for modulepreload to be explicit (current spec treats empty `as` for `modulepreload` as `script`)
             if (
                 !\array_key_exists('as', $link)
@@ -300,8 +319,8 @@ final class Links
     /**
      * Remove certain attributes if they are invalid or excessive.
      *
-     * @param array  $link
-     * @param string $type
+     * @param array<string, string> $link
+     * @param string                $type
      *
      * @return bool
      */
@@ -310,17 +329,19 @@ final class Links
         // referrerpolicy is allowed to have limited set of values with `strict-origin-when-cross-origin` being default
         if (
             \array_key_exists('referrerpolicy', $link)
-            && !\in_array(\mb_strtolower($link['referrerpolicy'], 'UTF-8'), self::REFERRER_POLICY, true)
+            && !\in_array(\mb_strtolower($link['referrerpolicy'], 'UTF-8'), self::REFERRER_POLICY, strict: true)
         ) {
             $link['referrerpolicy'] = 'strict-origin-when-cross-origin';
         }
+
         // `fetchpriority` is allowed to have limited set of values with `auto` being default
         if (
             \array_key_exists('fetchpriority', $link)
-            && !\in_array(\mb_strtolower($link['fetchpriority'], 'UTF-8'), self::FETCH_PRIORITY, true)
+            && !\in_array(\mb_strtolower($link['fetchpriority'], 'UTF-8'), self::FETCH_PRIORITY, strict: true)
         ) {
             $link['fetchpriority'] = 'auto';
         }
+
         // Remove `hreflang`, if it's a wrong language value
         if (
             \array_key_exists('hreflang', $link)
@@ -328,6 +349,7 @@ final class Links
         ) {
             unset($link['hreflang']);
         }
+
         // Remove `sizes` if wrong format
         if (
             \array_key_exists('sizes', $link)
@@ -335,16 +357,18 @@ final class Links
         ) {
             unset($link['sizes']);
         }
+
         // Sanitize `crossorigin`, if set
         if (
             \array_key_exists('crossorigin', $link)
             && (
                 empty($link['crossorigin'])
-                || !\in_array(\mb_strtolower($link['crossorigin'], 'UTF-8'), ['anonymous', 'use-credentials'], true)
+                || !\in_array(\mb_strtolower($link['crossorigin'], 'UTF-8'), ['anonymous', 'use-credentials'], strict: true)
             )
         ) {
             $link['crossorigin'] = 'anonymous';
         }
+
         // Sanitize `title` if it's set
         $link['title'] = \array_key_exists('title', $link)
             ? \urldecode(\htmlspecialchars($link['title'], \ENT_QUOTES | \ENT_SUBSTITUTE))
@@ -359,6 +383,7 @@ final class Links
         ) {
             unset($link['title*']);
         }
+
         // If integrity is set, validate if it's a valid value
         if (
             \array_key_exists('integrity', $link)
@@ -366,6 +391,7 @@ final class Links
         ) {
             return false;
         }
+
         // If integrity is set, check that rel type is of proper type, otherwise remove it
         if (
             isset($link['integrity'], $link['rel'])
@@ -373,6 +399,7 @@ final class Links
         ) {
             unset($link['integrity']);
         }
+
         // `crossorigin` and `referrerpolicy` are for external resources only
         if (
             \array_key_exists('rel', $link)
@@ -380,6 +407,7 @@ final class Links
         ) {
             unset($link['crossorigin'], $link['referrerpolicy'], $link['fetchpriority']);
         }
+
         // `blocking` is allowed only for `expect` and `stylesheet`
         if (
             \array_key_exists('blocking', $link)
@@ -390,6 +418,7 @@ final class Links
         ) {
             unset($link['blocking']);
         }
+
         // `disabled` is allowed only for stylesheets
         if (
             \array_key_exists('disabled', $link)
@@ -401,9 +430,10 @@ final class Links
         ) {
             unset($link['disabled']);
         }
+
         // Remove unsupported attributes
         foreach ($link as $attribute => $value) {
-            if (!\in_array(\mb_strtolower($attribute, 'UTF-8'), self::ALLOWED_ATTRIBUTES, true)) {
+            if (!\in_array(\mb_strtolower($attribute, 'UTF-8'), self::ALLOWED_ATTRIBUTES, strict: true)) {
                 unset($link[$attribute]);
             }
         }
@@ -414,7 +444,7 @@ final class Links
     /**
      * Process `integrity` attribute of the Link object.
      *
-     * @param array $link
+     * @param array<string, mixed> $link
      *
      * @return bool
      */
@@ -430,6 +460,7 @@ final class Links
                 // It looks like we have an absolute link. Assume error or malicious intent
                 return false;
             }
+
             // If not valid, check if it's a file and generate hash
             if (\is_file($link['integrity'])) {
                 // Attempt to get the actual MIME type while we're at it
@@ -439,6 +470,7 @@ final class Links
                 ) {
                     $link['type'] = \mime_content_type(\realpath($link['integrity']));
                 }
+
                 // Get the size of the image if the file is an image
                 if (
                     !\array_key_exists('sizes', $link)
@@ -463,6 +495,7 @@ final class Links
                                 // Assume error or malicious intent and skip
                                 return false;
                             }
+
                             // Set 'as' attribute if rel is "preload"
                             if (
                                 \array_key_exists('rel', $link)
@@ -473,15 +506,16 @@ final class Links
                         }
                     }
                 }
+
                 // Get hash if we have a script or style
                 if (
                     \array_key_exists('type', $link)
                     && \preg_match('/^(application\/javascript|text\/css)$/uir', $link['type']) === 1
                 ) {
                     $hash = $link['integrity']
-                            |> (static fn($x) => \realpath($x))
-                            |> (static fn($x) => \hash_file('sha512', $x))
-                            |> (static fn($x) => \base64_encode($x));
+                            |> (\realpath(...))
+                            |> (static fn($x): string|false => \hash_file('sha512', $x))
+                            |> (\base64_encode(...));
                     $link['integrity'] = 'sha512-'.$hash;
                 } else {
                     unset($link['integrity']);
@@ -497,7 +531,7 @@ final class Links
     /**
      * Attempt to get image size if the integrity attribute is a file.
      *
-     * @param array $link
+     * @param array<string, mixed> $link
      *
      * @return string
      */
@@ -525,7 +559,7 @@ final class Links
     /**
      * Check if valid, according to https://html.spec.whatwg.org/multipage/semantics.html#the-link-element.
      *
-     * @param array  $link Link element
+     * @param array<string, mixed> $link Link element
      * @param string $type Type of link expected
      *
      * @return bool
@@ -545,6 +579,7 @@ final class Links
         ) {
             return false;
         }
+
         // Either `rel` or `itemprop` can be set at a time. itemprop does not make sense in the HTTP header
         if (
             (
@@ -559,6 +594,7 @@ final class Links
         ) {
             return false;
         }
+
         // Validate rel values
         if (
             \array_key_exists('rel', $link)
@@ -566,6 +602,7 @@ final class Links
         ) {
             return false;
         }
+
         // Validate `blocking` value
         if (
             isset($link['rel'], $link['blocking'])
@@ -573,6 +610,7 @@ final class Links
         ) {
             return false;
         }
+
         // `imagesrcset` is an image candidate with width descriptor, we need imagesizes as well
         if (
             \array_key_exists('imagesrcset', $link)
@@ -581,23 +619,27 @@ final class Links
         ) {
             return false;
         }
+
         if (\array_key_exists('as', $link)) {
             // `as` is allowed to have limited set of values and only used for `preload` and `modulepreload`.
             if (!\array_key_exists('rel', $link)) {
                 return false;
             }
+
             if ((\preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) !== 1)) {
                 return false;
             }
+
             if (
                 (\preg_match('/((^| )(preload)( |$))+/uir', $link['rel']) === 1)
-                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_PRELOAD, true)
+                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_PRELOAD, strict: true)
             ) {
                 return false;
             }
+
             if (
                 (\preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1)
-                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_MODULEPRELOAD, true)
+                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_MODULEPRELOAD, strict: true)
             ) {
                 return false;
             }
@@ -609,7 +651,7 @@ final class Links
     /**
      * Check the validity of links with `rel` set.
      *
-     * @param array  $link Link element
+     * @param array<string, mixed> $link Link element
      * @param string $type Type of link expected
      *
      * @return bool
@@ -623,6 +665,7 @@ final class Links
         ) {
             return false;
         }
+
         // imagesrcset and imagesizes are allowed only for preload with as=image
         if (
             (
@@ -637,6 +680,7 @@ final class Links
         ) {
             return false;
         }
+
         // `sizes` attribute should be set only if rel is icon of apple-touch-icon
         if (
             \array_key_exists('sizes', $link)
@@ -644,6 +688,7 @@ final class Links
         ) {
             return false;
         }
+
         // as is allowed only for preload
         if (
             \array_key_exists('as', $link)
@@ -661,7 +706,7 @@ final class Links
     /**
      * If Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches).
      *
-     * @param array $link
+     * @param array<string, mixed> $link
      *
      * @return void
      */
