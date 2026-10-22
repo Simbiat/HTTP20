@@ -12,13 +12,19 @@ use Simbiat\StringHelpers\Convert;
  */
 final class HTML
 {
-    // Static to count breadcrumbs in case multiple ones are created
+    /**
+     * @var int Static to count breadcrumbs in case multiple ones are created
+     */
     public private(set) static int $crumbs = 0;
 
-    // Static to count pagination elements in case multiple ones are created
+    /**
+     * @var int Static to count pagination elements in case multiple ones are created
+     */
     public private(set) static int $paginations = 0;
 
-    // Static to count timelines in case multiple ones are created
+    /**
+     * @var int Static to count timelines in case multiple ones are created
+     */
     public private(set) static int $timelines = 0;
 
     /**

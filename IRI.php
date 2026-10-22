@@ -118,7 +118,7 @@ final class IRI
             return null;
         }
 
-        // Pross user and pass if present
+        // Process user and pass if present
         /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
         if (!empty($parsed_iri['user'])) {
             /* @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
@@ -238,9 +238,7 @@ final class IRI
             $pairs[] = self::toRFC3986($key).'='.self::toRFC3986($value);
         }
 
-        // Suppressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does
-
-        /* @noinspection ImplodeMissUseInspection */
+        /* @noinspection ImplodeMissUseInspection -- Suppressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does */
         return \implode('&', $pairs);
     }
 
