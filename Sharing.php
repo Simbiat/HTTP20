@@ -11,6 +11,8 @@ use Simbiat\StringHelpers\Convert;
 
 /**
  * Functions related to file sharing.
+ *
+ * @api
  */
 final class Sharing
 {
@@ -189,9 +191,7 @@ final class Sharing
                 // Echo supportive text
                 echo "\r\n--".$boundary."\r\n".'Content-type: '.$mime."\r\n".'Content-Range: bytes '.$range['start'].'-'.$range['end'].'/'.$filesize."\r\n\r\n";
                 // Limit speed to range length if the current speed limit is too large, so that it will be provided fully
-                $speed_limit_multi = $speed_limit > $range['end'] - $range['start'] + 1
-                    ? $range['end'] - $range['start'] + 1
-                    : $speed_limit;
+                $speed_limit_multi = \min($speed_limit, $range['end'] - $range['start'] + 1);
                 $speed_limit_multi = self::speedLimit($speed_limit_multi);
                 // Output data
                 $result = self::streamCopy($stream, $output, $range['end'] - $range['start'] + 1, $range['start'], $speed_limit_multi);
@@ -243,6 +243,447 @@ final class Sharing
     }
 
     /**
+     * Function to send a file directly to browser.
+     *
+     * @param string $filepath       Path to file
+     * @param array  $allowed_mime   List of allowed MIME types
+     * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)
+     * @param bool   $exit           Whether to stop execution in case of errors
+     *
+     * @return int
+     *
+     * @noinspection PhpUnused
+     */
+    public static function fileEcho(#[FileReference] string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
+    {
+        // Check if file exists
+        if (\is_file($filepath)) {
+            // Process MIME
+            if (\extension_loaded('fileinfo')) {
+                // Get MIME from the file
+                $mime_type = \mime_content_type($filepath);
+                if ($allowed_mime !== []) {
+                    // Sanitize provided MIME types
+                    foreach ($allowed_mime as $key => $mime) {
+                        if (\preg_match('/^'.Common::MIME_REGEX.'$/i', $mime) !== 1) {
+                            unset($allowed_mime[$key]);
+                        }
+                    }
+
+                    // Check if MIME is allowed
+                    if (
+                        $allowed_mime !== []
+                        && !\in_array($mime_type, $allowed_mime, strict: true)
+                    ) {
+                        return Headers::clientReturn(403, $exit);
+                    }
+                }
+            }
+
+            // While the above checks the actual MIME type, it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
+            $extension = \pathinfo($filepath, \PATHINFO_EXTENSION);
+            // Set MIME from extension, of available
+            if (
+                !empty($extension)
+                && \is_string($extension)
+                && Common::getMimeFromExtension($extension) !== false
+            ) {
+                $mime_type_alt = Common::getMimeFromExtension($extension);
+            }
+
+            // Set MIME type to stream if it's empty
+            if (empty($mime_type_alt)) {
+                if (empty($mime_type)) {
+                    $mime_type = 'application/octet-stream';
+                }
+            } else {
+                $mime_type = $mime_type_alt;
+            }
+
+            // Send Last Modified, eTag and Cache-Control headers
+            Headers::lastModified(\filemtime($filepath), exit: true);
+            Headers::eTag(\hash_file('sha3-512', $filepath), exit: true);
+            Headers::cacheControl('', $cache_strategy, exit: true);
+            // Send MIME types. Add Charset to those, that are recommended to have it
+            if (\preg_match('/^(text\/.*)|(image\/svg\+xml)|(application\/(.*javascript|.*json|.*xml))$/i', $mime_type) === 1) {
+                \header('Content-Type: '.$mime_type.'; charset=utf-8');
+            } else {
+                \header('Content-Type: '.$mime_type);
+            }
+
+            // Send content disposition
+            \header('Content-Disposition: inline; filename="'.\basename($filepath).'"');
+            // Open stream
+            $stream = \fopen($filepath, 'rb');
+            if ($stream === false) {
+                return Headers::clientReturn(500, $exit);
+            }
+
+            // Some MIME types can be zipped nicely
+            if (\preg_match('/^((font|text)\/.*)|(application\/(.*javascript|.*json|.*xml|vnd\.ms-fontobject|wasm|x-font-ttf))|(image\/(bmp|svg\+xml|vnd.microsoft.icon))$/i', $mime_type) === 1) {
+                // Read the file
+                $output = \fread($stream, \filesize($filepath));
+                // Close stream
+                \fclose($stream);
+                if ($output === false) {
+                    return Headers::clientReturn(500, $exit);
+                }
+
+                Common::zEcho($output, $cache_strategy);
+            } else {
+                // Send size information
+                \header('Content-Length: '.\filesize($filepath));
+                // Exit if HEAD method was used (by this time all headers should have been sent
+                if (
+                    isset($_SERVER['REQUEST_METHOD'])
+                    && $_SERVER['REQUEST_METHOD'] === 'HEAD'
+                ) {
+                    // Close session
+                    if (\session_status() === \PHP_SESSION_ACTIVE) {
+                        \session_write_close();
+                    }
+
+                    exit(0);
+                }
+
+                // Send data
+                if (\fpassthru($stream) === 0) {
+                    return Headers::clientReturn(500, $exit);
+                }
+
+                // Close stream
+                \fclose($stream);
+            }
+
+            // Close session
+            if (\session_status() === \PHP_SESSION_ACTIVE) {
+                \session_write_close();
+            }
+
+            // Either exit or return
+            if ($exit) {
+                exit(0);
+            }
+
+            return 200;
+        }
+
+        return Headers::clientReturn(404, $exit);
+    }
+
+    /**
+     * Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes).
+     *
+     * @param string $memory
+     *
+     * @return int
+     */
+    public static function phpMemoryToInt(string $memory): int
+    {
+        // Get suffix. Suppressing inspection, since false-positive, `mb_strlen` returns `int`
+        /** @noinspection OffsetOperationsInspection */
+        $suffix = \mb_strtolower($memory[\mb_strlen($memory, 'UTF-8') - 1], 'UTF-8');
+        // Get int value
+        $memory_int = (int) \mb_substr($memory, 0, -1, 'UTF-8');
+        $memory_int *= match ($suffix) {
+            'g' => 1073741824,
+            'm' => 1048576,
+            'k' => 1024,
+            default => 1,
+        };
+
+        return $memory_int;
+    }
+
+    /**
+     * Function to proxy a file from another server as a stream.
+     *
+     * @param string $url            URL to proxy
+     * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)
+     *
+     * @return void
+     *
+     * @noinspection PhpUnused
+     */
+    #[NoReturn]
+    public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = ''): void
+    {
+        // Get headers
+        $headers_data = \get_headers($url, context: \stream_context_create([
+            'http' => [
+                'follow_location' => 1,
+                'method' => 'HEAD',
+                'protocol_version' => 2.0,
+            ],
+        ]));
+        // Check that we did get headers
+        if (!\is_array($headers_data)) {
+            // Failed to get headers, meaning we most likely will not be able to get the content as well
+            Headers::clientReturn();
+        }
+
+        // Cache-Control flag
+        $cache = false;
+        // Send the headers from remote server
+        foreach ($headers_data as $header_data) {
+            if (\preg_match('/^Cache-Control:.*$/', $header_data) === 1) {
+                $cache = true;
+            }
+
+            \header($header_data);
+        }
+
+        // Add Cache-Control
+        if (!$cache) {
+            Headers::cacheControl('', $cache_strategy, exit: true);
+        }
+
+        // Process lastModified and eTag to attempt to rely on client cache and not waste server resources
+        foreach ($headers_data as $header_data) {
+            if (\preg_match('/^Last-Modified:.*$/', $header_data) === 1) {
+                Headers::lastModified(\strtotime(\preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $header_data)), exit: true);
+            } elseif (\preg_match('/^ETag:.*$/', $header_data) === 1) {
+                Headers::eTag(\preg_replace('/^(ETag:\s*"?)([^"]*)("?)$/', '$2', $header_data), exit: true);
+            }
+        }
+
+        // Open streams
+        // Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
+        $url_open = \fopen($url, 'rb', context: \stream_context_create([
+            'http' => [
+                'follow_location' => 1,
+                'method' => 'GET',
+                'protocol_version' => 2.0,
+            ],
+        ]));
+        $output = \fopen('php://output', 'wb');
+        // Send contents
+        if (
+            $url_open !== false
+            && $output !== false
+        ) {
+            \stream_copy_to_stream($url_open, $output);
+            \fclose($output);
+            \fclose($url_open);
+        } else {
+            Headers::clientReturn();
+        }
+
+        // Close session
+        if (\session_status() === \PHP_SESSION_ACTIVE) {
+            \session_write_close();
+        }
+
+        // Ensure we exit
+        exit(0);
+    }
+
+    /**
+     * Function to validate HTTP header `Range` and return it as an array. If case of errors it will return array with one element (index 0) equalling false. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range.
+     *
+     * @param int $size
+     *
+     * @return array
+     */
+    public static function rangesValidate(int $size): array
+    {
+        if (isset($_SERVER['HTTP_RANGE'])) {
+            // Validate the value
+            if (\preg_match('/^bytes=\d*-\d*(\s*,\s*\d*-\d*)*$/i', $_SERVER['HTTP_RANGE']) !== 1) {
+                \header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
+
+                return [0 => false];
+            }
+
+            // Remove bytes
+            $ranges = \preg_replace('/bytes=/i', '', $_SERVER['HTTP_RANGE']);
+            // Split ranges
+            $ranges = \explode(',', $ranges);
+            // Sanitize
+            foreach ($ranges as $key => $range) {
+                if (\preg_match('/^-\d+$/', $range) === 1) {
+                    $ranges[$key] = ['start' => 0, 'end' => (int) \mb_ltrim($range, '-', 'UTF-8')];
+                } elseif (\preg_match('/^\d+-$/', $range) === 1) {
+                    $ranges[$key] = ['start' => (int) \mb_rtrim($range, '-', 'UTF-8'), 'end' => $size - 1];
+                } elseif (\preg_match('/^\d+-\d+$/', $range) === 1) {
+                    $temp_range = \explode('-', $range);
+                    $ranges[$key] = ['start' => (int) $temp_range[0], 'end' => (int) $temp_range[1]];
+                } else {
+                    // If we get here, something went incredibly wrong, so better exit
+                    return [0 => false];
+                }
+
+                // Check range is of proper value
+                if (
+                    $ranges[$key]['start'] >= $ranges[$key]['end']
+                    || $ranges[$key]['start'] >= $size
+                    || $ranges[$key]['end'] > $size
+                    || ($ranges[0]['end'] - $ranges[0]['start'] + 1) > $size
+                ) {
+                    return [0 => false];
+                }
+            }
+
+            // Checking for overlaps, since as per https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html we expect non-overlapping ranges
+            if (\count($ranges) > 1) {
+                foreach ($ranges as $key_prime => $range_prime) {
+                    foreach ($ranges as $key_sec => $range_sec) {
+                        // Only compare pairs after current one
+                        if ($key_sec > $key_prime) {
+                            // If overlap in any way - exit
+                            if (
+                                (
+                                    $range_prime['start'] === $range_sec['start']
+                                    && $range_prime['end'] === $range_sec['end']
+                                )
+                                || (
+                                    $range_sec['end'] >= $range_prime['start']
+                                    && $range_sec['end'] < $range_prime['end']
+                                )
+                                || (
+                                    $range_sec['start'] > $range_prime['start']
+                                    && $range_sec['start'] <= $range_prime['end']
+                                )
+                            ) {
+                                return [0 => false];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If something went wrong, and we got an empty range here - return as false
+            if ($ranges === []) {
+                return [0 => false];
+            }
+
+            return $ranges;
+        }
+
+        return [];
+    }
+
+    /**
+     * Function to determine speed limit based on maximum allowed memory usage.
+     *
+     * @param int   $speed      Desired maximum speed
+     * @param float $percentage Maximum percentage of memory allowed to use
+     *
+     * @return int
+     */
+    public static function speedLimit(int $speed = 0, float $percentage = 0.9): int
+    {
+        // Sanitize percentage
+        if (
+            $percentage <= 0
+            || $percentage > 1.0
+        ) {
+            $percentage = 0.9;
+        }
+
+        // Get memory limit
+        $memory = \ini_get('memory_limit');
+        $memory = self::phpMemoryToInt($memory);
+        // Exclude memory peak usage (assume, that it's either still being used or can be used in near future)
+        $memory -= \memory_get_peak_usage(real_usage: true);
+        // When using stream there is still a certain memory overhead, so we take only percentage of the memory
+        // Percentage was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
+        $memory = (int) \floor($memory * $percentage);
+        if (
+            $speed <= 0
+            || $speed > $memory
+        ) {
+            return $memory;
+        }
+
+        return $speed;
+    }
+
+    /**
+     * Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation.
+     *
+     * @param resource $input      Input stream
+     * @param resource $output     Output stream
+     * @param int      $total_size Total size of bytes to copy
+     * @param int      $offset     Offset of bytes to copy from
+     * @param int      $speed      Maximum speed of copying in bytes per second
+     *
+     * @return bool|int
+     */
+    public static function streamCopy($input, $output, int $total_size = 0, int $offset = 0, int $speed = 10485760): bool|int
+    {
+        // Ignore user abort to attempt to identify when the client has aborted
+        \ignore_user_abort(enable: true);
+        // Check that we have resources, since PHP does not have type hinting for resources
+        if (
+            !\is_resource($input)
+            || !\is_resource($output)
+        ) {
+            // Close session
+            if (\session_status() === \PHP_SESSION_ACTIVE) {
+                \session_write_close();
+            }
+
+            return false;
+        }
+
+        // Get size if not provided
+        if ($total_size <= 0) {
+            $fstat = \fstat($input);
+            if (\is_array($fstat)) {
+                /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
+                $total_size = $fstat['size'];
+            } else {
+                $total_size = 0;
+            }
+        }
+
+        // Sanitize speed
+        $speed = self::speedLimit($speed);
+        // Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
+        \set_time_limit((int) \floor($total_size / 10240));
+        // Set counter for the amount of data sent
+        $sent = 0;
+        while (
+            $sent < $total_size
+            && \connection_status() === \CONNECTION_NORMAL
+        ) {
+            // Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
+            $sent_stat = \stream_copy_to_stream($input, $output, $speed, $offset);
+            if ($sent_stat !== false) {
+                $sent += $sent_stat;
+            } else {
+                // Close session
+                if (\session_status() === \PHP_SESSION_ACTIVE) {
+                    \session_write_close();
+                }
+
+                return false;
+            }
+
+            $offset += $speed;
+            \ob_flush();
+            \flush();
+            // Sleep to limit data rate
+            \sleep(1);
+        }
+
+        // Close session
+        if (\session_status() === \PHP_SESSION_ACTIVE) {
+            \session_write_close();
+        }
+
+        if (
+            $sent >= $total_size
+            && \connection_status() === \CONNECTION_NORMAL
+        ) {
+            return $sent;
+        }
+
+        return false;
+    }
+
+    /**
      * Function to handle file uploads.
      *
      * @param array|string $dest_path      Path to save a file(s) to.
@@ -266,6 +707,8 @@ final class Sharing
         $max_upload = self::phpMemoryToInt(\ini_get('upload_max_filesize'));
         $max_post = self::phpMemoryToInt(\ini_get('post_max_size'));
         $max_files = (int) \ini_get('max_file_uploads');
+        // Prepare array for uploaded files
+        $uploaded_files = [];
         // Check if POST or PUT
         if (
             $_SERVER['REQUEST_METHOD'] !== 'POST'
@@ -339,7 +782,7 @@ final class Sharing
                     isset($_SERVER['CONTENT_LENGTH'])
                     && (int) $_SERVER['CONTENT_LENGTH'] === 0
                 )
-                || empty($_FILES)
+                || \count($_FILES) === 0
             ) {
                 return Headers::clientReturn(400, $exit);
             }
@@ -376,8 +819,6 @@ final class Sharing
                 return Headers::clientReturn(413, $exit);
             }
 
-            // Prepare array for uploaded files
-            $uploaded_files = [];
             // Check for any errors in files, so that we can exit before actually processing the rest
             foreach ($_FILES as $field => $files) {
                 // Check that field has a folder to copy the file to
@@ -404,6 +845,7 @@ final class Sharing
                         case \UPLOAD_ERR_OK:
                             // Do nothing at this time
                             break;
+
                         case \UPLOAD_ERR_INI_SIZE:
                         case \UPLOAD_ERR_FORM_SIZE:
                             if ($intolerant) {
@@ -414,6 +856,7 @@ final class Sharing
                             unset($_FILES[$field][$key]);
 
                             continue 2;
+
                         case \UPLOAD_ERR_PARTIAL:
                         case \UPLOAD_ERR_NO_FILE:
                         case \UPLOAD_ERR_CANT_WRITE:
@@ -425,6 +868,7 @@ final class Sharing
                             unset($_FILES[$field][$key]);
 
                             continue 2;
+
                         case \UPLOAD_ERR_NO_TMP_DIR:
                         case \UPLOAD_ERR_EXTENSION:
                             if ($intolerant) {
@@ -435,6 +879,7 @@ final class Sharing
                             unset($_FILES[$field][$key]);
 
                             continue 2;
+
                         default:
                             if ($intolerant) {
                                 return Headers::clientReturn(418, $exit);
@@ -578,7 +1023,7 @@ final class Sharing
             }
 
             // Check if any files were left
-            if (empty($_FILES)) {
+            if (\count($_FILES) === 0) {
                 if ($uploaded_files === []) {
                     return Headers::clientReturn(400, $exit);
                 }
@@ -813,442 +1258,5 @@ final class Sharing
         }
 
         return $uploaded_files;
-    }
-
-    /**
-     * Function to copy data in small chunks (not HTTP1.1 chunks) based on speed limitation.
-     *
-     * @param resource $input      Input stream
-     * @param resource $output     Output stream
-     * @param int      $total_size Total size of bytes to copy
-     * @param int      $offset     Offset of bytes to copy from
-     * @param int      $speed      Maximum speed of copying in bytes per second
-     *
-     * @return bool|int
-     */
-    public static function streamCopy($input, $output, int $total_size = 0, int $offset = 0, int $speed = 10485760): bool|int
-    {
-        // Ignore user abort to attempt to identify when the client has aborted
-        \ignore_user_abort(enable: true);
-        // Check that we have resources, since PHP does not have type hinting for resources
-        if (
-            !\is_resource($input)
-            || !\is_resource($output)
-        ) {
-            // Close session
-            if (\session_status() === \PHP_SESSION_ACTIVE) {
-                \session_write_close();
-            }
-
-            return false;
-        }
-
-        // Get size if not provided
-        if ($total_size <= 0) {
-            $fstat = \fstat($input);
-            if (\is_array($fstat)) {
-                /** @noinspection OffsetOperationsInspection https://github.com/kalessil/phpinspectionsea/issues/1941 */
-                $total_size = $fstat['size'];
-            } else {
-                $total_size = 0;
-            }
-        }
-
-        // Sanitize speed
-        $speed = self::speedLimit($speed);
-        // Set time limit equal to the size. If load speed is <=10 kilobytes per second - that's definitely low speed session, that we do not want to keep forever
-        \set_time_limit((int) \floor($total_size / 10240));
-        // Set counter for the amount of data sent
-        $sent = 0;
-        while (
-            $sent < $total_size
-            && \connection_status() === \CONNECTION_NORMAL
-        ) {
-            // Using stream_copy_to_stream because it is able to handle much larger files even with relatively large speed limits, close to how readfile() can.
-            $sent_stat = \stream_copy_to_stream($input, $output, $speed, $offset);
-            if ($sent_stat !== false) {
-                $sent += $sent_stat;
-            } else {
-                // Close session
-                if (\session_status() === \PHP_SESSION_ACTIVE) {
-                    \session_write_close();
-                }
-
-                return false;
-            }
-
-            $offset += $speed;
-            \ob_flush();
-            \flush();
-            // Sleep to limit data rate
-            \sleep(1);
-        }
-
-        // Close session
-        if (\session_status() === \PHP_SESSION_ACTIVE) {
-            \session_write_close();
-        }
-
-        if (
-            $sent >= $total_size
-            && \connection_status() === \CONNECTION_NORMAL
-        ) {
-            return $sent;
-        }
-
-        return false;
-    }
-
-    /**
-     * Function to determine speed limit based on maximum allowed memory usage.
-     *
-     * @param int   $speed      Desired maximum speed
-     * @param float $percentage Maximum percentage of memory allowed to use
-     *
-     * @return int
-     */
-    public static function speedLimit(int $speed = 0, float $percentage = 0.9): int
-    {
-        // Sanitize percentage
-        if (
-            $percentage <= 0
-            || $percentage > 1.0
-        ) {
-            $percentage = 0.9;
-        }
-
-        // Get memory limit
-        $memory = \ini_get('memory_limit');
-        $memory = self::phpMemoryToInt($memory);
-        // Exclude memory peak usage (assume, that it's either still being used or can be used in near future)
-        $memory -= \memory_get_peak_usage(real_usage: true);
-        // When using stream there is still a certain memory overhead, so we take only percentage of the memory
-        // Percentage was experimentally derived from downloading a 1.5G file with 256M memory limit until there was no "Allowed memory size of X bytes exhausted". Actually it was 0.94, but we would prefer to have at least some headroom.
-        $memory = (int) \floor($memory * $percentage);
-        if (
-            $speed <= 0
-            || $speed > $memory
-        ) {
-            return $memory;
-        }
-
-        return $speed;
-    }
-
-    /**
-     * Function to convert PHP's memory strings (like 256M) used in some settings to integer value (bytes).
-     *
-     * @param string $memory
-     *
-     * @return int
-     */
-    public static function phpMemoryToInt(string $memory): int
-    {
-        // Get suffix. Suppressing inspection, since false-positive, `mb_strlen` returns `int`
-        /** @noinspection OffsetOperationsInspection */
-        $suffix = \mb_strtolower($memory[\mb_strlen($memory, 'UTF-8') - 1], 'UTF-8');
-        // Get int value
-        $memory_int = (int) \mb_substr($memory, 0, -1, 'UTF-8');
-        $memory_int *= match ($suffix) {
-            'g' => 1073741824,
-            'm' => 1048576,
-            'k' => 1024,
-            default => 1,
-        };
-
-        return $memory_int;
-    }
-
-    /**
-     * Function to validate HTTP header `Range` and return it as an array. If case of errors it will return array with one element (index 0) equalling false. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range.
-     *
-     * @param int $size
-     *
-     * @return array
-     */
-    public static function rangesValidate(int $size): array
-    {
-        if (isset($_SERVER['HTTP_RANGE'])) {
-            // Validate the value
-            if (\preg_match('/^bytes=\d*-\d*(\s*,\s*\d*-\d*)*$/i', $_SERVER['HTTP_RANGE']) !== 1) {
-                \header($_SERVER['SERVER_PROTOCOL'].' 416 Range Not Satisfiable');
-
-                return [0 => false];
-            }
-
-            // Remove bytes
-            $ranges = \preg_replace('/bytes=/i', '', $_SERVER['HTTP_RANGE']);
-            // Split ranges
-            $ranges = \explode(',', $ranges);
-            // Sanitize
-            foreach ($ranges as $key => $range) {
-                if (\preg_match('/^-\d+$/', $range) === 1) {
-                    $ranges[$key] = ['start' => 0, 'end' => (int) \mb_ltrim($range, '-', 'UTF-8')];
-                } elseif (\preg_match('/^\d+-$/', $range) === 1) {
-                    $ranges[$key] = ['start' => (int) \mb_rtrim($range, '-', 'UTF-8'), 'end' => $size - 1];
-                } elseif (\preg_match('/^\d+-\d+$/', $range) === 1) {
-                    $temp_range = \explode('-', $range);
-                    $ranges[$key] = ['start' => (int) $temp_range[0], 'end' => (int) $temp_range[1]];
-                } else {
-                    // If we get here, something went incredibly wrong, so better exit
-                    return [0 => false];
-                }
-
-                // Check range is of proper value
-                if (
-                    $ranges[$key]['start'] >= $ranges[$key]['end']
-                    || $ranges[$key]['start'] >= $size
-                    || $ranges[$key]['end'] > $size
-                    || ($ranges[0]['end'] - $ranges[0]['start'] + 1) > $size
-                ) {
-                    return [0 => false];
-                }
-            }
-
-            // Checking for overlaps, since as per https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html we expect non-overlapping ranges
-            if (\count($ranges) > 1) {
-                foreach ($ranges as $key_prime => $range_prime) {
-                    foreach ($ranges as $key_sec => $range_sec) {
-                        // Only compare pairs after current one
-                        if ($key_sec > $key_prime) {
-                            // If overlap in any way - exit
-                            if (
-                                (
-                                    $range_prime['start'] === $range_sec['start']
-                                    && $range_prime['end'] === $range_sec['end']
-                                )
-                                || (
-                                    $range_sec['end'] >= $range_prime['start']
-                                    && $range_sec['end'] < $range_prime['end']
-                                )
-                                || (
-                                    $range_sec['start'] > $range_prime['start']
-                                    && $range_sec['start'] <= $range_prime['end']
-                                )
-                            ) {
-                                return [0 => false];
-                            }
-                        }
-                    }
-                }
-            }
-
-            // If something went wrong, and we got an empty range here - return as false
-            if ($ranges === []) {
-                return [0 => false];
-            }
-
-            return $ranges;
-        }
-
-        return [];
-    }
-
-    /**
-     * Function to send a file directly to browser.
-     *
-     * @param string $filepath       Path to file
-     * @param array  $allowed_mime   List of allowed MIME types
-     * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)
-     * @param bool   $exit           Whether to stop execution in case of errors
-     *
-     * @return int
-     */
-    public static function fileEcho(#[FileReference] string $filepath, array $allowed_mime = [], #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = 'month', bool $exit = true): int
-    {
-        // Check if file exists
-        if (\is_file($filepath)) {
-            // Process MIME
-            if (\extension_loaded('fileinfo')) {
-                // Get MIME from the file
-                $mime_type = \mime_content_type($filepath);
-                if ($allowed_mime !== []) {
-                    // Sanitize provided MIME types
-                    foreach ($allowed_mime as $key => $mime) {
-                        if (\preg_match('/^'.Common::MIME_REGEX.'$/i', $mime) !== 1) {
-                            unset($allowed_mime[$key]);
-                        }
-                    }
-
-                    // Check if MIME is allowed
-                    if (
-                        $allowed_mime !== []
-                        && !\in_array($mime_type, $allowed_mime, strict: true)
-                    ) {
-                        return Headers::clientReturn(403, $exit);
-                    }
-                }
-            }
-
-            // While the above checks the actual MIME type, it may be different from the one client may be expecting based on extension. For example RSS file will be recognized as application/xml (or text/xml), instead of application/rss+xml. This may be minor, but depending on client can cause unexpected behaviour. Thus, we rely on extension here, since it can provide a more appropriate MIME type
-            $extension = \pathinfo($filepath, \PATHINFO_EXTENSION);
-            // Set MIME from extension, of available
-            if (
-                !empty($extension)
-                && \is_string($extension)
-                && Common::getMimeFromExtension($extension) !== false
-            ) {
-                $mime_type_alt = Common::getMimeFromExtension($extension);
-            }
-
-            // Set MIME type to stream if it's empty
-            if (empty($mime_type_alt)) {
-                if (empty($mime_type)) {
-                    $mime_type = 'application/octet-stream';
-                }
-            } else {
-                $mime_type = $mime_type_alt;
-            }
-
-            // Send Last Modified, eTag and Cache-Control headers
-            Headers::lastModified(\filemtime($filepath), exit: true);
-            Headers::eTag(\hash_file('sha3-512', $filepath), exit: true);
-            Headers::cacheControl('', $cache_strategy, exit: true);
-            // Send MIME types. Add Charset to those, that are recommended to have it
-            if (\preg_match('/^(text\/.*)|(image\/svg\+xml)|(application\/(.*javascript|.*json|.*xml))$/i', $mime_type) === 1) {
-                \header('Content-Type: '.$mime_type.'; charset=utf-8');
-            } else {
-                \header('Content-Type: '.$mime_type);
-            }
-
-            // Send content disposition
-            \header('Content-Disposition: inline; filename="'.\basename($filepath).'"');
-            // Open stream
-            $stream = \fopen($filepath, 'rb');
-            if ($stream === false) {
-                return Headers::clientReturn(500, $exit);
-            }
-
-            // Some MIME types can be zipped nicely
-            if (\preg_match('/^((font|text)\/.*)|(application\/(.*javascript|.*json|.*xml|vnd\.ms-fontobject|wasm|x-font-ttf))|(image\/(bmp|svg\+xml|vnd.microsoft.icon))$/i', $mime_type) === 1) {
-                // Read the file
-                $output = \fread($stream, \filesize($filepath));
-                // Close stream
-                \fclose($stream);
-                if ($output === false) {
-                    return Headers::clientReturn(500, $exit);
-                }
-
-                Common::zEcho($output, $cache_strategy);
-            } else {
-                // Send size information
-                \header('Content-Length: '.\filesize($filepath));
-                // Exit if HEAD method was used (by this time all headers should have been sent
-                if (
-                    isset($_SERVER['REQUEST_METHOD'])
-                    && $_SERVER['REQUEST_METHOD'] === 'HEAD'
-                ) {
-                    // Close session
-                    if (\session_status() === \PHP_SESSION_ACTIVE) {
-                        \session_write_close();
-                    }
-
-                    exit(0);
-                }
-
-                // Send data
-                if (\fpassthru($stream) === 0) {
-                    return Headers::clientReturn(500, $exit);
-                }
-
-                // Close stream
-                \fclose($stream);
-            }
-
-            // Close session
-            if (\session_status() === \PHP_SESSION_ACTIVE) {
-                \session_write_close();
-            }
-
-            // Either exit or return
-            if ($exit) {
-                exit(0);
-            }
-
-            return 200;
-        }
-
-        return Headers::clientReturn(404, $exit);
-    }
-
-    /**
-     * Function to proxy a file from another server as a stream.
-     *
-     * @param string $url            URL to proxy
-     * @param string $cache_strategy Cashing strategy (same as for `Headers::cacheControl`)
-     *
-     * @return void
-     */
-    #[NoReturn]
-    public static function proxyFile(string $url, #[ExpectedValues(['', 'aggressive', 'private', 'none', 'live', 'month', 'week', 'day', 'hour'])] string $cache_strategy = ''): void
-    {
-        // Get headers
-        $headers_data = \get_headers($url, context: \stream_context_create([
-            'http' => [
-                'follow_location' => 1,
-                'method' => 'HEAD',
-                'protocol_version' => 2.0,
-            ],
-        ]));
-        // Check that we did get headers
-        if (!\is_array($headers_data)) {
-            // Failed to get headers, meaning we most likely will not be able to get the content as well
-            Headers::clientReturn();
-        }
-
-        // Cache-Control flag
-        $cache = false;
-        // Send the headers from remote server
-        foreach ($headers_data as $header_data) {
-            if (\preg_match('/^Cache-Control:.*$/', $header_data) === 1) {
-                $cache = true;
-            }
-
-            \header($header_data);
-        }
-
-        // Add Cache-Control
-        if (!$cache) {
-            Headers::cacheControl('', $cache_strategy, exit: true);
-        }
-
-        // Process lastModified and eTag to attempt to rely on client cache and not waste server resources
-        foreach ($headers_data as $header_data) {
-            if (\preg_match('/^Last-Modified:.*$/', $header_data) === 1) {
-                Headers::lastModified(\strtotime(\preg_replace('/^(Last-Modified:\s*"?)([^"]*)("?)$/', '$2', $header_data)), exit: true);
-            } elseif (\preg_match('/^ETag:.*$/', $header_data) === 1) {
-                Headers::eTag(\preg_replace('/^(ETag:\s*"?)([^"]*)("?)$/', '$2', $header_data), exit: true);
-            }
-        }
-
-        // Open streams
-        // Supress warning for $url, since connection can be refused for some reason, and it still may be "normal"
-        $url_open = \fopen($url, 'rb', context: \stream_context_create([
-            'http' => [
-                'follow_location' => 1,
-                'method' => 'GET',
-                'protocol_version' => 2.0,
-            ],
-        ]));
-        $output = \fopen('php://output', 'wb');
-        // Send contents
-        if (
-            $url_open !== false
-            && $output !== false
-        ) {
-            \stream_copy_to_stream($url_open, $output);
-            \fclose($output);
-            \fclose($url_open);
-        } else {
-            Headers::clientReturn();
-        }
-
-        // Close session
-        if (\session_status() === \PHP_SESSION_ACTIVE) {
-            \session_write_close();
-        }
-
-        // Ensure we exit
-        exit(0);
     }
 }

@@ -19,6 +19,8 @@ final class Sitemap
      * @param bool   $direct_output Whether to output result directly to browser.
      *
      * @return string
+     *
+     * @throws \UnexpectedValueException
      */
     public static function sitemap(array $links, #[ExpectedValues(['xml', 'index', 'html', 'text', 'txt'])] string $format = 'xml', bool $direct_output = false): string
     {
@@ -97,6 +99,8 @@ final class Sitemap
      * @param array $links
      *
      * @return void
+     *
+     * @throws \UnexpectedValueException
      */
     private static function linksValidator(array &$links): void
     {

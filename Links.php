@@ -9,6 +9,8 @@ use Simbiat\StringHelpers\Sanitize;
 
 /**
  * Generate HTTP `Link` header and `link` HTML element.
+ *
+ * @api
  */
 final class Links
 {
@@ -18,9 +20,9 @@ final class Links
     public const string ALLOWED_IN_BODY = '/^\s*(alternate )?((^| )(dns-prefetch|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+(alternate)?\s*$/uir';
 
     /**
-     * Regex for `rel` values that are used for preload.
+     * Regex for allowed `as` values for `rel=modulepreload` as per https://html.spec.whatwg.org/multipage/links.html#module-preload-destination and https://fetch.spec.whatwg.org/#request-destination-script-like.
      */
-    public const string PRELOAD_REL = '/((^| )(dns-prefetch|modulepreload|preconnect|prefetch|preload)( |$))+/uir';
+    public const array AS_VALUES_MODULEPRELOAD = ['audioworklet', 'json', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'style', 'text', 'worker'];
 
     /**
      * Regex for allowed `as` values for `rel=preload` as per https://html.spec.whatwg.org/multipage/links.html#preload-destination.
@@ -28,14 +30,14 @@ final class Links
     public const array AS_VALUES_PRELOAD = ['fetch', 'font', 'image', 'script', 'style', 'track'];
 
     /**
-     * Regex for allowed `as` values for `rel=modulepreload` as per https://html.spec.whatwg.org/multipage/links.html#module-preload-destination and https://fetch.spec.whatwg.org/#request-destination-script-like.
-     */
-    public const array AS_VALUES_MODULEPRELOAD = ['audioworklet', 'json', 'paintworklet', 'script', 'serviceworker', 'sharedworker', 'style', 'text', 'worker'];
-
-    /**
      * Regex for `rel` values that are considered external resources as per https://html.spec.whatwg.org/multipage/links.html#linkTypes.
      */
     public const string EXTERNAL_RESOURCES = '/((^| )(dns-prefetch|icon|manifest|modulepreload|pingback|preconnect|prefetch|preload|stylesheet)( |$))+/uir';
+
+    /**
+     * Regex for `rel` values that are used for preload.
+     */
+    public const string PRELOAD_REL = '/((^| )(dns-prefetch|modulepreload|preconnect|prefetch|preload)( |$))+/uir';
 
     /**
      * List of supported attributes.
@@ -43,14 +45,14 @@ final class Links
     private const array ALLOWED_ATTRIBUTES = ['href', 'imagesrcset', 'title', 'rel', 'itemprop', 'hreflang', 'type', 'as', 'color', 'sizes', 'imagesizes', 'media', 'integrity', 'crossorigin', 'referrerpolicy', 'blocking', 'disabled', 'fetchpriority'];
 
     /**
-     * Allowed values for `referrerpolicy`.
-     */
-    private const array REFERRER_POLICY = ['no-referrer', 'no-referrer-when-downgrade', 'strict-origin', 'strict-origin-when-cross-origin', 'same-origin', 'origin', 'origin-when-cross-origin', 'unsafe-url'];
-
-    /**
      * Allowed values for `fetchpriority`.
      */
     private const array FETCH_PRIORITY = ['auto', 'low', 'high'];
+
+    /**
+     * Allowed values for `referrerpolicy`.
+     */
+    private const array REFERRER_POLICY = ['no-referrer', 'no-referrer-when-downgrade', 'strict-origin', 'strict-origin-when-cross-origin', 'same-origin', 'origin', 'origin-when-cross-origin', 'unsafe-url'];
 
     /**
      * Flag indicating that HTTP_SAVE_DATA was received and is `on`.
@@ -75,6 +77,8 @@ final class Links
      * @param bool   $force_cross_origin If set to `true`, if `rel` attribute is set it will be checked against a list of External Resources as per spec https://html.spec.whatwg.org/multipage/links.html#linkTypes and will force `crossorigin="anonymous"`, if the attribute is missing.
      *
      * @return string
+     *
+     * @throws \UnexpectedValueException
      */
     public static function links(array $links = [], #[ExpectedValues(['header', 'head', 'body'])] string $type = 'header', bool $force_cross_origin = false): string
     {
@@ -157,163 +161,6 @@ final class Links
         }
 
         return \implode("\r\n", $links_to_send);
-    }
-
-    /**
-     * Generate `<link>` representing the respective `Link` object.
-     *
-     * @param array<string, mixed> $link Link object
-     *
-     * @return string
-     */
-    private static function generateTag(array $link): string
-    {
-        return '<link'
-            .(empty($link['href']) ? '' : ' href="'.$link['href'].'"')
-            .(empty($link['imagesrcset']) ? '' : ' imagesrcset="'.$link['imagesrcset'].'"')
-            .(empty($link['title']) ? '' : ' title="'.$link['title'].'"')
-            .(empty($link['rel']) ? '' : ' rel="'.$link['rel'].'"')
-            .(empty($link['itemprop']) ? '' : ' itemprop="'.$link['itemprop'].'"')
-            .(empty($link['hreflang']) ? '' : ' hreflang="'.$link['hreflang'].'"')
-            .(empty($link['type']) ? '' : ' type="'.$link['type'].'"')
-            .(empty($link['as']) ? '' : ' as="'.$link['as'].'"')
-            .(empty($link['color']) ? '' : ' color="'.$link['color'].'"')
-            .(empty($link['sizes']) ? '' : ' sizes="'.$link['sizes'].'"')
-            .(empty($link['imagesizes']) ? '' : ' imagesizes="'.$link['imagesizes'].'"')
-            .(empty($link['media']) ? '' : ' media="'.$link['media'].'"')
-            .(empty($link['integrity']) ? '' : ' integrity="'.$link['integrity'].'"')
-            .(empty($link['crossorigin']) ? '' : ' crossorigin="'.$link['crossorigin'].'"')
-            .(empty($link['referrerpolicy']) ? '' : ' referrerpolicy="'.$link['referrerpolicy'].'"')
-            .(empty($link['blocking']) ? '' : ' blocking="'.$link['blocking'].'"')
-            .(\array_key_exists('disabled', $link) ? ' disabled' : '')
-            .(empty($link['fetchpriority']) ? '' : ' fetchpriority="'.$link['fetchpriority'].'"')
-            .'>';
-    }
-
-    /**
-     * Generate a link for the HTTP header representing the respective `Link` object.
-     *
-     * @param array<string, mixed> $link
-     *
-     * @return string
-     */
-    private static function generateHeader(array $link): string
-    {
-        return '<'.$link['href'].'>'
-            .(empty($link['title']) ? '' : '; title="'.$link['title'].'"')
-            .(empty($link['title*']) ? '' : '; title*="'.$link['title*'].'"')
-            .(empty($link['rel']) ? '' : '; rel="'.$link['rel'].'"')
-            .(empty($link['hreflang']) ? '' : '; hreflang="'.$link['hreflang'].'"')
-            .(empty($link['type']) ? '' : '; type="'.$link['type'].'"')
-            .(empty($link['as']) ? '' : '; as="'.$link['as'].'"')
-            .(empty($link['sizes']) ? '' : '; sizes="'.$link['sizes'].'"')
-            .(empty($link['imagesizes']) ? '' : '; imagesizes="'.$link['imagesizes'].'"')
-            .(empty($link['media']) ? '' : '; media="'.$link['media'].'"')
-            .(empty($link['integrity']) ? '' : '; integrity="'.$link['integrity'].'"')
-            .(empty($link['crossorigin']) ? '' : '; crossorigin="'.$link['crossorigin'].'"')
-            .(empty($link['referrerpolicy']) ? '' : '; referrerpolicy="'.$link['referrerpolicy'].'"')
-            .(empty($link['fetchpriority']) ? '' : '; fetchpriority="'.$link['fetchpriority'].'"');
-    }
-
-    /**
-     * Process `type` property that needs to comply with certain rules.
-     *
-     * @param array<string, mixed> $link
-     *
-     * @return bool
-     */
-    private static function processTypeProperty(array &$link): bool
-    {
-        // Empty MIME type if it does ont confirm with the standard
-        if (
-            \array_key_exists('type', $link)
-            && \preg_match('/'.Common::MIME_REGEX.'/u', $link['type']) !== 1
-        ) {
-            $link['type'] = '';
-        }
-
-        // Try to set or update media type based on link
-        if (
-            empty($link['type'])
-            && \array_key_exists('href', $link)
-        ) {
-            $ext = \pathinfo($link['href'], \PATHINFO_EXTENSION);
-            $link['type']
-                = \is_string($ext)
-                && Common::getMimeFromExtension($ext) !== false
-                    ? Common::getMimeFromExtension($ext)
-                    : '';
-        }
-
-        if (
-            \array_key_exists('rel', $link)
-            && \preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) === 1
-        ) {
-            // Force 'as' for stylesheet
-            if (
-                (
-                    !empty($link['type'])
-                    && \preg_match('/^text\/css(;.*)?$/uir', $link['type']) === 1
-                )
-                || (
-                    !empty($link['rel'])
-                    && \preg_match('/((^| )(stylesheet)( |$))+/uir', $link['rel']) === 1
-                )
-            ) {
-                $link['as'] = 'style';
-            }
-
-            // Force 'as' for JS
-            if (
-                (
-                    !empty($link['type'])
-                    && \preg_match('/^application\/javascript(;.*)?$/uir', $link['type']) === 1
-                )
-            ) {
-                $link['as'] = 'script';
-            }
-
-            // Force 'as' for images
-            if (
-                (
-                    !empty($link['type'])
-                    && \preg_match('/^image\/.*$/uir', $link['type']) === 1
-                )
-            ) {
-                $link['as'] = 'image';
-            }
-
-            // Force 'as' for fonts
-            if (
-                (
-                    !empty($link['type'])
-                    && \preg_match('/^application\/.*(font|opentype).*$/uir', $link['type']) === 1
-                )
-            ) {
-                $link['as'] = 'font';
-            }
-
-            // Force 'as' for `track`
-            if (
-                (
-                    !empty($link['type'])
-                    && \preg_match('/^text\/vtt(;.*)?$/uir', $link['type']) === 1
-                )
-            ) {
-                $link['as'] = 'track';
-            }
-
-            // Force `as` for modulepreload to be explicit (current spec treats empty `as` for `modulepreload` as `script`)
-            if (
-                !\array_key_exists('as', $link)
-                && \preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1
-            ) {
-                $link['as'] = 'script';
-            }
-        }
-
-        // If a type is defined, check it corresponds to 'as'. If not, then do not process, assume error or malicious intent
-        return !(!empty($link['type']) && !empty($link['as']) && \preg_match('/^(image|font)$/uir', $link['as']) === 1 && \preg_match('/^'.$link['as'].'\/.*$/uir', $link['type']) !== 1);
     }
 
     /**
@@ -442,6 +289,256 @@ final class Links
     }
 
     /**
+     * If Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches).
+     *
+     * @param array<string, mixed> $link
+     *
+     * @return void
+     */
+    private static function disablePreload(array &$link): void
+    {
+        if (
+            self::$save_data
+            && \array_key_exists('rel', $link)
+        ) {
+            $link['rel'] = \preg_replace(self::PRELOAD_REL, '', $link['rel']);
+            // Unset 'imagesrcset', 'imagesizes' and 'as', since they are allowed only with preload. If we do not do this, some links may get skipped by the logic below.
+            unset($link['imagesrcset'], $link['imagesizes'], $link['as']);
+        }
+    }
+
+    /**
+     * Generate a link for the HTTP header representing the respective `Link` object.
+     *
+     * @param array<string, mixed> $link
+     *
+     * @return string
+     */
+    private static function generateHeader(array $link): string
+    {
+        return '<'.$link['href'].'>'
+            .(empty($link['title']) ? '' : '; title="'.$link['title'].'"')
+            .(empty($link['title*']) ? '' : '; title*="'.$link['title*'].'"')
+            .(empty($link['rel']) ? '' : '; rel="'.$link['rel'].'"')
+            .(empty($link['hreflang']) ? '' : '; hreflang="'.$link['hreflang'].'"')
+            .(empty($link['type']) ? '' : '; type="'.$link['type'].'"')
+            .(empty($link['as']) ? '' : '; as="'.$link['as'].'"')
+            .(empty($link['sizes']) ? '' : '; sizes="'.$link['sizes'].'"')
+            .(empty($link['imagesizes']) ? '' : '; imagesizes="'.$link['imagesizes'].'"')
+            .(empty($link['media']) ? '' : '; media="'.$link['media'].'"')
+            .(empty($link['integrity']) ? '' : '; integrity="'.$link['integrity'].'"')
+            .(empty($link['crossorigin']) ? '' : '; crossorigin="'.$link['crossorigin'].'"')
+            .(empty($link['referrerpolicy']) ? '' : '; referrerpolicy="'.$link['referrerpolicy'].'"')
+            .(empty($link['fetchpriority']) ? '' : '; fetchpriority="'.$link['fetchpriority'].'"');
+    }
+
+    /**
+     * Generate `<link>` representing the respective `Link` object.
+     *
+     * @param array<string, mixed> $link Link object
+     *
+     * @return string
+     */
+    private static function generateTag(array $link): string
+    {
+        return '<link'
+            .(empty($link['href']) ? '' : ' href="'.$link['href'].'"')
+            .(empty($link['imagesrcset']) ? '' : ' imagesrcset="'.$link['imagesrcset'].'"')
+            .(empty($link['title']) ? '' : ' title="'.$link['title'].'"')
+            .(empty($link['rel']) ? '' : ' rel="'.$link['rel'].'"')
+            .(empty($link['itemprop']) ? '' : ' itemprop="'.$link['itemprop'].'"')
+            .(empty($link['hreflang']) ? '' : ' hreflang="'.$link['hreflang'].'"')
+            .(empty($link['type']) ? '' : ' type="'.$link['type'].'"')
+            .(empty($link['as']) ? '' : ' as="'.$link['as'].'"')
+            .(empty($link['color']) ? '' : ' color="'.$link['color'].'"')
+            .(empty($link['sizes']) ? '' : ' sizes="'.$link['sizes'].'"')
+            .(empty($link['imagesizes']) ? '' : ' imagesizes="'.$link['imagesizes'].'"')
+            .(empty($link['media']) ? '' : ' media="'.$link['media'].'"')
+            .(empty($link['integrity']) ? '' : ' integrity="'.$link['integrity'].'"')
+            .(empty($link['crossorigin']) ? '' : ' crossorigin="'.$link['crossorigin'].'"')
+            .(empty($link['referrerpolicy']) ? '' : ' referrerpolicy="'.$link['referrerpolicy'].'"')
+            .(empty($link['blocking']) ? '' : ' blocking="'.$link['blocking'].'"')
+            .(\array_key_exists('disabled', $link) ? ' disabled' : '')
+            .(empty($link['fetchpriority']) ? '' : ' fetchpriority="'.$link['fetchpriority'].'"')
+            .'>';
+    }
+
+    /**
+     * Attempt to get image size if the integrity attribute is a file.
+     *
+     * @param array<string, mixed> $link
+     *
+     * @return string
+     */
+    private static function getImageSize(array $link): string
+    {
+        // Set to 'any' if it's SVG
+        if (\preg_match('/^image\/svg\+xml(;.*)?$/uir', $link['type']) === 1) {
+            $size = 'any';
+        } else {
+            $size = \getimagesize(\realpath($link['integrity']));
+            if ($size !== false) {
+                $size = $size[0].'x'.$size[1];
+                // Unset it if it's empty
+                if ($size === '0x0') {
+                    $size = '';
+                }
+            } else {
+                $size = '';
+            }
+        }
+
+        return $size;
+    }
+
+    /**
+     * Check if valid, according to https://html.spec.whatwg.org/multipage/semantics.html#the-link-element.
+     *
+     * @param array<string, mixed> $link Link element
+     * @param string               $type Type of link expected
+     *
+     * @return bool
+     */
+    private static function isLinkValid(array $link, #[ExpectedValues(['header', 'head', 'body'])] string $type): bool
+    {
+        // Either href or imagesrcset or both need to be present. imagesrcset does not make sense in the HTTP header
+        if (
+            (
+                !\array_key_exists('href', $link)
+                && !\array_key_exists('imagesrcset', $link)
+            )
+            || (
+                $type === 'header'
+                && !\array_key_exists('href', $link)
+            )
+        ) {
+            return false;
+        }
+
+        // Either `rel` or `itemprop` can be set at a time. itemprop does not make sense in the HTTP header
+        if (
+            (
+                !\array_key_exists('rel', $link)
+                && !\array_key_exists('itemprop', $link)
+            )
+            || isset($link['rel'], $link['itemprop'])
+            || (
+                $type === 'header'
+                && !\array_key_exists('rel', $link)
+            )
+        ) {
+            return false;
+        }
+
+        // Validate rel values
+        if (
+            \array_key_exists('rel', $link)
+            && !self::isRelValid($link, $type)
+        ) {
+            return false;
+        }
+
+        // Validate `blocking` value
+        if (
+            isset($link['rel'], $link['blocking'])
+            && \mb_strtolower($link['blocking'], 'UTF-8') !== 'render'
+        ) {
+            return false;
+        }
+
+        // `imagesrcset` is an image candidate with width descriptor, we need imagesizes as well
+        if (
+            \array_key_exists('imagesrcset', $link)
+            && !\array_key_exists('imagesizes', $link)
+            && \preg_match('/ \d+w(,|$)/u', $link['imagesrcset']) === 1
+        ) {
+            return false;
+        }
+
+        if (\array_key_exists('as', $link)) {
+            // `as` is allowed to have limited set of values and only used for `preload` and `modulepreload`.
+            if (!\array_key_exists('rel', $link)) {
+                return false;
+            }
+
+            if (\preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) !== 1) {
+                return false;
+            }
+
+            if (
+                (\preg_match('/((^| )(preload)( |$))+/uir', $link['rel']) === 1)
+                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_PRELOAD, strict: true)
+            ) {
+                return false;
+            }
+
+            if (
+                (\preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1)
+                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_MODULEPRELOAD, strict: true)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check the validity of links with `rel` set.
+     *
+     * @param array<string, mixed> $link Link element
+     * @param string               $type Type of link expected
+     *
+     * @return bool
+     */
+    private static function isRelValid(array $link, #[ExpectedValues(['header', 'head', 'body'])] string $type): bool
+    {
+        // If we are using `body`, check that `rel` is body-ok one
+        if (
+            $type === 'body'
+            && \preg_match(self::ALLOWED_IN_BODY, $link['rel']) !== 1
+        ) {
+            return false;
+        }
+
+        // imagesrcset and imagesizes are allowed only for preload with as=image
+        if (
+            (
+                \array_key_exists('imagesrcset', $link)
+                || \array_key_exists('imagesizes', $link)
+            )
+            && (
+                !\array_key_exists('as', $link)
+                || $link['as'] !== 'image'
+                || \preg_match('/((^| )(preload)( |$))+/iur', $link['rel']) !== 1
+            )
+        ) {
+            return false;
+        }
+
+        // `sizes` attribute should be set only if rel is icon of apple-touch-icon
+        if (
+            \array_key_exists('sizes', $link)
+            && \preg_match('/((^| )(icon|apple-touch-icon|apple-touch-icon-precomposed)( |$))+/iur', $link['rel']) !== 1
+        ) {
+            return false;
+        }
+
+        // as is allowed only for preload
+        if (
+            \array_key_exists('as', $link)
+            && \preg_match('/((^| )(modulepreload|preload)( |$))+/iur', $link['rel']) !== 1
+        ) {
+            return false;
+        }
+
+        // color is allowed only for mask-icon
+        return
+            !\array_key_exists('color', $link)
+            || \preg_match('/((^| )(mask-icon)( |$))+/uir', $link['rel']) === 1;
+    }
+
+    /**
      * Process `integrity` attribute of the Link object.
      *
      * @param array<string, mixed> $link
@@ -513,9 +610,9 @@ final class Links
                     && \preg_match('/^(application\/javascript|text\/css)$/uir', $link['type']) === 1
                 ) {
                     $hash = $link['integrity']
-                            |> (\realpath(...))
-                            |> (static fn($x): string|false => \hash_file('sha512', $x))
-                            |> (\base64_encode(...));
+                            |> \realpath(...)
+                            |> (static fn($x): false|string => \hash_file('sha512', $x))
+                            |> \base64_encode(...);
                     $link['integrity'] = 'sha512-'.$hash;
                 } else {
                     unset($link['integrity']);
@@ -529,196 +626,95 @@ final class Links
     }
 
     /**
-     * Attempt to get image size if the integrity attribute is a file.
+     * Process `type` property that needs to comply with certain rules.
      *
      * @param array<string, mixed> $link
      *
-     * @return string
-     */
-    private static function getImageSize(array $link): string
-    {
-        // Set to 'any' if it's SVG
-        if (\preg_match('/^image\/svg\+xml(;.*)?$/uir', $link['type']) === 1) {
-            $size = 'any';
-        } else {
-            $size = \getimagesize(\realpath($link['integrity']));
-            if ($size !== false) {
-                $size = $size[0].'x'.$size[1];
-                // Unset it if it's empty
-                if ($size === '0x0') {
-                    $size = '';
-                }
-            } else {
-                $size = '';
-            }
-        }
-
-        return $size;
-    }
-
-    /**
-     * Check if valid, according to https://html.spec.whatwg.org/multipage/semantics.html#the-link-element.
-     *
-     * @param array<string, mixed> $link Link element
-     * @param string $type Type of link expected
-     *
      * @return bool
      */
-    private static function isLinkValid(array $link, #[ExpectedValues(['header', 'head', 'body'])] string $type): bool
+    private static function processTypeProperty(array &$link): bool
     {
-        // Either href or imagesrcset or both need to be present. imagesrcset does not make sense in the HTTP header
+        // Empty MIME type if it does ont confirm with the standard
         if (
-            (
-                !\array_key_exists('href', $link)
-                && !\array_key_exists('imagesrcset', $link)
-            )
-            || (
-                $type === 'header'
-                && !\array_key_exists('href', $link)
-            )
+            \array_key_exists('type', $link)
+            && \preg_match('/'.Common::MIME_REGEX.'/u', $link['type']) !== 1
         ) {
-            return false;
+            $link['type'] = '';
         }
 
-        // Either `rel` or `itemprop` can be set at a time. itemprop does not make sense in the HTTP header
+        // Try to set or update media type based on link
         if (
-            (
-                !\array_key_exists('rel', $link)
-                && !\array_key_exists('itemprop', $link)
-            )
-            || isset($link['rel'], $link['itemprop'])
-            || (
-                $type === 'header'
-                && !\array_key_exists('rel', $link)
-            )
+            empty($link['type'])
+            && \array_key_exists('href', $link)
         ) {
-            return false;
+            $ext = \pathinfo($link['href'], \PATHINFO_EXTENSION);
+            $link['type']
+                = \is_string($ext)
+                && Common::getMimeFromExtension($ext) !== false
+                    ? Common::getMimeFromExtension($ext)
+                    : '';
         }
 
-        // Validate rel values
         if (
             \array_key_exists('rel', $link)
-            && !self::isRelValid($link, $type)
+            && \preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) === 1
         ) {
-            return false;
-        }
-
-        // Validate `blocking` value
-        if (
-            isset($link['rel'], $link['blocking'])
-            && \mb_strtolower($link['blocking'], 'UTF-8') !== 'render'
-        ) {
-            return false;
-        }
-
-        // `imagesrcset` is an image candidate with width descriptor, we need imagesizes as well
-        if (
-            \array_key_exists('imagesrcset', $link)
-            && !\array_key_exists('imagesizes', $link)
-            && \preg_match('/ \d+w(,|$)/u', $link['imagesrcset']) === 1
-        ) {
-            return false;
-        }
-
-        if (\array_key_exists('as', $link)) {
-            // `as` is allowed to have limited set of values and only used for `preload` and `modulepreload`.
-            if (!\array_key_exists('rel', $link)) {
-                return false;
-            }
-
-            if ((\preg_match('/((^| )(modulepreload|preload)( |$))+/uir', $link['rel']) !== 1)) {
-                return false;
-            }
-
+            // Force 'as' for stylesheet
             if (
-                (\preg_match('/((^| )(preload)( |$))+/uir', $link['rel']) === 1)
-                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_PRELOAD, strict: true)
+                (
+                    !empty($link['type'])
+                    && \preg_match('/^text\/css(;.*)?$/uir', $link['type']) === 1
+                )
+                || (
+                    !empty($link['rel'])
+                    && \preg_match('/((^| )(stylesheet)( |$))+/uir', $link['rel']) === 1
+                )
             ) {
-                return false;
+                $link['as'] = 'style';
             }
 
+            // Force 'as' for JS
             if (
-                (\preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1)
-                && !\in_array(\mb_strtolower($link['as'], 'UTF-8'), self::AS_VALUES_MODULEPRELOAD, strict: true)
+                !empty($link['type'])
+                && \preg_match('/^application\/javascript(;.*)?$/uir', $link['type']) === 1
             ) {
-                return false;
+                $link['as'] = 'script';
             }
-        }
 
-        return true;
-    }
+            // Force 'as' for images
+            if (
+                !empty($link['type'])
+                && \preg_match('/^image\/.*$/uir', $link['type']) === 1
+            ) {
+                $link['as'] = 'image';
+            }
 
-    /**
-     * Check the validity of links with `rel` set.
-     *
-     * @param array<string, mixed> $link Link element
-     * @param string $type Type of link expected
-     *
-     * @return bool
-     */
-    private static function isRelValid(array $link, #[ExpectedValues(['header', 'head', 'body'])] string $type): bool
-    {
-        // If we are using `body`, check that `rel` is body-ok one
-        if (
-            $type === 'body'
-            && \preg_match(self::ALLOWED_IN_BODY, $link['rel']) !== 1
-        ) {
-            return false;
-        }
+            // Force 'as' for fonts
+            if (
+                !empty($link['type'])
+                && \preg_match('/^application\/.*(font|opentype).*$/uir', $link['type']) === 1
+            ) {
+                $link['as'] = 'font';
+            }
 
-        // imagesrcset and imagesizes are allowed only for preload with as=image
-        if (
-            (
-                \array_key_exists('imagesrcset', $link)
-                || \array_key_exists('imagesizes', $link)
-            )
-            && (
+            // Force 'as' for `track`
+            if (
+                !empty($link['type'])
+                && \preg_match('/^text\/vtt(;.*)?$/uir', $link['type']) === 1
+            ) {
+                $link['as'] = 'track';
+            }
+
+            // Force `as` for modulepreload to be explicit (current spec treats empty `as` for `modulepreload` as `script`)
+            if (
                 !\array_key_exists('as', $link)
-                || $link['as'] !== 'image'
-                || \preg_match('/((^| )(preload)( |$))+/iur', $link['rel']) !== 1
-            )
-        ) {
-            return false;
+                && \preg_match('/((^| )(modulepreload)( |$))+/uir', $link['rel']) === 1
+            ) {
+                $link['as'] = 'script';
+            }
         }
 
-        // `sizes` attribute should be set only if rel is icon of apple-touch-icon
-        if (
-            \array_key_exists('sizes', $link)
-            && \preg_match('/((^| )(icon|apple-touch-icon|apple-touch-icon-precomposed)( |$))+/iur', $link['rel']) !== 1
-        ) {
-            return false;
-        }
-
-        // as is allowed only for preload
-        if (
-            \array_key_exists('as', $link)
-            && \preg_match('/((^| )(modulepreload|preload)( |$))+/iur', $link['rel']) !== 1
-        ) {
-            return false;
-        }
-
-        // color is allowed only for mask-icon
-        return
-            !\array_key_exists('color', $link)
-            || \preg_match('/((^| )(mask-icon)( |$))+/uir', $link['rel']) === 1;
-    }
-
-    /**
-     * If Save-Data is set to 'on', disable (remove respective rel) HTTP2 push logic (that is preloads and prefetches).
-     *
-     * @param array<string, mixed> $link
-     *
-     * @return void
-     */
-    private static function disablePreload(array &$link): void
-    {
-        if (
-            self::$save_data
-            && \array_key_exists('rel', $link)
-        ) {
-            $link['rel'] = \preg_replace(self::PRELOAD_REL, '', $link['rel']);
-            // Unset 'imagesrcset', 'imagesizes' and 'as', since they are allowed only with preload. If we do not do this, some links may get skipped by the logic below.
-            unset($link['imagesrcset'], $link['imagesizes'], $link['as']);
-        }
+        // If a type is defined, check it corresponds to 'as'. If not, then do not process, assume error or malicious intent
+        return !(!empty($link['type']) && !empty($link['as']) && \preg_match('/^(image|font)$/uir', $link['as']) === 1 && \preg_match('/^'.$link['as'].'\/.*$/uir', $link['type']) !== 1);
     }
 }

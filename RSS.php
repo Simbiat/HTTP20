@@ -12,14 +12,15 @@ final class RSS
     /**
      * Function generates RSS 2.0 feed (based on https://www.rssboard.org/rss-specification).
      *
-     * @param string $title         Title for RSS feed.
-     * @param array  $entries       Items for the feed.
-     * @param string $feed_link     Link to feed. If empty current `REQUEST_URI` will be used.
+     * @param string               $title         Title for RSS feed.
+     * @param array                $entries       Items for the feed.
+     * @param string               $feed_link     Link to feed. If empty current `REQUEST_URI` will be used.
      * @param array<string, mixed> $feed_settings Feed settings
      *
      * @return void
      *
      * @throws \DOMException
+     * @throws \UnexpectedValueException
      */
     public static function rss(string $title, array $entries, string $feed_link = '', array $feed_settings = []): void
     {
@@ -324,13 +325,14 @@ final class RSS
     /**
      * Helper function to add actual entries.
      *
-     * @param \DOMNode     $element Node to process
-     * @param \DOMDocument $feed    Main feed object
-     * @param array<string, mixed> $entry Element to add
+     * @param \DOMNode             $element Node to process
+     * @param \DOMDocument         $feed    Main feed object
+     * @param array<string, mixed> $entry   Element to add
      *
      * @return void
      *
      * @throws \DOMException
+     * @throws \UnexpectedValueException
      */
     private static function rssAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry): void
     {

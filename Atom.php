@@ -14,15 +14,16 @@ final class Atom
     /**
      * Function generates Atom feed (based on https://validator.w3.org/feed/docs/atom.html).
      *
-     * @param string $title         Text to be used in `<title>` element
-     * @param array  $entries       Items for the feed
-     * @param string $id            Text, that will be used as `id`. It needs to be a URI. If empty `$_SERVER['REQUEST_URI']` will be used.
-     * @param string $text_type     Text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
+     * @param string               $title         Text to be used in `<title>` element
+     * @param array                $entries       Items for the feed
+     * @param string               $id            Text, that will be used as `id`. It needs to be a URI. If empty `$_SERVER['REQUEST_URI']` will be used.
+     * @param string               $text_type     Text type, that will be added as attribute to some tags as per specification. Supported types are `text`, `html`, `xhtml`.
      * @param array<string, mixed> $feed_settings Array with optional settings for the feed. Check Atom.md for details.
      *
      * @return void
      *
      * @throws \DOMException
+     * @throws \UnexpectedValueException
      */
     public static function atom(string $title, array $entries, string $id = '', #[ExpectedValues(['text', 'html', 'xhtml'])] string $text_type = 'text', array $feed_settings = []): void
     {
@@ -174,99 +175,6 @@ final class Atom
     }
 
     /**
-     * Helper function to validate some elements.
-     *
-     * @param array  $elements     Array of elements to validate
-     * @param string $type         Optional type of the element
-     * @param string $element_name Name of the element
-     *
-     * @return void
-     */
-    private static function atomElementValidator(array &$elements, string $type = 'author', string $element_name = 'name'): void
-    {
-        foreach ($elements as $key => $element_to_val) {
-            if (!\is_array($element_to_val)) {
-                unset($elements[$key]);
-
-                continue;
-            }
-
-            if (empty($element_to_val[$element_name])) {
-                unset($elements[$key]);
-
-                continue;
-            }
-
-            if (!\is_string($element_to_val[$element_name])) {
-                unset($elements[$key]);
-
-                continue;
-            }
-
-            if ($type === 'link') {
-                if (!IRI::isValidIri($element_to_val['href'], 'https')) {
-                    unset($elements[$key]);
-
-                    continue;
-                }
-
-                if (
-                    !empty($element_to_val['rel'])
-                    && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'], strict: true)
-                ) {
-                    unset($elements[$key]);
-
-                    continue;
-                }
-            }
-
-            if ($type !== 'entry') {
-                continue;
-            }
-
-            if (empty($element_to_val['title'])) {
-                unset($elements[$key]);
-
-                continue;
-            }
-
-            if (empty($element_to_val['updated'])) {
-                unset($elements[$key]);
-
-                continue;
-            }
-
-            if (!IRI::isValidIri($element_to_val['link'], 'https')) {
-                unset($elements[$key]);
-            }
-        }
-    }
-
-    /**
-     * Helper function to add sub elements.
-     *
-     * @param \DOMNode     $element Node to process
-     * @param \DOMDocument $feed    Main feed object
-     * @param array<string, mixed> $top_tag Tag name
-     *
-     * @return void
-     *
-     * @throws \DOMException
-     */
-    private static function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $top_tag): void
-    {
-        foreach (['name', 'email', 'uri'] as $sub_node) {
-            if (!empty($top_tag[$sub_node])) {
-                if ($sub_node === 'uri') {
-                    $element->appendChild($feed->createElement($sub_node, Common::htmlToRFC3986($top_tag[$sub_node])));
-                } else {
-                    $element->appendChild($feed->createElement($sub_node, $top_tag[$sub_node]));
-                }
-            }
-        }
-    }
-
-    /**
      * Helper function to add attributes.
      *
      * @param \DOMElement           $element    Node to process
@@ -274,6 +182,8 @@ final class Atom
      * @param array<int, string>    $attributes Attributes to add
      *
      * @return void
+     *
+     * @throws \UnexpectedValueException
      */
     private static function atomAddAttributes(\DOMElement $element, array $top_tag, array $attributes): void
     {
@@ -305,6 +215,8 @@ final class Atom
      * @return void
      *
      * @throws \DOMException
+     * @throws \RuntimeException
+     * @throws \UnexpectedValueException
      */
     private static function atomAddEntries(\DOMNode $element, \DOMDocument $feed, array $entry, string $text_type): void
     {
@@ -413,24 +325,120 @@ final class Atom
     }
 
     /**
+     * Helper function to add sub elements.
+     *
+     * @param \DOMNode             $element Node to process
+     * @param \DOMDocument         $feed    Main feed object
+     * @param array<string, mixed> $top_tag Tag name
+     *
+     * @return void
+     *
+     * @throws \DOMException
+     */
+    private static function atomAddSubElements(\DOMNode $element, \DOMDocument $feed, array $top_tag): void
+    {
+        foreach (['name', 'email', 'uri'] as $sub_node) {
+            if (!empty($top_tag[$sub_node])) {
+                if ($sub_node === 'uri') {
+                    $element->appendChild($feed->createElement($sub_node, Common::htmlToRFC3986($top_tag[$sub_node])));
+                } else {
+                    $element->appendChild($feed->createElement($sub_node, $top_tag[$sub_node]));
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper function to validate some elements.
+     *
+     * @param array  $elements     Array of elements to validate
+     * @param string $type         Optional type of the element
+     * @param string $element_name Name of the element
+     *
+     * @return void
+     */
+    private static function atomElementValidator(array &$elements, string $type = 'author', string $element_name = 'name'): void
+    {
+        foreach ($elements as $key => $element_to_val) {
+            if (!\is_array($element_to_val)) {
+                unset($elements[$key]);
+
+                continue;
+            }
+
+            if (empty($element_to_val[$element_name])) {
+                unset($elements[$key]);
+
+                continue;
+            }
+
+            if (!\is_string($element_to_val[$element_name])) {
+                unset($elements[$key]);
+
+                continue;
+            }
+
+            if ($type === 'link') {
+                if (!IRI::isValidIri($element_to_val['href'], 'https')) {
+                    unset($elements[$key]);
+
+                    continue;
+                }
+
+                if (
+                    !empty($element_to_val['rel'])
+                    && !\in_array($element_to_val['rel'], ['alternate', 'self', 'enclosure', 'related', 'via'], strict: true)
+                ) {
+                    unset($elements[$key]);
+
+                    continue;
+                }
+            }
+
+            if ($type !== 'entry') {
+                continue;
+            }
+
+            if (empty($element_to_val['title'])) {
+                unset($elements[$key]);
+
+                continue;
+            }
+
+            if (empty($element_to_val['updated'])) {
+                unset($elements[$key]);
+
+                continue;
+            }
+
+            if (!IRI::isValidIri($element_to_val['link'], 'https')) {
+                unset($elements[$key]);
+            }
+        }
+    }
+
+    /**
      * Function to prepare ID for Atom feed as suggested on http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id.
+     * Removes URI protocol (if any), replace any `#` with `/`.
+     * Removes HTML/XML reserved characters as a precaution (using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082).
+     * Adds `tag:` to beginning and a `,Y-m-d:` after domain name.
      *
      * @param string $link
      *
      * @return string
+     *
+     * @throws \RuntimeException
+     * @throws \UnexpectedValueException
      */
     private static function atomIDGen(string $link): string
     {
         $date = Common::valueToTime(time: null, format: 'Y-m-d', valid_regex: '/^\d{4}-\d{2}-\d{2}$/i');
-        // Remove URI protocol (if any)
-        $link = \preg_replace('/^(?:[a-zA-Z]+?:\/\/)?/im', '', Common::htmlToRFC3986($link));
-        // Replace any # with /
-        $link = \preg_replace('/#/m', '/', $link);
-        // Remove HTML/XML reserved characters as a precaution.
-        // Using \x{5C} instead if \ directly due false-positive hit from PHPStorm https://youtrack.jetbrains.com/issue/IDEA-298082
-        $link = \preg_replace('/[\x{5C}\'"<>&]/im', '', $link);
 
-        // Add 'tag:' to beginning and a ',Y-m-d:' after domain name
-        return \preg_replace('/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im', 'tag:$1,'.$date.':$3', $link);
+        $result = \preg_replace(['/^(?:[a-zA-Z]+?:\/\/)?/im', '/#/m', '/[\x{5C}\'"<>&]/im', '/(?<domain>^(?:www\.)?([^:\/\n?]+))(?<rest>.*)/im'], ['', '/', '', 'tag:$1,'.$date.':$3'], Common::htmlToRFC3986($link));
+        if ($result === null) {
+            throw new \RuntimeException('Unable to generate Atom ID');
+        }
+
+        return $result;
     }
 }

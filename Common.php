@@ -10,34 +10,36 @@ use Simbiat\StringHelpers\Sanitize;
 
 /**
  * Collection of useful HTTP related functions.
+ *
+ * @api
  */
 final class Common
 {
     /**
      * Regex for language tag as per https://tools.ietf.org/html/rfc5987 and https://tools.ietf.org/html/rfc5646#section-2.1. Uses a portion from https://stackoverflow.com/questions/7035825/regular-expression-for-a-language-tag-as-defined-by-bcp47.
      */
-    /**
-     * @lang PhpRegExp
-     */
     public const string LANGUAGE_ENC_REGEX
+        /*
+         * @lang PhpRegExp
+         */
         = '(UTF-8|ISO-8859-1|[!#$%&+\-^_`{}~a-zA-Z0-9]+)\'((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)?\'';
 
     /**
      * Language values as per https://www.ietf.org/rfc/bcp/bcp47.txt (essentially just part of the above value).
      */
-    /**
-     * @lang PhpRegExp
-     */
     public const string LANGUAGE_TAG_REGEX
+        /*
+         * @lang PhpRegExp
+         */
         = '((?<grandfathered>(?:en-GB-oed|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|t(?:a[oy]|su))|sgn-(?:BE-(?:FR|NL)|CH-DE))|(?:art-lojban|cel-gaulish|no-(?:bok|nyn)|zh-(?:guoyu|hakka|min(?:-nan)?|xiang)))|(?<language>[A-Za-z]{2,3}(?:-(?<extlang>[A-Za-z]{3}(?:-[A-Za-z]{3}){0,2}))?|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-(?<script>[A-Za-z]{4}))?(?:-(?<region>[A-Za-z]{2}|[0-9]{3}))?(?:-(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(?:-(?<extension>[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+))*(?:-(?<privateUse>x(?:-[A-Za-z0-9]{1,8})+))?)';
 
     /**
      * Regex for MIME type.
      */
-    /**
-     * @lang PhpRegExp
-     */
     public const string MIME_REGEX
+        /*
+         * @lang PhpRegExp
+         */
         = '(?<type>application|audio|image|message|multipart|text|video|(x-[-\w.]+))\/[-+\w.]+(?<parameter> *; *[-\w.]+ *= *("*[()<>@,;:\/\\\\\[\]?="\-\w. ]+"|[-\w.]+))*';
 
     /**
@@ -48,18 +50,31 @@ final class Common
     public static array $extension_to_mime = [];
 
     /**
-     * Get MIME type based on extension.
+     * Function to force close HTTP connection. Possible notices from `ob_end_clean` and `flush` are suppressed, since I do not see a good alternative to this, when closing connection, which may be closed in a non-planned way.
      *
-     * @param string $extension Extension to get MIME for
-     * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
+     * @return void
      *
-     * @return false|string
+     * @noinspection PhpUsageOfSilenceOperatorInspection
      */
-    public static function getMimeFromExtension(string $extension, string $mime_list = ''): false|string
+    #[NoReturn]
+    public static function forceClose(): void
     {
-        self::loadMime($mime_list);
+        // Close session
+        if (\session_status() === \PHP_SESSION_ACTIVE) {
+            \session_write_close();
+        }
 
-        return self::$extension_to_mime[$extension] ?? false;
+        // Send header to notify, that connection was closed
+        if (!\headers_sent()) {
+            \header('Connection: close');
+        }
+
+        // Clean output buffer and close it
+        @\ob_end_clean();
+        // Clean system buffer
+        @\flush();
+
+        exit(0);
     }
 
     /**
@@ -78,15 +93,282 @@ final class Common
     }
 
     /**
+     * Get MIME type based on extension.
+     *
+     * @param string $extension Extension to get MIME for
+     * @param string $mime_list Optional extension-to-MIME map file or JSON of the same format
+     *
+     * @return false|string
+     */
+    public static function getMimeFromExtension(string $extension, string $mime_list = ''): false|string
+    {
+        self::loadMime($mime_list);
+
+        return self::$extension_to_mime[$extension] ?? false;
+    }
+
+    /**
+     * Function does the same as `rawurlencode`, but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use `htmlentities`, but otherwise break HTML/XML.
+     *
+     * @param string $string String to encode
+     * @param bool   $full   Means that all characters will be converted (useful when text inside a tag). If `false` only `<` and `&` are converted (useful when inside attribute). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML
+     *
+     * @return string
+     */
+    public static function htmlToRFC3986(string $string, bool $full = true): string
+    {
+        if ($full) {
+            return \str_replace(["'", '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
+        }
+
+        return \str_replace(['&', '<'], ['%26', '%3C'], $string);
+    }
+
+    /**
+     * Function to check if string is a valid language code.
+     *
+     * @param string $string
+     *
+     * @return bool
+     */
+    public static function langCodeCheck(string $string): bool
+    {
+        return \in_array(
+            \mb_strtolower($string, 'UTF-8'),
+            ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk'],
+            strict: true,
+        );
+    }
+
+    /**
+     * Function to merge CSS/JS files to reduce the number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f.
+     *
+     * @param array|string $files          File(s) to process
+     * @param string       $type           File(s) type (`css`, `js` or `html`)
+     * @param bool         $minify         Whether to minify the output
+     * @param string       $to_file        Optional path to a file, if you want to save the result
+     * @param string       $cache_strategy Cache strategy (same as `cacheStrategy` function)
+     *
+     * @return void
+     *
+     * @noinspection PhpUnused
+     *
+     * @throws \UnexpectedValueException
+     */
+    public static function reductor(array|string $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $to_file = '', string $cache_strategy = ''): void
+    {
+        // Set content to empty string as precaution
+        $content = '';
+        // Check if empty value was sent
+        if (empty($files)) {
+            throw new \UnexpectedValueException('Empty set of files provided to `reductor` function');
+        }
+
+        // Check if a string
+        if (\is_string($files)) {
+            // Convert to array
+            $files = [$files];
+        }
+
+        // Prepare the array of dates
+        $dates = [];
+        // Iterate array
+        foreach ($files as $file) {
+            // Check if string is a file
+            if (\is_file($file)) {
+                // Check extension
+                if (\strcasecmp(\pathinfo($file, \PATHINFO_EXTENSION), $type) === 0) {
+                    // Add date to list
+                    $dates[] = \filemtime($file);
+                    // Add contents
+                    $content .= \file_get_contents($file);
+                }
+            } elseif (\is_dir($file)) {
+                $file_list = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+                foreach ($file_list as $sub_file) {
+                    if (\strcasecmp($sub_file->getExtension(), $type) === 0) {
+                        // Add date to list
+                        $dates[] = $sub_file->getMTime();
+                        // Add contents
+                        $content .= \file_get_contents($sub_file->getRealPath());
+                    }
+                }
+            }
+        }
+
+        // Get date if we are directly outputting the data
+        if (empty($to_file)) {
+            // Send Last-Modified header and exit if we hit browser cache
+            Headers::lastModified(\max($dates), exit: true);
+        }
+
+        // Minify
+        if ($minify) {
+            switch (\mb_strtolower($type, 'UTF-8')) {
+                case 'js':
+                    $content = \preg_replace(
+                        [
+                            // Remove comment(s)
+                            '#\s*("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')\s*|\s*/\*(?!!|@cc_on)(?>[\s\S]*?\*/)\s*|\s*(?<![:=])//.*(?=[\n\r]|$)|^\s*|\s*$#',
+                            // Remove white-space(s) outside the string and regex
+                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|/\*(?>.*?\*/)|/(?!/)[^\n\r]*?/(?=[\s.,;]|[gimuy]|$))|\s*([!%&*()\-=+\[\]{}|;:,.<>?/])\s*#s',
+                            // Remove the last semicolon
+                            '#;+}#',
+                            // Minify object attribute(s) except JSON attribute(s). From `{'foo':'bar'}` to `{foo:'bar'}`
+                            '#([{,])(\')(\d+|[a-z_][a-z0-9_]*)\2(?=:)#i',
+                            // --ibid. From `foo['bar']` to `foo.bar`
+                            '#([a-z0-9_)\]])\[([\'"])([a-z_][a-z0-9_]*)\2]#i',
+                        ],
+                        [
+                            '$1',
+                            '$1$2',
+                            '}',
+                            '$1$3',
+                            '$1.$3',
+                        ],
+                        $content,
+                    );
+
+                    break;
+
+                case 'css':
+                    $content = \preg_replace(
+                        [
+                            // Remove comment(s)
+                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')|/\*(?!!)(?>.*?\*/)|^\s*|\s*$#s',
+                            // Remove unused white-space(s)
+                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|/\*(?>.*?\*/))|\s*+;\s*+(})\s*+|\s*+([*$~^|]?+=|[{};,>~]|\s(?![0-9.])|!important\b)\s*+|([[(:])\s++|\s++([])])|\s++(:)\s*+(?!(?>[^{}"\']++|"(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')*+{)|^\s++|\s++\z|(\s)\s+#si',
+                            // Replace `0(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)` with `0`
+                            '#(?<=[\s:])(0)(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)#i',
+                            // Replace `:0 0 0 0` with `:0`
+                            '#:(0\s+0|0\s+0\s+0\s+0)(?=[;}]|!important)#i',
+                            // Replace `background-position:0` with `background-position:0 0`
+                            '#(background-position):0(?=[;}])#i',
+                            // Replace `0.6` with `.6`, but only when preceded by `:`, `,`, `-` or a white-space
+                            '#(?<=[\s:,\-])0+\.(\d+)#',
+                            // Minify string value
+                            '#(/\*(?>.*?\*/))|(?<!content:)([\'"])([a-z_][a-z0-9\-_]*?)\2(?=[\s{}\];,])#si',
+                            '#(/\*(?>.*?\*/))|(\burl\()([\'"])(\S+?)\3(\))#si',
+                            // Minify HEX color code
+                            '#(?<=[\s:,\-]\#)([a-f0-6]+)\1([a-f0-6]+)\2([a-f0-6]+)\3#i',
+                            // Replace `(border|outline):none` with `(border|outline):0`
+                            '#(?<=[{;])(border|outline):none(?=[;}!])#',
+                            // Remove empty selector(s)
+                            '#(/\*(?>.*?\*/))|(^|[{}])[^\s{}]+{}#s',
+                        ],
+                        [
+                            '$1',
+                            '$1$2$3$4$5$6$7',
+                            '$1',
+                            ':0',
+                            '$1:0 0',
+                            '.$1',
+                            '$1$3',
+                            '$1$2$4$5',
+                            '$1$2$3',
+                            '$1:0',
+                            '$1$2',
+                        ],
+                        $content,
+                    );
+
+                    break;
+
+                case 'html':
+                    $content = \preg_replace_callback(
+                        '#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
+                        static fn($matches): string => '<'.$matches[1].\preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]).$matches[3].'>',
+                        \str_replace("\r", '', $content),
+                    );
+                    $content = \preg_replace(
+                        [
+                            // t = text
+                            // o = tag open
+                            // c = tag close
+                            // Keep important white-space(s) after self-closing HTML tag(s)
+                            '#<(img|input)(>| .*?>)#s',
+                            // Remove a line break and two or more white-space(s) between tag(s)
+                            '#(<!--.*?-->)|(>)(?:\n*|\s{2,})(<)|^\s*|\s*$#s',
+                            // t+c || o+t
+                            '#(<!--.*?-->)|(?<!>)\s+(</.*?>)|(<[^/]*?>)\s+(?!<)#s',
+                            // o+o || c+c
+                            '#(<!--.*?-->)|(<[^/]*?>)\s+(<[^/]*?>)|(</.*?>)\s+(</.*?>)#s',
+                            // c+t || t+o || o+t -- separated by long white-space(s)
+                            '#(<!--.*?-->)|(</.*?>)\s+(\s)(?!<)|(?<!>)\s+(\s)(<[^/]*?/?>)|(<[^/]*?/?>)\s+(\s)(?!<)#s',
+                            // empty tag
+                            '#(<!--.*?-->)|(<[^/]*?>)\s+(</.*?>)#s',
+                            // reset previous fix
+                            '#<(img|input)(>| .*?>)</\1>#s',
+                            // clean up ...
+                            '#(&nbsp;)&nbsp;(?![<\s])#',
+                            // --ibid
+                            '#(?<=>)(&nbsp;)(?=<)#',
+                            // Remove HTML comment(s) except IE comment(s)
+                            '#\s*<!--(?!\[if\s).*?-->\s*|(?<!>)\n+(?=<[^!])#s',
+                        ],
+                        [
+                            '<$1$2</$1>',
+                            '$1$2$3',
+                            '$1$2$3',
+                            '$1$2$3$4$5',
+                            '$1$2$3$4$5$6$7',
+                            '$1$2$3',
+                            '<$1$2',
+                            '$1 ',
+                            '$1',
+                            '',
+                        ],
+                        $content,
+                    );
+
+                    break;
+            }
+        }
+
+        if (empty($to_file)) {
+            // Send the appropriate header
+            switch (\mb_strtolower($type, 'UTF-8')) {
+                case 'js':
+                    if (!\headers_list()) {
+                        \header('Content-Type: application/javascript; charset=utf-8');
+                    }
+
+                    break;
+
+                case 'css':
+                    if (!\headers_list()) {
+                        \header('Content-Type: text/css; charset=utf-8');
+                    }
+
+                    break;
+
+                default:
+                    if (!\headers_list()) {
+                        \header('Content-Type: text/html; charset=utf-8');
+                    }
+
+                    break;
+            }
+
+            // Send data to browser
+            self::zEcho($content, $cache_strategy);
+        } else {
+            \file_put_contents($to_file, $content);
+        }
+    }
+
+    /**
      * Wrapper for date(), that handles strings and allows validation of the result.
      *
-     * @param null|float|int|string $time        Time value
+     * @param float|int|string|null $time        Time value
      * @param string                $format      Expected format
      * @param string                $valid_regex Regex to use for validation
      *
      * @return string
+     *
+     * @throws \UnexpectedValueException
      */
-    public static function valueToTime(null|float|int|string $time, string $format, string $valid_regex = ''): string
+    public static function valueToTime(float|int|string|null $time, string $format, string $valid_regex = ''): string
     {
         // If we want to use a constant, but it was sent as a string
         if (\str_starts_with(\mb_strtoupper($format, 'UTF-8'), 'DATE_')) {
@@ -186,275 +468,6 @@ final class Common
         if ($exit) {
             exit(0);
         }
-    }
-
-    /**
-     * Function to check if string is a valid language code.
-     *
-     * @param string $string
-     *
-     * @return bool
-     */
-    public static function langCodeCheck(string $string): bool
-    {
-        return \in_array(
-            \mb_strtolower($string, 'UTF-8'),
-            ['af', 'sq', 'eu', 'be', 'bg', 'ca', 'zh-cn', 'zh-tw', 'hr', 'cs', 'da', 'nl', 'nl-be', 'nl-nl', 'en', 'en-au', 'en-bz', 'en-ca', 'en-ie', 'en-jm', 'en-nz', 'en-ph', 'en-za', 'en-tt', 'en-gb', 'en-us', 'en-zw', 'et', 'fo', 'fi', 'fr', 'fr-be', 'fr-ca', 'fr-fr', 'fr-lu', 'fr-mc', 'fr-ch', 'gl', 'gd', 'de', 'de-at', 'de-de', 'de-li', 'de-lu', 'de-ch', 'el', 'haw', 'hu', 'is', 'in', 'ga', 'it', 'it-it', 'it-ch', 'ja', 'ko', 'mk', 'no', 'pl', 'pt', 'pt-br', 'pt-pt', 'ro', 'ro-mo', 'ro-ro', 'ru', 'ru-mo', 'ru-ru', 'sr', 'sk', 'sl', 'es', 'es-ar', 'es-bo', 'es-cl', 'es-co', 'es-cr', 'es-do', 'es-ec', 'es-sv', 'es-gt', 'es-hn', 'es-mx', 'es-ni', 'es-pa', 'es-py', 'es-pe', 'es-pr', 'es-es', 'es-uy', 'es-ve', 'sv', 'sv-fi', 'sv-se', 'tr', 'uk'],
-            strict: true,
-        );
-    }
-
-    /**
-     * Function does the same as `rawurlencode`, but only for selected characters, that are restricted in HTML/XML. Useful for URIs that can have these characters and need to be used in HTML/XML and thus can't use `htmlentities`, but otherwise break HTML/XML.
-     *
-     * @param string $string String to encode
-     * @param bool   $full   Means that all characters will be converted (useful when text inside a tag). If `false` only `<` and `&` are converted (useful when inside attribute). If `false` is used - be careful with quotes inside the string you provide, because they can invalidate your HTML/XML
-     *
-     * @return string
-     */
-    public static function htmlToRFC3986(string $string, bool $full = true): string
-    {
-        if ($full) {
-            return \str_replace(["'", '"', '&', '<', '>'], ['%27', '%22', '%26', '%3C', '%3E'], $string);
-        }
-
-        return \str_replace(['&', '<'], ['%26', '%3C'], $string);
-    }
-
-    /**
-     * Function to merge CSS/JS files to reduce the number of connections to your server, yet allow you to keep the files separate for easier development. It also allows you to minify the result for extra size saving, but be careful with that. #Minification is based on https://gist.github.com/Rodrigo54/93169db48194d470188f.
-     *
-     * @param array|string $files          File(s) to process
-     * @param string       $type           File(s) type (`css`, `js` or `html`)
-     * @param bool         $minify         Whether to minify the output
-     * @param string       $to_file        Optional path to a file, if you want to save the result
-     * @param string       $cache_strategy Cache strategy (same as `cacheStrategy` function)
-     *
-     * @return void
-     */
-    public static function reductor(array|string $files, #[ExpectedValues('css', 'js', 'html')] string $type, bool $minify = false, string $to_file = '', string $cache_strategy = ''): void
-    {
-        // Set content to empty string as precaution
-        $content = '';
-        // Check if empty value was sent
-        if (empty($files)) {
-            throw new \UnexpectedValueException('Empty set of files provided to `reductor` function');
-        }
-
-        // Check if a string
-        if (\is_string($files)) {
-            // Convert to array
-            $files = [$files];
-        }
-
-        // Prepare the array of dates
-        $dates = [];
-        // Iterate array
-        foreach ($files as $file) {
-            // Check if string is a file
-            if (\is_file($file)) {
-                // Check extension
-                if (\strcasecmp(\pathinfo($file, \PATHINFO_EXTENSION), $type) === 0) {
-                    // Add date to list
-                    $dates[] = \filemtime($file);
-                    // Add contents
-                    $content .= \file_get_contents($file);
-                }
-            } elseif (\is_dir($file)) {
-                $file_list = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($file, \FilesystemIterator::FOLLOW_SYMLINKS | \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
-                foreach ($file_list as $sub_file) {
-                    if (\strcasecmp($sub_file->getExtension(), $type) === 0) {
-                        // Add date to list
-                        $dates[] = $sub_file->getMTime();
-                        // Add contents
-                        $content .= \file_get_contents($sub_file->getRealPath());
-                    }
-                }
-            }
-        }
-
-        // Get date if we are directly outputting the data
-        if (empty($to_file)) {
-            // Send Last-Modified header and exit if we hit browser cache
-            Headers::lastModified(\max($dates), exit: true);
-        }
-
-        // Minify
-        if ($minify) {
-            switch (\mb_strtolower($type, 'UTF-8')) {
-                case 'js':
-                    $content = \preg_replace(
-                        [
-                            // Remove comment(s)
-                            '#\s*("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')\s*|\s*/\*(?!!|@cc_on)(?>[\s\S]*?\*/)\s*|\s*(?<![:=])//.*(?=[\n\r]|$)|^\s*|\s*$#',
-                            // Remove white-space(s) outside the string and regex
-                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|/\*(?>.*?\*/)|/(?!/)[^\n\r]*?/(?=[\s.,;]|[gimuy]|$))|\s*([!%&*()\-=+\[\]{}|;:,.<>?/])\s*#s',
-                            // Remove the last semicolon
-                            '#;+}#',
-                            // Minify object attribute(s) except JSON attribute(s). From `{'foo':'bar'}` to `{foo:'bar'}`
-                            '#([{,])(\')(\d+|[a-z_][a-z0-9_]*)\2(?=:)#i',
-                            // --ibid. From `foo['bar']` to `foo.bar`
-                            '#([a-z0-9_)\]])\[([\'"])([a-z_][a-z0-9_]*)\2]#i',
-                        ],
-                        [
-                            '$1',
-                            '$1$2',
-                            '}',
-                            '$1$3',
-                            '$1.$3',
-                        ],
-                        $content,
-                    );
-
-                    break;
-                case 'css':
-                    $content = \preg_replace(
-                        [
-                            // Remove comment(s)
-                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')|/\*(?!!)(?>.*?\*/)|^\s*|\s*$#s',
-                            // Remove unused white-space(s)
-                            '#("(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\'|/\*(?>.*?\*/))|\s*+;\s*+(})\s*+|\s*+([*$~^|]?+=|[{};,>~]|\s(?![0-9.])|!important\b)\s*+|([[(:])\s++|\s++([])])|\s++(:)\s*+(?!(?>[^{}"\']++|"(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\\]++|\\\.)*+\')*+{)|^\s++|\s++\z|(\s)\s+#si',
-                            // Replace `0(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)` with `0`
-                            '#(?<=[\s:])(0)(cm|em|ex|in|mm|pc|pt|px|vh|vw|%)#i',
-                            // Replace `:0 0 0 0` with `:0`
-                            '#:(0\s+0|0\s+0\s+0\s+0)(?=[;}]|!important)#i',
-                            // Replace `background-position:0` with `background-position:0 0`
-                            '#(background-position):0(?=[;}])#i',
-                            // Replace `0.6` with `.6`, but only when preceded by `:`, `,`, `-` or a white-space
-                            '#(?<=[\s:,\-])0+\.(\d+)#',
-                            // Minify string value
-                            '#(/\*(?>.*?\*/))|(?<!content:)([\'"])([a-z_][a-z0-9\-_]*?)\2(?=[\s{}\];,])#si',
-                            '#(/\*(?>.*?\*/))|(\burl\()([\'"])(\S+?)\3(\))#si',
-                            // Minify HEX color code
-                            '#(?<=[\s:,\-]\#)([a-f0-6]+)\1([a-f0-6]+)\2([a-f0-6]+)\3#i',
-                            // Replace `(border|outline):none` with `(border|outline):0`
-                            '#(?<=[{;])(border|outline):none(?=[;}!])#',
-                            // Remove empty selector(s)
-                            '#(/\*(?>.*?\*/))|(^|[{}])[^\s{}]+{}#s',
-                        ],
-                        [
-                            '$1',
-                            '$1$2$3$4$5$6$7',
-                            '$1',
-                            ':0',
-                            '$1:0 0',
-                            '.$1',
-                            '$1$3',
-                            '$1$2$4$5',
-                            '$1$2$3',
-                            '$1:0',
-                            '$1$2',
-                        ],
-                        $content,
-                    );
-
-                    break;
-                case 'html':
-                    $content = \preg_replace_callback(
-                        '#<([^/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(/?)>#',
-                        static fn($matches): string => '<'.$matches[1].\preg_replace('#([^\s=]+)(=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]).$matches[3].'>',
-                        \str_replace("\r", '', $content),
-                    );
-                    $content = \preg_replace(
-                        [
-                            // t = text
-                            // o = tag open
-                            // c = tag close
-                            // Keep important white-space(s) after self-closing HTML tag(s)
-                            '#<(img|input)(>| .*?>)#s',
-                            // Remove a line break and two or more white-space(s) between tag(s)
-                            '#(<!--.*?-->)|(>)(?:\n*|\s{2,})(<)|^\s*|\s*$#s',
-                            // t+c || o+t
-                            '#(<!--.*?-->)|(?<!>)\s+(</.*?>)|(<[^/]*?>)\s+(?!<)#s',
-                            // o+o || c+c
-                            '#(<!--.*?-->)|(<[^/]*?>)\s+(<[^/]*?>)|(</.*?>)\s+(</.*?>)#s',
-                            // c+t || t+o || o+t -- separated by long white-space(s)
-                            '#(<!--.*?-->)|(</.*?>)\s+(\s)(?!<)|(?<!>)\s+(\s)(<[^/]*?/?>)|(<[^/]*?/?>)\s+(\s)(?!<)#s',
-                            // empty tag
-                            '#(<!--.*?-->)|(<[^/]*?>)\s+(</.*?>)#s',
-                            // reset previous fix
-                            '#<(img|input)(>| .*?>)</\1>#s',
-                            // clean up ...
-                            '#(&nbsp;)&nbsp;(?![<\s])#',
-                            // --ibid
-                            '#(?<=>)(&nbsp;)(?=<)#',
-                            // Remove HTML comment(s) except IE comment(s)
-                            '#\s*<!--(?!\[if\s).*?-->\s*|(?<!>)\n+(?=<[^!])#s',
-                        ],
-                        [
-                            '<$1$2</$1>',
-                            '$1$2$3',
-                            '$1$2$3',
-                            '$1$2$3$4$5',
-                            '$1$2$3$4$5$6$7',
-                            '$1$2$3',
-                            '<$1$2',
-                            '$1 ',
-                            '$1',
-                            '',
-                        ],
-                        $content,
-                    );
-
-                    break;
-            }
-        }
-
-        if (empty($to_file)) {
-            // Send the appropriate header
-            switch (\mb_strtolower($type, 'UTF-8')) {
-                case 'js':
-                    if (!\headers_list()) {
-                        \header('Content-Type: application/javascript; charset=utf-8');
-                    }
-
-                    break;
-                case 'css':
-                    if (!\headers_list()) {
-                        \header('Content-Type: text/css; charset=utf-8');
-                    }
-
-                    break;
-                default:
-                    if (!\headers_list()) {
-                        \header('Content-Type: text/html; charset=utf-8');
-                    }
-
-                    break;
-            }
-
-            // Send data to browser
-            self::zEcho($content, $cache_strategy);
-        } else {
-            \file_put_contents($to_file, $content);
-        }
-    }
-
-    /**
-     * Function to force close HTTP connection. Possible notices from `ob_end_clean` and `flush` are suppressed, since I do not see a good alternative to this, when closing connection, which may be closed in a non-planned way.
-     *
-     * @return void
-     *
-     * @noinspection PhpUsageOfSilenceOperatorInspection
-     */
-    #[NoReturn]
-    public static function forceClose(): void
-    {
-        // Close session
-        if (\session_status() === \PHP_SESSION_ACTIVE) {
-            \session_write_close();
-        }
-
-        // Send header to notify, that connection was closed
-        if (!\headers_sent()) {
-            \header('Connection: close');
-        }
-
-        // Clean output buffer and close it
-        @\ob_end_clean();
-        // Clean system buffer
-        @\flush();
-        exit(0);
     }
 
     /**

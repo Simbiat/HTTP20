@@ -10,9 +10,9 @@ namespace Simbiat\http20;
 final class IRI
 {
     /**
-     * Characters from the `ucschar` terminal as seen in RFC 3987.
+     * Characters from the `gen-delims` terminal as seen in RFC 3987.
      */
-    public const string UCS_CHAR = '\x{00A0}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFEF}\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}';
+    public const string GEN_DELIMITERS = ':\/?#\[\]@';
 
     /**
      * Characters from the `iprivate` terminal as seen in RFC 3987.
@@ -20,51 +20,26 @@ final class IRI
     public const string I_PRIVATE = '\x{E000}-\x{F8FF}\x{F0000}-\x{FFFFD}\x{100000}-\x{10FFFD}';
 
     /**
-     * Characters from the `unreserved` terminal as seen in RFC 3987.
-     */
-    public const string UNRESERVED = 'a-zA-Z0-9~_.\-';
-
-    /**
-     * Characters from the `gen-delims` terminal as seen in RFC 3987.
-     */
-    public const string GEN_DELIMITERS = ':\/?#\[\]@';
-
-    /**
      * Characters from the `sub-delims` terminal as seen in RFC 3987.
      */
     public const string SUB_DELIMITERS = '!$&\'()*+,;=';
 
     /**
-     * Check if a string is a valid International Resource Identifier (IRI).
-     *
-     * @param string       $iri    IRI to validate
-     * @param array|string $scheme Optional allowed scheme(s)
-     *
-     * @return bool
+     * Characters from the `ucschar` terminal as seen in RFC 3987.
      */
-    public static function isValidIri(string $iri, array|string $scheme = []): bool
-    {
-        // Validate scheme, if provided
-        if (!empty($scheme)) {
-            if (\is_string($scheme)) {
-                $scheme = [$scheme];
-            }
+    public const string UCS_CHAR = '\x{00A0}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFEF}\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}';
 
-            if (\preg_match('/^('.\implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
-                return false;
-            }
-        }
-
-        // Convert to URI. If we have succeeded - then it's a valid IRI
-        return self::iriToUri($iri) !== null;
-    }
+    /**
+     * Characters from the `unreserved` terminal as seen in RFC 3987.
+     */
+    public const string UNRESERVED = 'a-zA-Z0-9~_.\-';
 
     /**
      * Convert International Resource Identifier (IRI) to Universal Resource Identifier (URI).
      *
      * @param string $iri IRI string
      *
-     * @return null|string
+     * @return string|null
      */
     public static function iriToUri(string $iri): ?string
     {
@@ -172,25 +147,28 @@ final class IRI
     }
 
     /**
-     * Restore the array from `parse_url()` function to original URL.
+     * Check if a string is a valid International Resource Identifier (IRI).
      *
-     * @param array<string, mixed> $parsed_uri Array from `parse_url()`
+     * @param string       $iri    IRI to validate
+     * @param array|string $scheme Optional allowed scheme(s)
      *
-     * @return null|string
+     * @return bool
      */
-    public static function restoreUri(array $parsed_uri): ?string
+    public static function isValidIri(string $iri, array|string $scheme = []): bool
     {
-        if ($parsed_uri === []) {
-            return null;
+        // Validate scheme, if provided
+        if (!empty($scheme)) {
+            if (\is_string($scheme)) {
+                $scheme = [$scheme];
+            }
+
+            if (\preg_match('/^('.\implode('|', $scheme).'):\/\//ui', $iri) !== 1) {
+                return false;
+            }
         }
 
-        return (!empty($parsed_uri['scheme']) ? $parsed_uri['scheme'].'://' : '')
-            .(!empty($parsed_uri['user']) ? $parsed_uri['user'].(!empty($parsed_uri['pass']) ? ':'.$parsed_uri['pass'] : '').'@' : '')
-            .($parsed_uri['host'] ?? '')
-            .(!empty($parsed_uri['port']) ? ':'.$parsed_uri['port'] : '')
-            .($parsed_uri['path'] ?? '')
-            .(!empty($parsed_uri['query']) ? '?'.$parsed_uri['query'] : '')
-            .(!empty($parsed_uri['fragment']) ? '#'.$parsed_uri['fragment'] : '');
+        // Convert to URI. If we have succeeded - then it's a valid IRI
+        return self::iriToUri($iri) !== null;
     }
 
     /**
@@ -240,6 +218,28 @@ final class IRI
 
         /* @noinspection ImplodeMissUseInspection -- Suppressing inspection, since we are intentionally avoiding URL encoding, which `http_build_query()` does */
         return \implode('&', $pairs);
+    }
+
+    /**
+     * Restore the array from `parse_url()` function to original URL.
+     *
+     * @param array<string, mixed> $parsed_uri Array from `parse_url()`
+     *
+     * @return string|null
+     */
+    public static function restoreUri(array $parsed_uri): ?string
+    {
+        if ($parsed_uri === []) {
+            return null;
+        }
+
+        return (!empty($parsed_uri['scheme']) ? $parsed_uri['scheme'].'://' : '')
+            .(!empty($parsed_uri['user']) ? $parsed_uri['user'].(!empty($parsed_uri['pass']) ? ':'.$parsed_uri['pass'] : '').'@' : '')
+            .($parsed_uri['host'] ?? '')
+            .(!empty($parsed_uri['port']) ? ':'.$parsed_uri['port'] : '')
+            .($parsed_uri['path'] ?? '')
+            .(!empty($parsed_uri['query']) ? '?'.$parsed_uri['query'] : '')
+            .(!empty($parsed_uri['fragment']) ? '#'.$parsed_uri['fragment'] : '');
     }
 
     /**

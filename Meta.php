@@ -10,179 +10,31 @@ namespace Simbiat\http20;
 final class Meta
 {
     /**
-     * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards.
+     * Function to generate Facebook special meta-tags.
      *
-     * @param array<string, mixed> $general Array of general settings used by cards
-     * @param array<string, mixed> $player_app Array of values used for cards with types `app` or `player`
-     * @param bool  $pretty     If set to `true` will add new line to the end of each `meta` tag
+     * @param int   $app_id Facebook appID
+     * @param array $admins List of Facebook admin IDs
      *
      * @return string
      */
-    public static function twitter(array $general, array $player_app = [], bool $pretty = false): string
+    public static function facebook(int $app_id, array $admins = []): string
     {
-        // Check that settings are not an empty array
-        if ($general === []) {
-            \trigger_error('Empty array of general settings was provided for Twitter card');
-
-            return '';
-        }
-
-        // Title is mandatory
-        if (empty($general['title'])) {
-            \trigger_error('Empty title was provided for Twitter card');
-
-            return '';
-        }
-
-        // If card type is not set or is unsupported - use 'summary'
-        if (
-            empty($general['card'])
-            || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'], strict: true)
-        ) {
-            $general['card'] = 'summary';
-        }
-
-        // Add main meta tag
-        $output = '<meta name="twitter:card" content="'.\htmlspecialchars($general['card'], \ENT_QUOTES | \ENT_SUBSTITUTE).'" />';
-        // Add title
-        $output .= '<meta name="twitter:title" content="'.\mb_substr(\htmlspecialchars($general['title'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 70, 'UTF-8').'" />';
-        // Add site if not empty and valid
-        if (
-            !empty($general['site'])
-            && \preg_match('/^@?(\w){4,15}$/', $general['site']) === 1
-            && \preg_match('/^.*(twitter|admin).*$/i', $general['site']) === 0
-        ) {
-            $output .= '<meta name="twitter:site" content="'.(\str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
-        }
-
-        // Add site:id if not empty and valid
-        if (
-            !empty($general['site:id'])
-            && \preg_match('/^\d+$/', $general['site:id']) === 1
-        ) {
-            $output .= '<meta name="twitter:site:id" content="'.$general['site:id'].'" />';
-        }
-
-        // Add creator if not empty and valid
-        if (
-            !empty($general['creator'])
-            && \preg_match('/^@?(\w){4,15}$/', $general['creator']) === 1
-            && \preg_match('/^.*(twitter|admin).*$/i', $general['creator']) === 0
-        ) {
-            $output .= '<meta name="twitter:creator" content="'.(\str_starts_with($general['creator'], '@') ? '' : '@').$general['creator'].'" />';
-        }
-
-        // Add creator:id if not empty and valid
-        if (
-            !empty($general['creator:id'])
-            && \preg_match('/^\d+$/', $general['creator:id']) === 1
-        ) {
-            $output .= '<meta name="twitter:creator:id" content="'.$general['creator:id'].'" />';
-        }
-
-        // Add description if not empty
-        if (!empty($general['description'])) {
-            $output .= '<meta name="twitter:description" content="'.\mb_substr(\htmlspecialchars($general['description'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 200, 'UTF-8').'" />';
-        }
-
-        // Add images' tags, that are not use with 'app' cards
-        if ($general['card'] !== 'app') {
-            // Add only if URL looks like a valid URL for a supported image
-            if (
-                !empty($general['image'])
-                && \preg_match('/\.(jpg|png|webp|gif)(\?.*)?$/i', $general['image']) === 1
-            ) {
-                $output .= '<meta name="twitter:image" content="'.$general['image'].'" />';
-            }
-
-            // Add image description
-            if (!empty($general['image:alt'])) {
-                $output .= '<meta name="twitter:image:alt" content="'.\mb_substr(\htmlspecialchars($general['image:alt'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 420, 'UTF-8').'" />';
+        // Add appId tag
+        $output = '<meta property="fb:app_id" content="'.$app_id.'"/>';
+        // Check the values of admins' IDs
+        foreach ($admins as $key => $admin) {
+            if (\is_numeric($admin)) {
+                // Convert to int
+                $admins[$key] = (int) $admin;
+            } else {
+                // Remove value
+                unset($admins[$key]);
             }
         }
 
-        // Process player tags
-        if ($general['card'] === 'player') {
-            // Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
-            if (
-                empty($player_app['player'])
-                || empty($player_app['width'])
-                || empty($player_app['height'])
-                || \preg_match('/twitter:site/i', $output) !== 1
-                || \preg_match('/twitter:image/i', $output) !== 1
-                || \preg_match('/^\d+$/', $player_app['width']) !== 1
-                || \preg_match('/^\d+$/', $player_app['height']) !== 1
-            ) {
-                // Do not process if, since will be invalidated by Twitter either way
-                \trigger_error('One or more Twitter player card parameter is missing or incorrect');
-
-                return '';
-            }
-
-            // Add player URL
-            $output .= '<meta name="twitter:player" content="'.$player_app['player'].'" />';
-            // Add width and height
-            $output .= '<meta name="twitter:player:width" content="'.$player_app['width'].'" />';
-            $output .= '<meta name="twitter:player:height" content="'.$player_app['height'].'" />';
-            // Add stream
-            if (!empty($player_app['stream'])) {
-                $output .= '<meta name="twitter:player:stream" content="'.$player_app['stream'].'" />';
-            }
-        } elseif ($general['card'] === 'app') {
-            // Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card
-            if (
-                empty($player_app['id:iphone'])
-                || empty($player_app['id:ipad'])
-                || empty($player_app['id:googleplay'])
-                || \preg_match('/twitter:site/i', $output) !== 1
-                || \preg_match('/^\d+$/', $player_app['id:iphone']) !== 1
-                || \preg_match('/^\d+$/', $player_app['id:ipad']) !== 1
-                || \preg_match('/^\d+$/', $player_app['id:googleplay']) !== 1
-            ) {
-                // Do not process if, since will be invalidated by Twitter either way
-                \trigger_error('One or more Twitter app card parameter is missing or incorrect');
-
-                return '';
-            }
-
-            // Add IDs
-            $output .= '<meta name="twitter:app:id:ipad" content="'.$player_app['id:ipad'].'" />';
-            $output .= '<meta name="twitter:app:id:iphone" content="'.$player_app['id:iphone'].'" />';
-            $output .= '<meta name="twitter:app:id:googleplay" content="'.$player_app['id:googleplay'].'" />';
-            // Add custom schemes
-            if (
-                !empty($player_app['url:ipad'])
-                && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:ipad']) === 1
-            ) {
-                $output .= '<meta name="twitter:app:url:ipad" content="'.$player_app['url:ipad'].'" />';
-            }
-
-            if (
-                !empty($player_app['url:iphone'])
-                && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:iphone']) === 1
-            ) {
-                $output .= '<meta name="twitter:app:url:iphone" content="'.$player_app['url:iphone'].'" />';
-            }
-
-            if (
-                !empty($player_app['url:googleplay'])
-                && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:googleplay']) === 1
-            ) {
-                $output .= '<meta name="twitter:app:url:googleplay" content="'.$player_app['url:googleplay'].'" />';
-            }
-
-            // Add country code
-            if (
-                !empty($player_app['country'])
-                && \preg_match('/^A[^ABCHJKNPVY]|B[^CKPUX]|C[^BEJPQST]|D[EJKMOZ]|E[CEGHRST]|F[IJKMOR]|G[^CJKOVXZ]|H[KMNRTU]|I[DEL-OQ-T]|J[EMOP]|K[EGHIMNPRWYZ]|L[ABCIKR-VY]|M[^BIJ]|N[ACEFGILOPRUZ]|OM|P[AE-HK-NRSTWY]|QA|R[EOSUW]|S[^FPQUW]|T[^ABEIPQSUXY]|U[AGMSYZ]|V[ACEGINU]|WF|WS|YE|YT|Z[AMW]$/i', $player_app['country']) === 1
-            ) {
-                $output .= '<meta name="twitter:app:country" content="'.$player_app['country'].'" />';
-            }
-        }
-
-        // Add new lines at the end of the tags for a more readable output
-        if ($pretty) {
-            return \str_replace('>', '>'."\r\n", $output);
+        // Add admins, if any
+        if ($admins !== []) {
+            $output .= '<meta property="fb:admins" content="'.\implode(',', $admins).'"/>';
         }
 
         return $output;
@@ -193,11 +45,11 @@ final class Meta
      * Meta specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn255024(v=vs.85)
      * `browserconfig` specification: https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/dn320426(v=vs.85).
      *
-     * @param array<string, mixed> $general Array of basic settings
-     * @param array $tasks         Array of so-called "tasks", that appear as pinned links, if pinned from IE
-     * @param array $notifications Array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
-     * @param bool  $xml           Whether to generate XML
-     * @param bool  $pretty_direct If `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
+     * @param array<string, mixed> $general       Array of basic settings
+     * @param array                $tasks         Array of so-called "tasks", that appear as pinned links, if pinned from IE
+     * @param array                $notifications Array of settings for notifications, URLs referencing XML files formatted as per https://docs.microsoft.com/en-us/uwp/schemas/tiles/tilesschema/schema-root
+     * @param bool                 $xml           Whether to generate XML
+     * @param bool                 $pretty_direct If `$xml` is `false` this setting will govern whether a new line is added after each `<meta>` tag. If `$xml` is `true`, this setting will govern whether function will return a string or output the XML directly to browser.
      *
      * @return string
      */
@@ -529,31 +381,179 @@ final class Meta
     }
 
     /**
-     * Function to generate Facebook special meta-tags.
+     * Function to prepare Twitter card as per https://developer.twitter.com/en/docs/twitter-for-websites/cards.
      *
-     * @param int   $app_id Facebook appID
-     * @param array $admins List of Facebook admin IDs
+     * @param array<string, mixed> $general    Array of general settings used by cards
+     * @param array<string, mixed> $player_app Array of values used for cards with types `app` or `player`
+     * @param bool                 $pretty     If set to `true` will add new line to the end of each `meta` tag
      *
      * @return string
      */
-    public static function facebook(int $app_id, array $admins = []): string
+    public static function twitter(array $general, array $player_app = [], bool $pretty = false): string
     {
-        // Add appId tag
-        $output = '<meta property="fb:app_id" content="'.$app_id.'"/>';
-        // Check the values of admins' IDs
-        foreach ($admins as $key => $admin) {
-            if (\is_numeric($admin)) {
-                // Convert to int
-                $admins[$key] = (int) $admin;
-            } else {
-                // Remove value
-                unset($admins[$key]);
+        // Check that settings are not an empty array
+        if ($general === []) {
+            \trigger_error('Empty array of general settings was provided for Twitter card');
+
+            return '';
+        }
+
+        // Title is mandatory
+        if (empty($general['title'])) {
+            \trigger_error('Empty title was provided for Twitter card');
+
+            return '';
+        }
+
+        // If card type is not set or is unsupported - use 'summary'
+        if (
+            empty($general['card'])
+            || !\in_array($general['card'], ['summary', 'summary_large_image', 'app', 'player'], strict: true)
+        ) {
+            $general['card'] = 'summary';
+        }
+
+        // Add main meta tag
+        $output = '<meta name="twitter:card" content="'.\htmlspecialchars($general['card'], \ENT_QUOTES | \ENT_SUBSTITUTE).'" />';
+        // Add title
+        $output .= '<meta name="twitter:title" content="'.\mb_substr(\htmlspecialchars($general['title'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 70, 'UTF-8').'" />';
+        // Add site if not empty and valid
+        if (
+            !empty($general['site'])
+            && \preg_match('/^@?(\w){4,15}$/', $general['site']) === 1
+            && \preg_match('/^.*(twitter|admin).*$/i', $general['site']) === 0
+        ) {
+            $output .= '<meta name="twitter:site" content="'.(\str_starts_with($general['site'], '@') ? '' : '@').$general['site'].'" />';
+        }
+
+        // Add site:id if not empty and valid
+        if (
+            !empty($general['site:id'])
+            && \preg_match('/^\d+$/', $general['site:id']) === 1
+        ) {
+            $output .= '<meta name="twitter:site:id" content="'.$general['site:id'].'" />';
+        }
+
+        // Add creator if not empty and valid
+        if (
+            !empty($general['creator'])
+            && \preg_match('/^@?(\w){4,15}$/', $general['creator']) === 1
+            && \preg_match('/^.*(twitter|admin).*$/i', $general['creator']) === 0
+        ) {
+            $output .= '<meta name="twitter:creator" content="'.(\str_starts_with($general['creator'], '@') ? '' : '@').$general['creator'].'" />';
+        }
+
+        // Add creator:id if not empty and valid
+        if (
+            !empty($general['creator:id'])
+            && \preg_match('/^\d+$/', $general['creator:id']) === 1
+        ) {
+            $output .= '<meta name="twitter:creator:id" content="'.$general['creator:id'].'" />';
+        }
+
+        // Add description if not empty
+        if (!empty($general['description'])) {
+            $output .= '<meta name="twitter:description" content="'.\mb_substr(\htmlspecialchars($general['description'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 200, 'UTF-8').'" />';
+        }
+
+        // Add images' tags, that are not use with 'app' cards
+        if ($general['card'] !== 'app') {
+            // Add only if URL looks like a valid URL for a supported image
+            if (
+                !empty($general['image'])
+                && \preg_match('/\.(jpg|png|webp|gif)(\?.*)?$/i', $general['image']) === 1
+            ) {
+                $output .= '<meta name="twitter:image" content="'.$general['image'].'" />';
+            }
+
+            // Add image description
+            if (!empty($general['image:alt'])) {
+                $output .= '<meta name="twitter:image:alt" content="'.\mb_substr(\htmlspecialchars($general['image:alt'], \ENT_QUOTES | \ENT_SUBSTITUTE), 0, 420, 'UTF-8').'" />';
             }
         }
 
-        // Add admins, if any
-        if ($admins !== []) {
-            $output .= '<meta property="fb:admins" content="'.\implode(',', $admins).'"/>';
+        // Process player tags
+        if ($general['card'] === 'player') {
+            // Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/player-card
+            if (
+                empty($player_app['player'])
+                || empty($player_app['width'])
+                || empty($player_app['height'])
+                || \preg_match('/twitter:site/i', $output) !== 1
+                || \preg_match('/twitter:image/i', $output) !== 1
+                || \preg_match('/^\d+$/', $player_app['width']) !== 1
+                || \preg_match('/^\d+$/', $player_app['height']) !== 1
+            ) {
+                // Do not process if, since will be invalidated by Twitter either way
+                \trigger_error('One or more Twitter player card parameter is missing or incorrect');
+
+                return '';
+            }
+
+            // Add player URL
+            $output .= '<meta name="twitter:player" content="'.$player_app['player'].'" />';
+            // Add width and height
+            $output .= '<meta name="twitter:player:width" content="'.$player_app['width'].'" />';
+            $output .= '<meta name="twitter:player:height" content="'.$player_app['height'].'" />';
+            // Add stream
+            if (!empty($player_app['stream'])) {
+                $output .= '<meta name="twitter:player:stream" content="'.$player_app['stream'].'" />';
+            }
+        } elseif ($general['card'] === 'app') {
+            // Check that mandatory fields are present as per https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/app-card
+            if (
+                empty($player_app['id:iphone'])
+                || empty($player_app['id:ipad'])
+                || empty($player_app['id:googleplay'])
+                || \preg_match('/twitter:site/i', $output) !== 1
+                || \preg_match('/^\d+$/', $player_app['id:iphone']) !== 1
+                || \preg_match('/^\d+$/', $player_app['id:ipad']) !== 1
+                || \preg_match('/^\d+$/', $player_app['id:googleplay']) !== 1
+            ) {
+                // Do not process if, since will be invalidated by Twitter either way
+                \trigger_error('One or more Twitter app card parameter is missing or incorrect');
+
+                return '';
+            }
+
+            // Add IDs
+            $output .= '<meta name="twitter:app:id:ipad" content="'.$player_app['id:ipad'].'" />';
+            $output .= '<meta name="twitter:app:id:iphone" content="'.$player_app['id:iphone'].'" />';
+            $output .= '<meta name="twitter:app:id:googleplay" content="'.$player_app['id:googleplay'].'" />';
+            // Add custom schemes
+            if (
+                !empty($player_app['url:ipad'])
+                && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:ipad']) === 1
+            ) {
+                $output .= '<meta name="twitter:app:url:ipad" content="'.$player_app['url:ipad'].'" />';
+            }
+
+            if (
+                !empty($player_app['url:iphone'])
+                && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:iphone']) === 1
+            ) {
+                $output .= '<meta name="twitter:app:url:iphone" content="'.$player_app['url:iphone'].'" />';
+            }
+
+            if (
+                !empty($player_app['url:googleplay'])
+                && \preg_match('/^(?<scheme>[a-z][a-z0-9+.-]+):\/\//i', $player_app['url:googleplay']) === 1
+            ) {
+                $output .= '<meta name="twitter:app:url:googleplay" content="'.$player_app['url:googleplay'].'" />';
+            }
+
+            // Add country code
+            if (
+                !empty($player_app['country'])
+                && \preg_match('/^A[^ABCHJKNPVY]|B[^CKPUX]|C[^BEJPQST]|D[EJKMOZ]|E[CEGHRST]|F[IJKMOR]|G[^CJKOVXZ]|H[KMNRTU]|I[DEL-OQ-T]|J[EMOP]|K[EGHIMNPRWYZ]|L[ABCIKR-VY]|M[^BIJ]|N[ACEFGILOPRUZ]|OM|P[AE-HK-NRSTWY]|QA|R[EOSUW]|S[^FPQUW]|T[^ABEIPQSUXY]|U[AGMSYZ]|V[ACEGINU]|WF|WS|YE|YT|Z[AMW]$/i', $player_app['country']) === 1
+            ) {
+                $output .= '<meta name="twitter:app:country" content="'.$player_app['country'].'" />';
+            }
+        }
+
+        // Add new lines at the end of the tags for a more readable output
+        if ($pretty) {
+            return \str_replace('>', '>'."\r\n", $output);
         }
 
         return $output;
